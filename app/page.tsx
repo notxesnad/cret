@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/utils/supabase'
 
 export default function HomePage() {
-  const [user, setUser] = useState(null)
-  const [profileStep, setProfileStep] = useState(1) 
-  const [profile, setProfile] = useState({
+  // Added <any> to prevent TS from inferring 'never' or strictly 'null'
+  const [user, setUser] = useState<any>(null)
+  const [profileStep, setProfileStep] = useState<number>(1) 
+  const [profile, setProfile] = useState<any>({
     full_name: '',
     email: '',
     phone: '',
@@ -13,14 +14,13 @@ export default function HomePage() {
     headshot_url: '',
     logo_url: '',
     pdf_look: 'look1',
-    show_headshot: true // Big toggle state
+    show_headshot: true 
   })
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState<boolean>(false)
 
-  // Net Sheet State & View Toggle ('calc' vs 'checkboxes')
-  const [netSheetView, setNetSheetView] = useState('calc') 
+  const [netSheetView, setNetSheetView] = useState<string>('calc') 
 
-  const [activeFields, setActiveFields] = useState({
+  const [activeFields, setActiveFields] = useState<any>({
     sellerConcessions: false,
     personalProperty: false,
     secondMortgage: false,
@@ -41,7 +41,7 @@ export default function HomePage() {
     repairCredits: false
   })
 
-  const [netData, setNetData] = useState({
+  const [netData, setNetData] = useState<any>({
     salePrice: 750000,
     mortgagePayoff: 400000,
     agentCommissionPct: 5,
@@ -92,7 +92,7 @@ export default function HomePage() {
             show_headshot: data.show_headshot !== false
           })
         } else {
-          setProfile(prev => ({ ...prev, email: currentUser.email || '' }))
+          setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
         }
       }
     }
@@ -105,7 +105,8 @@ export default function HomePage() {
     window.location.reload()
   }
 
-  const showCustomModal = (msg) => {
+  // Added string type to msg
+  const showCustomModal = (msg: string) => {
     const modalMsg = document.getElementById('modal-message')
     const modal = document.getElementById('custom-modal')
     if (modalMsg && modal) {
@@ -121,7 +122,8 @@ export default function HomePage() {
     }
   }
 
-  const switchView = (viewId) => {
+  // Added string type to viewId
+  const switchView = (viewId: string) => {
     document.querySelectorAll('.app-view').forEach(el => {
       el.classList.remove('active')
     })
@@ -173,28 +175,32 @@ export default function HomePage() {
 
   const calculatedNetProceeds = netData.salePrice - calcTotalDeductions()
 
-  const handleNetInputChange = (field, val) => {
-    setNetData(prev => ({ ...prev, [field]: parseFloat(val) || 0 }))
+  // Typed parameters
+  const handleNetInputChange = (field: string, val: any) => {
+    setNetData((prev: any) => ({ ...prev, [field]: parseFloat(val) || 0 }))
   }
 
-  const toggleFieldCheckbox = (fieldKey) => {
-    setActiveFields(prev => ({ ...prev, [fieldKey]: !prev[fieldKey] }))
+  // Typed parameters
+  const toggleFieldCheckbox = (fieldKey: string) => {
+    setActiveFields((prev: any) => ({ ...prev, [fieldKey]: !prev[fieldKey] }))
   }
 
-  const submitOpenHouse = (e) => {
+  // Typed event parameter
+  const submitOpenHouse = (e: any) => {
     e.preventDefault()
-    document.getElementById('oh-form-container').classList.add('hidden')
-    document.getElementById('oh-success').classList.remove('hidden')
+    document.getElementById('oh-form-container')?.classList.add('hidden')
+    document.getElementById('oh-success')?.classList.remove('hidden')
   }
 
   const resetOpenHouse = () => {
-    document.getElementById('oh-name').value = ''
-    document.getElementById('oh-phone').value = ''
-    document.getElementById('oh-success').classList.add('hidden')
-    document.getElementById('oh-form-container').classList.remove('hidden')
+    (document.getElementById('oh-name') as HTMLInputElement).value = '';
+    (document.getElementById('oh-phone') as HTMLInputElement).value = '';
+    document.getElementById('oh-success')?.classList.add('hidden')
+    document.getElementById('oh-form-container')?.classList.remove('hidden')
   }
 
-  const handleStep1Submit = async (e) => {
+  // Typed event parameter
+  const handleStep1Submit = async (e: any) => {
     e.preventDefault()
 
     if (!user) {
@@ -202,7 +208,7 @@ export default function HomePage() {
         email: profile.email,
         options: { 
           shouldCreateUser: true,
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
         }
       })
 
@@ -231,7 +237,6 @@ export default function HomePage() {
     if (error) {
       showCustomModal('Error saving profile: ' + error.message)
     } else {
-      // Smooth slide to step 2
       setProfileStep(2)
     }
   }
@@ -249,7 +254,8 @@ export default function HomePage() {
     switchView('home')
   }
 
-  const handleImageUpload = async (e, fieldName) => {
+  // Typed event and fieldName parameters
+  const handleImageUpload = async (e: any, fieldName: string) => {
     const file = e.target.files[0]
     if (!file || !user) return
 
@@ -295,12 +301,13 @@ export default function HomePage() {
     setUploading(false)
   }
 
-  const savePdfLookSelection = (lookKey) => {
-    setProfile(prev => ({ ...prev, pdf_look: lookKey }))
+  // Typed parameter
+  const savePdfLookSelection = (lookKey: string) => {
+    setProfile((prev: any) => ({ ...prev, pdf_look: lookKey }))
   }
 
-  // 10 Bespoke Header Designs catering to horizontal logos
-  const renderAgentHeader = (themeOverride = null) => {
+  // Permitted string null union to fix argument assignment error
+  const renderAgentHeader = (themeOverride: string | null = null) => {
     const look = themeOverride || profile.pdf_look || 'look1'
     const name = profile.full_name || 'Jane Doe'
     const brokerage = profile.brokerage || 'Luxury Real Estate'
@@ -310,7 +317,7 @@ export default function HomePage() {
     const logo = profile.logo_url
 
     switch(look) {
-      case 'look1': // Minimal Hero - Great for Horizontal Logos
+      case 'look1': 
         return (
           <div className="bg-white border-b border-slate-100 pb-5 mb-5 flex flex-col items-center text-center px-4 pt-2">
             {logo ? (
@@ -328,7 +335,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look2': // Obsidian Luxury Split
+      case 'look2': 
         return (
           <div className="bg-slate-950 text-amber-50 p-5 rounded-xl flex justify-between items-center mb-5 shadow-lg border border-slate-800">
             <div className="flex-1 flex flex-col justify-center">
@@ -348,7 +355,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look3': // Coastal Elegance (Teals/Breezy)
+      case 'look3': 
         return (
           <div className="bg-teal-50/50 border border-teal-100 p-5 rounded-2xl flex justify-between items-center mb-5">
             <div className="flex items-center gap-4">
@@ -368,7 +375,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look4': // Editorial Serif Arch
+      case 'look4': 
         return (
           <div className="border-t-4 border-b border-slate-900 py-5 mb-5 flex justify-between items-start text-slate-900 bg-white">
             <div className="flex-1">
@@ -380,7 +387,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look5': // The Agency (Massive Logo Hero)
+      case 'look5': 
         return (
           <div className="bg-slate-50 border border-slate-200 p-6 rounded-xl flex flex-col items-center mb-5">
             {logo ? (
@@ -398,7 +405,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look6': // Classic Executive (Navy/Gold)
+      case 'look6': 
         return (
           <div className="bg-blue-950 p-1 mb-5 shadow-sm rounded-lg">
             <div className="bg-white p-4 rounded-md border-2 border-blue-900/10 flex justify-between items-center">
@@ -418,7 +425,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look7': // Vibrant Gradient Edge
+      case 'look7': 
         return (
           <div className="relative p-5 rounded-2xl mb-5 overflow-hidden bg-white shadow-md border border-slate-100">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-fuchsia-500 to-rose-500"></div>
@@ -433,7 +440,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look8': // Stark Monochrome
+      case 'look8': 
         return (
           <div className="border-4 border-black p-4 mb-5 bg-white flex justify-between items-center">
             <div className="flex flex-col">
@@ -448,7 +455,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look9': // Florida Sunset Warmth
+      case 'look9': 
         return (
           <div className="bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-100 p-5 rounded-xl flex justify-between items-center mb-5">
             <div className="flex items-center gap-4">
@@ -465,7 +472,7 @@ export default function HomePage() {
           </div>
         )
 
-      case 'look10': // Glassmorphism Modern
+      case 'look10': 
       default:
         return (
           <div className="bg-slate-100/50 backdrop-blur-md border border-white/60 p-4 rounded-2xl flex justify-between items-center mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
@@ -498,7 +505,6 @@ export default function HomePage() {
             to { opacity: 1; transform: translateY(0); }
           }
           
-          /* Hide scrollbar for the looks selector */
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
@@ -1064,7 +1070,7 @@ export default function HomePage() {
                         type="text" 
                         placeholder="Jane Doe" 
                         value={profile.full_name}
-                        onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+                        onChange={(e: any) => setProfile({...profile, full_name: e.target.value})}
                         required
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
@@ -1075,7 +1081,7 @@ export default function HomePage() {
                         type="email" 
                         placeholder="name@example.com" 
                         value={profile.email}
-                        onChange={(e) => setProfile({...profile, email: e.target.value})}
+                        onChange={(e: any) => setProfile({...profile, email: e.target.value})}
                         required
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
@@ -1086,7 +1092,7 @@ export default function HomePage() {
                         type="tel" 
                         placeholder="(555) 123-4567" 
                         value={profile.phone}
-                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                        onChange={(e: any) => setProfile({...profile, phone: e.target.value})}
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
                     </div>
@@ -1096,7 +1102,7 @@ export default function HomePage() {
                         type="text" 
                         placeholder="Luxury Real Estate Inc." 
                         value={profile.brokerage}
-                        onChange={(e) => setProfile({...profile, brokerage: e.target.value})}
+                        onChange={(e: any) => setProfile({...profile, brokerage: e.target.value})}
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
                     </div>
@@ -1239,11 +1245,12 @@ export default function HomePage() {
 
 // Reusable Email Magic Link Login Widget
 function EmailLoginWidget() {
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-  const [message, setMessage] = useState('')
+  const [email, setEmail] = useState<string>('')
+  const [sent, setSent] = useState<boolean>(false)
+  const [message, setMessage] = useState<string>('')
 
-  const handleSendMagicLink = async (e) => {
+  // Typed parameter
+  const handleSendMagicLink = async (e: any) => {
     e.preventDefault()
     setMessage('')
     
@@ -1251,7 +1258,7 @@ function EmailLoginWidget() {
       email,
       options: { 
         shouldCreateUser: true,
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
       }
     })
 
@@ -1272,7 +1279,7 @@ function EmailLoginWidget() {
               type="email"
               placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: any) => setEmail(e.target.value)}
               required
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
             />
