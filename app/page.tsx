@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/utils/supabase'
 
 export default function HomePage() {
-  // Added <any> to prevent TS from inferring 'never' or strictly 'null'
   const [user, setUser] = useState<any>(null)
   const [profileStep, setProfileStep] = useState<number>(1) 
   const [profile, setProfile] = useState<any>({
@@ -74,6 +73,17 @@ export default function HomePage() {
       setUser(currentUser)
 
       if (currentUser) {
+        // Check if user was in the middle of step 2 registration
+        const savedStep = localStorage.getItem('crt_profile_step')
+        const savedDraft = localStorage.getItem('crt_profile_draft')
+
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft)
+            setProfile((prev: any) => ({ ...prev, ...parsed }))
+          } catch (e) {}
+        }
+
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -91,21 +101,36 @@ export default function HomePage() {
             pdf_look: data.pdf_look || 'look1',
             show_headshot: data.show_headshot !== false
           })
+          // If they already finished setup before, stay home or let them edit
+          if (savedStep === '2') {
+            setProfileStep(2)
+            switchView('profile')
+          } else {
+            switchView('home')
+          }
         } else {
           setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
+          if (savedStep === '2') {
+            setProfileStep(2)
+            switchView('profile')
+          } else {
+            switchView('home')
+          }
         }
+      } else {
+        switchView('home')
       }
     }
     loadData()
-    switchView('home')
   }, [])
 
   const handleLogout = async () => {
+    localStorage.removeItem('crt_profile_step')
+    localStorage.removeItem('crt_profile_draft')
     await supabase.auth.signOut()
     window.location.reload()
   }
 
-  // Added string type to msg
   const showCustomModal = (msg: string) => {
     const modalMsg = document.getElementById('modal-message')
     const modal = document.getElementById('custom-modal')
@@ -122,7 +147,6 @@ export default function HomePage() {
     }
   }
 
-  // Added string type to viewId
   const switchView = (viewId: string) => {
     document.querySelectorAll('.app-view').forEach(el => {
       el.classList.remove('active')
@@ -175,17 +199,14 @@ export default function HomePage() {
 
   const calculatedNetProceeds = netData.salePrice - calcTotalDeductions()
 
-  // Typed parameters
   const handleNetInputChange = (field: string, val: any) => {
     setNetData((prev: any) => ({ ...prev, [field]: parseFloat(val) || 0 }))
   }
 
-  // Typed parameters
   const toggleFieldCheckbox = (fieldKey: string) => {
     setActiveFields((prev: any) => ({ ...prev, [fieldKey]: !prev[fieldKey] }))
   }
 
-  // Typed event parameter
   const submitOpenHouse = (e: any) => {
     e.preventDefault()
     document.getElementById('oh-form-container')?.classList.add('hidden')
@@ -199,9 +220,12 @@ export default function HomePage() {
     document.getElementById('oh-form-container')?.classList.remove('hidden')
   }
 
-  // Typed event parameter
   const handleStep1Submit = async (e: any) => {
     e.preventDefault()
+
+    // Save draft state to localStorage so we recover it after magic link verification
+    localStorage.setItem('crt_profile_step', '2')
+    localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
 
     if (!user) {
       const { error: authError } = await supabase.auth.signInWithOtp({
@@ -217,10 +241,11 @@ export default function HomePage() {
         return
       }
 
-      showCustomModal('Magic link sent! Check your email to verify your account and proceed to Step 2.')
+      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
       return
     }
 
+    // If user is already logged in, save data immediately
     const updates = {
       id: user.id,
       full_name: profile.full_name,
@@ -243,18 +268,32 @@ export default function HomePage() {
 
   const handleFinalSave = async () => {
     if (user) {
-      await supabase.from('profiles').upsert({
+      const finalPayload = {
         id: user.id,
+        full_name: profile.full_name,
+        email: profile.email || user.email,
+        phone: profile.phone,
+        brokerage: profile.brokerage,
         pdf_look: profile.pdf_look,
         show_headshot: profile.show_headshot,
+        headshot_url: profile.headshot_url,
+        logo_url: profile.logo_url,
         updated_at: new Date()
-      })
+      }
+
+      const { error } = await supabase.from('profiles').upsert(finalPayload)
+      if (error) {
+        showCustomModal('Error saving profile: ' + error.message)
+        return
+      }
     }
+
+    localStorage.removeItem('crt_profile_step')
+    localStorage.removeItem('crt_profile_draft')
     showCustomModal('Profile fully updated!')
     switchView('home')
   }
 
-  // Typed event and fieldName parameters
   const handleImageUpload = async (e: any, fieldName: string) => {
     const file = e.target.files[0]
     if (!file || !user) return
@@ -294,6 +333,10 @@ export default function HomePage() {
 
     await supabase.from('profiles').upsert({
       id: user.id,
+      full_name: profile.full_name,
+      email: profile.email || user.email,
+      phone: profile.phone,
+      brokerage: profile.brokerage,
       [fieldName]: publicUrl,
       updated_at: new Date()
     })
@@ -301,12 +344,10 @@ export default function HomePage() {
     setUploading(false)
   }
 
-  // Typed parameter
   const savePdfLookSelection = (lookKey: string) => {
     setProfile((prev: any) => ({ ...prev, pdf_look: lookKey }))
   }
 
-  // Permitted string null union to fix argument assignment error
   const renderAgentHeader = (themeOverride: string | null = null) => {
     const look = themeOverride || profile.pdf_look || 'look1'
     const name = profile.full_name || 'Jane Doe'
@@ -1243,13 +1284,11 @@ export default function HomePage() {
   )
 }
 
-// Reusable Email Magic Link Login Widget
 function EmailLoginWidget() {
   const [email, setEmail] = useState<string>('')
   const [sent, setSent] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
 
-  // Typed parameter
   const handleSendMagicLink = async (e: any) => {
     e.preventDefault()
     setMessage('')
