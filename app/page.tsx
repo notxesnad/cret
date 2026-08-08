@@ -1,8 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 
-export default function HomePage() {
+function HomeContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const currentView = searchParams.get('view') || 'home'
+
   const [user, setUser] = useState<any>(null)
   const [profileStep, setProfileStep] = useState<number>(1) 
   const [profile, setProfile] = useState<any>({
@@ -105,20 +110,14 @@ export default function HomePage() {
           if (savedStep === '2') {
             setProfileStep(2)
             switchView('profile')
-          } else {
-            switchView('home')
           }
         } else {
           setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
           if (savedStep === '2') {
             setProfileStep(2)
             switchView('profile')
-          } else {
-            switchView('home')
           }
         }
-      } else {
-        switchView('home')
       }
     }
     loadData()
@@ -147,21 +146,29 @@ export default function HomePage() {
     }
   }
 
-  const switchView = (viewId: string) => {
+  useEffect(() => {
     document.querySelectorAll('.app-view').forEach(el => {
       el.classList.remove('active')
     })
     
-    const targetView = document.getElementById('view-' + viewId)
+    const targetView = document.getElementById('view-' + currentView)
     if(targetView) {
       targetView.classList.add('active')
+    } else {
+      const homeView = document.getElementById('view-home')
+      if (homeView) homeView.classList.add('active')
+      router.replace('?view=home', { scroll: false })
     }
     
     const navAction = document.getElementById('nav-action')
     if(navAction) {
-      navAction.style.display = viewId === 'home' ? 'none' : 'block'
+      navAction.style.display = currentView === 'home' ? 'none' : 'block'
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentView])
+
+  const switchView = (viewId: string) => {
+    router.push(`?view=${viewId}`, { scroll: false })
   }
 
   const calcTotalDeductions = () => {
@@ -1348,5 +1355,13 @@ function EmailLoginWidget() {
         </p>
       )}
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0f172a]" />}>
+      <HomeContent />
+    </Suspense>
   )
 }
