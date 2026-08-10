@@ -227,49 +227,62 @@ function HomeContent() {
     document.getElementById('oh-form-container')?.classList.remove('hidden')
   }
 
-  const handleStep1Submit = async (e: any) => {
-    e.preventDefault()
-
-    // Save draft state to localStorage so we recover it after magic link verification
-    localStorage.setItem('crt_profile_step', '2')
-    localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
-
-    if (!user) {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: profile.email,
-        options: { 
-          shouldCreateUser: true,
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
-        }
-      })
-
-      if (authError) {
-        showCustomModal('Error sending verification link: ' + authError.message)
+  const handleNextStep = async () => {
+    if (profileStep === 1) {
+      if (!profile.full_name?.trim()) {
+        showCustomModal('Please enter your full name to continue.')
+        return
+      }
+      if (!profile.email?.trim()) {
+        showCustomModal('Please enter your email address to continue.')
         return
       }
 
-      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
-      return
-    }
+      // Save draft state to localStorage so we recover it after magic link verification
+      localStorage.setItem('crt_profile_step', '2')
+      localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
 
-    // If user is already logged in, save data immediately
-    const updates = {
-      id: user.id,
-      full_name: profile.full_name,
-      email: profile.email,
-      phone: profile.phone,
-      brokerage: profile.brokerage,
-      pdf_look: profile.pdf_look,
-      show_headshot: profile.show_headshot,
-      updated_at: new Date(),
-    }
+      if (!user) {
+        const { error: authError } = await supabase.auth.signInWithOtp({
+          email: profile.email,
+          options: { 
+            shouldCreateUser: true,
+            emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+          }
+        })
 
-    const { error } = await supabase.from('profiles').upsert(updates)
+        if (authError) {
+          showCustomModal('Error sending verification link: ' + authError.message)
+          return
+        }
 
-    if (error) {
-      showCustomModal('Error saving profile: ' + error.message)
-    } else {
-      setProfileStep(2)
+        showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
+        return
+      }
+
+      // If user is already logged in, save data immediately
+      const updates = {
+        id: user.id,
+        full_name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        brokerage: profile.brokerage,
+        pdf_look: profile.pdf_look,
+        show_headshot: profile.show_headshot,
+        updated_at: new Date(),
+      }
+
+      const { error } = await supabase.from('profiles').upsert(updates)
+
+      if (error) {
+        showCustomModal('Error saving profile: ' + error.message)
+      } else {
+        setProfileStep(2)
+      }
+    } else if (profileStep === 2) {
+      setProfileStep(3)
+    } else if (profileStep === 3) {
+      handleFinalSave()
     }
   }
 
@@ -1094,24 +1107,36 @@ function HomeContent() {
           </div>
 
           {/* TOOL 7: PROFILE BUILDER */}
-          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl pt-8 pb-8 shadow-2xl overflow-hidden relative">
+          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative flex flex-col h-[700px]">
             
-            <div className="px-6 mb-6">
-              <span className="text-[10px] font-bold tracking-widest text-fuchsia-400 uppercase">Profile Configuration</span>
-              <h1 className="text-2xl font-black mt-1 tracking-tight">Design Your PDF Header</h1>
+            {/* Duolingo style progress header */}
+            <div className="flex items-center px-6 py-6 border-b border-slate-800">
+              {profileStep > 1 ? (
+                <button onClick={() => setProfileStep(profileStep - 1)} className="text-slate-400 hover:text-white transition">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+              ) : (
+                <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              )}
+              
+              <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-fuchsia-500 h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${(profileStep / 3) * 100}%` }}
+                ></div>
+              </div>
             </div>
 
-            <div className="w-full overflow-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out" style={{ width: '200%', transform: profileStep === 1 ? 'translateX(0%)' : 'translateX(-50%)' }}>
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-x-hidden overflow-y-auto hide-scrollbar">
+              <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                 
                 {/* --- STEP 1: Details --- */}
-                <div className="w-1/2 flex-shrink-0 px-6">
-                  <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-2">
-                    <h3 className="font-bold text-white">Step 1: Your Details</h3>
-                    <span className="text-xs font-mono text-slate-500">1 / 2</span>
-                  </div>
-
-                  <form onSubmit={handleStep1Submit} className="space-y-4">
+                <div className="w-1/3 flex-shrink-0 px-6 py-6">
+                  <h3 className="text-xl font-black text-white mb-6">Your Details</h3>
+                  <div className="space-y-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Full Name</label>
                       <input 
@@ -1119,7 +1144,6 @@ function HomeContent() {
                         placeholder="Jane Doe" 
                         value={profile.full_name}
                         onChange={(e: any) => setProfile({...profile, full_name: e.target.value})}
-                        required
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
                     </div>
@@ -1130,7 +1154,6 @@ function HomeContent() {
                         placeholder="name@example.com" 
                         value={profile.email}
                         onChange={(e: any) => setProfile({...profile, email: e.target.value})}
-                        required
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
                     </div>
@@ -1154,22 +1177,12 @@ function HomeContent() {
                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                       />
                     </div>
-
-                    <button type="submit" className="w-full bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow mt-6">
-                      Continue to Brand Assets &rarr;
-                    </button>
-                  </form>
+                  </div>
                 </div>
 
                 {/* --- STEP 2: Branding & Selection --- */}
-                <div className="w-1/2 flex-shrink-0 px-6 h-[500px] overflow-y-auto hide-scrollbar pb-12">
-                  <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
-                    <button type="button" onClick={() => setProfileStep(1)} className="text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1 transition">
-                      &larr; Back
-                    </button>
-                    <h3 className="font-bold text-white">Step 2: Brand Assets</h3>
-                    <span className="text-xs font-mono text-slate-500">2 / 2</span>
-                  </div>
+                <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+                  <h3 className="text-xl font-black text-white mb-6">Brand Assets</h3>
 
                   <div className="space-y-6">
                     {/* File Uploads */}
@@ -1218,10 +1231,17 @@ function HomeContent() {
                         <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
                       </div>
                     </label>
+                  </div>
+                </div>
 
+                {/* --- STEP 3: Layout Selection --- */}
+                <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-12">
+                  <h3 className="text-xl font-black text-white mb-6">Select Layout</h3>
+
+                  <div className="space-y-6">
                     {/* Choose PDF Layout */}
                     <div>
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Select Your Layout Architecture</h4>
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Layout Architecture</h4>
                       <div className="grid grid-cols-1 gap-4">
                         
                         {[
@@ -1252,21 +1272,25 @@ function HomeContent() {
 
                       </div>
                     </div>
-
-                    <div className="pt-4 pb-10">
-                      <button 
-                        onClick={handleFinalSave} 
-                        className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                        Save All Preferences
-                      </button>
-                    </div>
-
                   </div>
                 </div>
 
               </div>
+            </div>
+
+            {/* Static Action Footer */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/90 backdrop-blur border-t border-slate-800">
+              <button 
+                onClick={handleNextStep} 
+                className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
+              >
+                {profileStep === 1 ? 'Continue to Brand Assets \u2192' : profileStep === 2 ? 'Continue to Layout \u2192' : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                    Save All Preferences
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
