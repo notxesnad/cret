@@ -1130,12 +1130,12 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="flex-1 overflow-x-hidden overflow-y-auto hide-scrollbar">
+            <div className="flex-1 overflow-x-hidden overflow-y-hidden">
               <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                 
                 {/* --- STEP 1: Details --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6">
-                  <h3 className="text-xl font-black text-white mb-6">Your Details</h3>
+                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+                  <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Full Name</label>
@@ -1181,42 +1181,48 @@ function HomeContent() {
                 </div>
 
                 {/* --- STEP 2: Branding & Selection --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-                  <h3 className="text-xl font-black text-white mb-6">Brand Assets</h3>
+                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+                  <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
                   <div className="space-y-6">
                     {/* File Uploads */}
-                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-4">
+                    <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-6">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2 tracking-wider">Brokerage Logo (Horizontal Preferred)</label>
-                        <div className="flex items-center gap-4">
+                        <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Brokerage Logo</label>
+                        <div className="flex flex-col gap-4">
                           {profile.logo_url && (
-                            <img src={profile.logo_url} alt="Logo" className="w-16 h-10 rounded object-contain bg-white p-1" />
+                            <img src={profile.logo_url} alt="Logo" className="h-16 w-auto object-contain bg-white p-2 rounded max-w-full" />
                           )}
-                          <input 
-                            type="file" 
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={(e) => handleImageUpload(e, 'logo_url')}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-slate-700 file:text-white cursor-pointer"
-                          />
+                          <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
+                            <span>{profile.logo_url ? 'Change File' : 'Choose File'}</span>
+                            <input 
+                              type="file" 
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={(e) => handleImageUpload(e, 'logo_url')}
+                              className="hidden"
+                            />
+                          </label>
                         </div>
                       </div>
 
-                      <div className="border-t border-slate-700/50 pt-4">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-2 tracking-wider">Agent Headshot</label>
-                        <div className="flex items-center gap-4">
+                      <div className="border-t border-slate-700/50 pt-6">
+                        <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Agent Headshot</label>
+                        <div className="flex flex-col gap-4">
                           {profile.headshot_url && (
-                            <img src={profile.headshot_url} alt="Headshot" className="w-10 h-10 rounded-full object-cover border border-slate-600" />
+                            <img src={profile.headshot_url} alt="Headshot" className="w-20 h-20 rounded-full object-cover border-2 border-slate-600 self-center" />
                           )}
-                          <input 
-                            type="file" 
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={(e) => handleImageUpload(e, 'headshot_url')}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-slate-700 file:text-white cursor-pointer"
-                          />
+                          <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
+                            <span>{profile.headshot_url ? 'Change File' : 'Choose File'}</span>
+                            <input 
+                              type="file" 
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={(e) => handleImageUpload(e, 'headshot_url')}
+                              className="hidden"
+                            />
+                          </label>
                         </div>
                       </div>
-                      {uploading && <p className="text-[10px] text-fuchsia-400 font-bold animate-pulse">Uploading asset...</p>}
+                      {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
                     </div>
 
                     {/* Big Headshot Toggle */}
@@ -1235,13 +1241,12 @@ function HomeContent() {
                 </div>
 
                 {/* --- STEP 3: Layout Selection --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-12">
-                  <h3 className="text-xl font-black text-white mb-6">Select Layout</h3>
+                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+                  <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
 
                   <div className="space-y-6">
                     {/* Choose PDF Layout */}
                     <div>
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Layout Architecture</h4>
                       <div className="grid grid-cols-1 gap-4">
                         
                         {[
