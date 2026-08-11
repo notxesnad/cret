@@ -43,19 +43,22 @@ export function SellerTrackerView({
   const [step, setStep] = useState(1) // 1: Listings, 2: Activities
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
   const [customActivity, setCustomActivity] = useState('')
+  const [isAddingListing, setIsAddingListing] = useState(false)
+  const [newListingAddress, setNewListingAddress] = useState('')
 
   const activeListing = listings.find(l => l.id === activeListingId)
 
-  const handleAddListing = () => {
-    const address = prompt("Enter the new listing address:")
-    if (address && address.trim()) {
+  const confirmAddListing = () => {
+    if (newListingAddress && newListingAddress.trim()) {
       const newListing: Listing = {
         id: Math.random().toString(36).substr(2, 9),
-        address: address.trim(),
+        address: newListingAddress.trim(),
         activities: []
       }
       updateListings(prev => [newListing, ...prev])
       setActiveListingId(newListing.id)
+      setNewListingAddress('')
+      setIsAddingListing(false)
       setStep(2)
     }
   }
@@ -136,13 +139,31 @@ export function SellerTrackerView({
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
             </div>
 
-            <button 
-              onClick={handleAddListing}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Add My Listing
-            </button>
+            {isAddingListing ? (
+              <div className="bg-slate-800 p-4 rounded-xl border border-amber-500/50 mb-6">
+                <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Enter property address..." 
+                  value={newListingAddress}
+                  onChange={e => setNewListingAddress(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && confirmAddListing()}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-amber-500 mb-3"
+                />
+                <div className="flex gap-2">
+                  <button onClick={confirmAddListing} className="flex-1 bg-amber-500 text-slate-950 font-bold py-2 rounded-lg">Save</button>
+                  <button onClick={() => {setIsAddingListing(false); setNewListingAddress('');}} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsAddingListing(true)}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                Add My Listing
+              </button>
+            )}
 
             <div className="space-y-3">
               {listings.length === 0 ? (
