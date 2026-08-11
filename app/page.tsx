@@ -1107,7 +1107,7 @@ function HomeContent() {
           </div>
 
           {/* TOOL 7: PROFILE BUILDER */}
-          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative flex flex-col" style={{ minHeight: '700px' }}>
+          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative flex flex-col h-[700px]">
             
             {/* Duolingo style progress header */}
             <div className="flex items-center px-6 py-6 border-b border-slate-800">
@@ -1130,11 +1130,12 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="flex-1 overflow-x-hidden overflow-y-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out h-full min-h-[500px]" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
-                
-                {/* --- STEP 1: Details --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+            <div className="flex-1 min-h-0 relative">
+              <div className="absolute inset-0 overflow-x-hidden overflow-y-hidden">
+                <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+                  
+                  {/* --- STEP 1: Details --- */}
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
                   <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
                   <div className="space-y-4">
                     <div>
@@ -1180,8 +1181,8 @@ function HomeContent() {
                   </div>
                 </div>
 
-                {/* --- STEP 2: Branding & Selection --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+                  {/* --- STEP 2: Branding & Selection --- */}
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
                   <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
                   <div className="space-y-6">
@@ -1240,8 +1241,8 @@ function HomeContent() {
                   </div>
                 </div>
 
-                {/* --- STEP 3: Layout Selection --- */}
-                <div className="w-1/3 flex-shrink-0 px-6 py-6 overflow-y-auto hide-scrollbar pb-32">
+                  {/* --- STEP 3: Layout Selection --- */}
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
                   <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
 
                   <div className="space-y-6">
@@ -1280,6 +1281,7 @@ function HomeContent() {
                   </div>
                 </div>
 
+                </div>
               </div>
             </div>
 
