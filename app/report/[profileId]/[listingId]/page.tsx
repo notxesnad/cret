@@ -21,6 +21,11 @@ export default function SellerReportPage({ params }: { params: Promise<{ profile
         .eq('id', profileId)
         .single()
 
+      if (error) {
+        console.error("Supabase Error fetching profile:", error)
+        // If it's an RLS error, data will be null and error will be populated.
+      }
+
       if (data && data.listings) {
         setProfile(data)
         const found = data.listings.find((l: any) => l.id === listingId)
@@ -46,7 +51,10 @@ export default function SellerReportPage({ params }: { params: Promise<{ profile
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-2xl font-black text-slate-800 mb-2">Report Not Found</h1>
-        <p className="text-slate-500">This listing might have been removed or the link is incorrect.</p>
+        <p className="text-slate-500 max-w-md mx-auto mb-4">This listing might have been removed or the link is incorrect.</p>
+        <div className="bg-amber-50 text-amber-800 text-sm p-4 rounded-xl max-w-md border border-amber-200">
+          <strong>Agent Note:</strong> If you are testing this link and seeing this error, your Supabase <code>profiles</code> table is likely blocking unauthenticated access via Row Level Security (RLS). You must go to your Supabase Dashboard and add a Policy to allow public read access to the <code>profiles</code> table so your sellers can view this page!
+        </div>
       </div>
     )
   }

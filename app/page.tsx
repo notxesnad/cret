@@ -141,16 +141,21 @@ function HomeContent() {
             show_headshot: data.show_headshot !== false
           })
           setListings(data.listings || [])
-          // If they already finished setup before, stay home or let them edit
+          // If they were in the middle of setup, we recovered their draft above.
+          // We no longer force them into the profile view on load.
           if (savedStep === '2') {
             setProfileStep(2)
-            switchView('profile')
+            // clear it so it doesn't persist forever
+            localStorage.removeItem('crt_profile_step')
+            localStorage.removeItem('crt_profile_draft')
           }
         } else {
           setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
           if (savedStep === '2') {
             setProfileStep(2)
-            switchView('profile')
+            // clear it so it doesn't persist forever
+            localStorage.removeItem('crt_profile_step')
+            localStorage.removeItem('crt_profile_draft')
           }
         }
       }
