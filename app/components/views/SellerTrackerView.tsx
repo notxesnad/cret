@@ -19,6 +19,7 @@ interface SellerTrackerViewProps {
   updateListings: (updater: (prev: Listing[]) => Listing[]) => void;
   showCustomModal: (msg: string) => void;
   switchView: (view: string) => void;
+  userId?: string;
 }
 
 const PRESET_ACTIVITIES = [
@@ -40,7 +41,8 @@ export function SellerTrackerView({
   listings,
   updateListings,
   showCustomModal,
-  switchView
+  switchView,
+  userId
 }: SellerTrackerViewProps) {
   const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
@@ -80,17 +82,21 @@ export function SellerTrackerView({
     
     updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
+        const updatedActivities = [
+          {
+            id: Math.random().toString(36).substr(2, 9),
+            label,
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            status: 'completed' as const
+          },
+          ...listing.activities
+        ];
+        // Sort by date (newest first)
+        updatedActivities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
         return {
           ...listing,
-          activities: [
-            {
-              id: Math.random().toString(36).substr(2, 9),
-              label,
-              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-              status: 'completed'
-            },
-            ...listing.activities
-          ]
+          activities: updatedActivities
         }
       }
       return listing
@@ -114,11 +120,15 @@ export function SellerTrackerView({
 
     updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
+        const updatedActivities = listing.activities.map(a => 
+          a.id === activeActivityId ? { ...a, ...editActivityForm } as Activity : a
+        );
+        // Sort by date (newest first)
+        updatedActivities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
         return {
           ...listing,
-          activities: listing.activities.map(a => 
-            a.id === activeActivityId ? { ...a, ...editActivityForm } as Activity : a
-          )
+          activities: updatedActivities
         }
       }
       return listing
@@ -137,6 +147,25 @@ export function SellerTrackerView({
       }
       return listing
     }))
+  }
+
+  const handleShareLink = () => {
+    if (!userId || !activeListingId) {
+      showCustomModal("You must be fully logged in and have an active listing to share.")
+      return
+    }
+    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}`
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showCustomModal(`Link copied! Text this directly to your seller:\n\n${shareUrl}`)
+    }).catch(() => {
+      showCustomModal(`Here is your link (copy it manually):\n\n${shareUrl}`)
+    })
+  }
+
+  const handlePrintPDF = () => {
+    if (!userId || !activeListingId) return
+    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}?print=true`
+    window.open(shareUrl, '_blank')
   }
 
   return (
@@ -396,13 +425,13 @@ export function SellerTrackerView({
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <div className="flex gap-3">
             <button 
-              onClick={() => showCustomModal('Tracker PDF generated & branded successfully!')} 
+              onClick={handlePrintPDF} 
               className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm"
             >
               PDF
             </button>
             <button 
-              onClick={() => showCustomModal('Link generated! Text this directly to your seller.')} 
+              onClick={handleShareLink} 
               className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm"
             >
               Share Live Link
