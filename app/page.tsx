@@ -1130,12 +1130,11 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="flex-1 relative overflow-hidden">
-              <div className="absolute inset-0">
-                <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+            <div className="flex-1 min-h-0 overflow-hidden relative">
+              <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                   
                   {/* --- STEP 1: Details --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-12">
                   <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
                   <div className="space-y-4">
                     <div>
@@ -1182,7 +1181,7 @@ function HomeContent() {
                 </div>
 
                   {/* --- STEP 2: Branding & Selection --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-12">
                   <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
                   <div className="space-y-6">
@@ -1242,7 +1241,7 @@ function HomeContent() {
                 </div>
 
                   {/* --- STEP 3: Layout Selection --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-12">
                   <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
 
                   <div className="space-y-6">
@@ -1282,7 +1281,6 @@ function HomeContent() {
                 </div>
 
                 </div>
-              </div>
             </div>
 
             {/* Static Action Footer */}
