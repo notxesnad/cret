@@ -561,7 +561,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; animation: fadeIn 0.3s ease-out; }
-          #view-profile.active { display: block !important; }
+          #view-profile.active { display: flex !important; flex-direction: column !important; }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -1108,10 +1108,10 @@ function HomeContent() {
           </div>
 
           {/* TOOL 7: PROFILE BUILDER */}
-          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 sm:rounded-3xl shadow-2xl overflow-hidden relative fixed inset-0 sm:static sm:max-h-[calc(100vh-4rem)] sm:h-[700px] z-50 sm:z-auto">
+          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 sm:rounded-3xl shadow-2xl overflow-hidden fixed top-0 left-0 right-0 h-[100dvh] sm:h-[700px] sm:max-h-[75vh] sm:relative sm:inset-auto z-50 sm:z-auto">
             
             {/* Duolingo style progress header */}
-            <div className="absolute top-0 left-0 right-0 h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 safe-top">
+            <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe sm:pt-0">
               {profileStep > 1 ? (
                 <button onClick={() => setProfileStep(profileStep - 1)} className="text-slate-400 hover:text-white transition">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
@@ -1131,7 +1131,7 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="absolute top-[72px] bottom-[104px] left-0 right-0 overflow-x-hidden overflow-y-hidden">
+            <div className="flex-1 min-h-0 relative">
               <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                   
                   {/* --- STEP 1: Details --- */}
@@ -1285,7 +1285,7 @@ function HomeContent() {
             </div>
 
             {/* Static Action Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900 border-t border-slate-800 z-10 safe-bottom">
+            <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe sm:pb-6">
               <button 
                 onClick={handleNextStep} 
                 className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
