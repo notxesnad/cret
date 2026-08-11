@@ -1130,12 +1130,12 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="flex-1 min-h-0 relative">
-              <div className="absolute inset-0 overflow-x-hidden overflow-y-hidden">
+            <div className="flex-1 relative overflow-hidden">
+              <div className="absolute inset-0">
                 <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                   
                   {/* --- STEP 1: Details --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
                   <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
                   <div className="space-y-4">
                     <div>
@@ -1182,7 +1182,7 @@ function HomeContent() {
                 </div>
 
                   {/* --- STEP 2: Branding & Selection --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
                   <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
                   <div className="space-y-6">
@@ -1242,7 +1242,7 @@ function HomeContent() {
                 </div>
 
                   {/* --- STEP 3: Layout Selection --- */}
-                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+                  <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
                   <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
 
                   <div className="space-y-6">
@@ -1286,7 +1286,7 @@ function HomeContent() {
             </div>
 
             {/* Static Action Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900/90 backdrop-blur border-t border-slate-800">
+            <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10">
               <button 
                 onClick={handleNextStep} 
                 className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
