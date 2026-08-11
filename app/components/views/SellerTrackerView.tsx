@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 export interface Activity {
   id: string;
   label: string;
   date: string;
+  notes?: string;
+  status?: 'completed' | 'pending' | 'upcoming';
 }
 
 export interface Listing {
@@ -40,13 +42,18 @@ export function SellerTrackerView({
   showCustomModal,
   switchView
 }: SellerTrackerViewProps) {
-  const [step, setStep] = useState(1) // 1: Listings, 2: Activities
+  const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
+  const [activeActivityId, setActiveActivityId] = useState<string | null>(null)
   const [customActivity, setCustomActivity] = useState('')
   const [isAddingListing, setIsAddingListing] = useState(false)
   const [newListingAddress, setNewListingAddress] = useState('')
+  const [editActivityForm, setEditActivityForm] = useState<Partial<Activity>>({})
+
+  const activityLogRef = useRef<HTMLDivElement>(null)
 
   const activeListing = listings.find(l => l.id === activeListingId)
+  const activeActivity = activeListing?.activities.find(a => a.id === activeActivityId)
 
   const confirmAddListing = () => {
     if (newListingAddress && newListingAddress.trim()) {
@@ -79,7 +86,8 @@ export function SellerTrackerView({
             {
               id: Math.random().toString(36).substr(2, 9),
               label,
-              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              status: 'completed'
             },
             ...listing.activities
           ]
@@ -88,6 +96,34 @@ export function SellerTrackerView({
       return listing
     }))
     setCustomActivity('')
+
+    // Scroll to activity log top smoothly
+    setTimeout(() => {
+      activityLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
+
+  const handleOpenActivity = (act: Activity) => {
+    setActiveActivityId(act.id)
+    setEditActivityForm(act)
+    setStep(3)
+  }
+
+  const handleUpdateActivity = () => {
+    if (!activeListingId || !activeActivityId) return;
+
+    updateListings(prev => prev.map(listing => {
+      if (listing.id === activeListingId) {
+        return {
+          ...listing,
+          activities: listing.activities.map(a => 
+            a.id === activeActivityId ? { ...a, ...editActivityForm } as Activity : a
+          )
+        }
+      }
+      return listing
+    }))
+    setStep(2)
   }
 
   const handleRemoveActivity = (activityId: string) => {
@@ -108,8 +144,8 @@ export function SellerTrackerView({
       
       {/* Header */}
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step === 2 ? (
-          <button onClick={() => setStep(1)} className="text-slate-400 hover:text-white transition flex items-center">
+        {step > 1 ? (
+          <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
             <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
           </button>
@@ -123,17 +159,17 @@ export function SellerTrackerView({
         <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
           <div 
             className="bg-amber-500 h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / 2) * 100}%` }}
+            style={{ width: `${(step / 3) * 100}%` }}
           ></div>
         </div>
       </div>
 
       {/* Scrollable content area */}
       <div className="flex-1 min-h-0 relative h-[calc(100vh-72px)]">
-        <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '200%', transform: step === 1 ? 'translateX(0%)' : 'translateX(-50%)' }}>
+        <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
           {/* --- STEP 1: Listings --- */}
-          <div className="w-[50%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
             <div className="text-center mb-8">
               <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Tracker Report</span>
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
@@ -192,7 +228,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 2: Activities --- */}
-          <div className="w-[50%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-40">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-40">
             {activeListing && (
               <>
                 <div className="mb-6">
@@ -237,7 +273,7 @@ export function SellerTrackerView({
                 </div>
 
                 {/* Logged Activities */}
-                <div className="space-y-3">
+                <div className="space-y-3 scroll-mt-6" ref={activityLogRef}>
                   <h3 className="text-sm font-bold text-white flex items-center justify-between">
                     Activity Log
                     <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">{activeListing.activities.length} total</span>
@@ -248,13 +284,22 @@ export function SellerTrackerView({
                   ) : (
                     <div className="space-y-2">
                       {activeListing.activities.map((act) => (
-                        <div key={act.id} className="bg-slate-800 border border-slate-700 rounded-xl p-3 flex justify-between items-start group">
+                        <div 
+                          key={act.id} 
+                          onClick={() => handleOpenActivity(act)}
+                          className={`bg-slate-800 border ${act.status === 'pending' ? 'border-amber-500/50 border-dashed' : act.status === 'upcoming' ? 'border-cyan-500/50' : 'border-slate-700'} rounded-xl p-3 flex justify-between items-start group cursor-pointer hover:border-amber-400 transition-colors`}
+                        >
                           <div>
-                            <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded inline-block mb-1">{act.date}</span>
+                            <div className="flex gap-2 mb-1">
+                              <span className="text-[9px] font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{act.date}</span>
+                              {act.status === 'upcoming' && <span className="text-[9px] font-black text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded inline-block uppercase">Upcoming</span>}
+                              {act.status === 'pending' && <span className="text-[9px] font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded inline-block uppercase">Pending</span>}
+                            </div>
                             <p className="text-sm font-bold text-white leading-tight">{act.label}</p>
+                            {act.notes && <p className="text-xs text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
                           </div>
                           <button 
-                            onClick={() => handleRemoveActivity(act.id)}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveActivity(act.id); }}
                             className="text-slate-500 hover:text-rose-400 p-1 opacity-50 group-hover:opacity-100 transition"
                             title="Remove activity"
                           >
@@ -264,6 +309,80 @@ export function SellerTrackerView({
                       ))}
                     </div>
                   )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* --- STEP 3: Edit Activity --- */}
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+            {activeActivity && (
+              <>
+                <div className="mb-6">
+                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Edit Activity</span>
+                  <h3 className="text-xl font-black text-white mt-1">Update Details</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Activity Title</label>
+                    <input 
+                      type="text" 
+                      value={editActivityForm.label || ''}
+                      onChange={(e) => setEditActivityForm({...editActivityForm, label: e.target.value})}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-amber-500 transition-colors" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Date</label>
+                    <input 
+                      type="text" 
+                      value={editActivityForm.date || ''}
+                      onChange={(e) => setEditActivityForm({...editActivityForm, date: e.target.value})}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-amber-500 transition-colors" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Status</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['completed', 'pending', 'upcoming'] as const).map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setEditActivityForm({...editActivityForm, status})}
+                          className={`py-2 px-1 text-[10px] uppercase tracking-wider font-bold rounded-lg transition-colors ${editActivityForm.status === status ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Notes (Optional)</label>
+                    <textarea 
+                      placeholder="Add any internal notes..."
+                      value={editActivityForm.notes || ''}
+                      onChange={(e) => setEditActivityForm({...editActivityForm, notes: e.target.value})}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors min-h-[100px]" 
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 flex gap-3">
+                  <button 
+                    onClick={handleUpdateActivity}
+                    className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow"
+                  >
+                    Save Changes
+                  </button>
+                  <button 
+                    onClick={() => setStep(2)}
+                    className="flex-[1] bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition border border-slate-700"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </>
             )}
