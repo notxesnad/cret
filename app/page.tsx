@@ -14,7 +14,8 @@ import {
   DrivingView,
   BuyerView,
   SellerCallView,
-  ProfileBuilderView
+  ProfileBuilderView,
+  NeighborhoodExpertView
 } from './components/views'
 
 
@@ -90,8 +91,9 @@ function HomeContent() {
     repairCredits: 0
   })
 
-  // --- Listings State ---
+  // --- Listings & Neighborhoods State ---
   const [listings, setListings] = useState<any[]>([])
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([])
 
   const updateListings = (updater: (prev: any[]) => any[]) => {
     setListings(prev => {
@@ -102,6 +104,18 @@ function HomeContent() {
         })
       }
       return newListings
+    })
+  }
+
+  const updateNeighborhoods = (updater: (prev: any[]) => any[]) => {
+    setNeighborhoods(prev => {
+      const newNeighborhoods = updater(prev)
+      if (user) {
+        supabase.from('profiles').update({ neighborhoods: newNeighborhoods }).eq('id', user.id).then(({ error }) => {
+          if (error) console.error('Error saving neighborhoods:', error)
+        })
+      }
+      return newNeighborhoods
     })
   }
 
@@ -141,6 +155,7 @@ function HomeContent() {
             show_headshot: data.show_headshot !== false
           })
           setListings(data.listings || [])
+          setNeighborhoods(data.neighborhoods || [])
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
           if (savedStep === '2') {
@@ -187,7 +202,7 @@ function HomeContent() {
   }
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile']
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
@@ -451,6 +466,15 @@ function HomeContent() {
               renderAgentHeader={(theme: string | null) => renderAgentHeader(profile, theme)}
               handleNextStep={handleNextStep}
               switchView={switchView}
+            />
+          )}
+          {currentView === 'neighborhoods' && (
+            <NeighborhoodExpertView 
+              neighborhoods={neighborhoods}
+              updateNeighborhoods={updateNeighborhoods}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userEmail={user?.email}
             />
           )}
         </main>
