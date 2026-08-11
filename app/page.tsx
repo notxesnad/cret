@@ -1130,8 +1130,8 @@ function HomeContent() {
             </div>
 
             {/* Scrollable content area */}
-            <div className="flex-1 overflow-x-hidden overflow-y-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+            <div className="flex-1 overflow-x-hidden overflow-y-hidden relative">
+              <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
                 
                 {/* --- STEP 1: Details --- */}
                 <div className="w-1/3 flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
