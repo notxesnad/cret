@@ -1282,7 +1282,6 @@ function HomeContent() {
                 </div>
 
                 </div>
-              </div>
             </div>
 
             {/* Static Action Footer */}
