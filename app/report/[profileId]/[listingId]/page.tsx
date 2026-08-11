@@ -97,7 +97,7 @@ export default function SellerReportPage({ params }: { params: Promise<{ profile
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl">
           <h2 className="text-lg font-black text-slate-900 mb-6 border-b border-slate-100 pb-4">Marketing & Activity Timeline</h2>
           
-          {listing.activities.length === 0 ? (
+          {(!listing.activities || listing.activities.length === 0) ? (
             <p className="text-slate-500 italic py-4">No activities logged yet for this listing.</p>
           ) : (
             <div className="relative border-l-2 border-slate-100 ml-3 md:ml-4 space-y-8 pb-4">
