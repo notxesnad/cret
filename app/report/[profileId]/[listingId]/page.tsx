@@ -1,50 +1,30 @@
-'use client'
-
-import { useEffect, useState, use } from 'react'
-import { supabase } from '@/utils/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AutoPrint, PrintButton } from '@/app/components/PrintControls'
 
-export default function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
-  const unwrappedParams = use(params)
-  const { profileId, listingId } = unwrappedParams
-  const [profile, setProfile] = useState<any>(null)
-  const [listing, setListing] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
+  const { profileId, listingId } = await params
 
-  useEffect(() => {
-    async function fetchReport() {
-      // In a real app with RLS, we'd either have public read access to profiles
-      // or a specific edge function. Assuming we can read public info for now.
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', profileId)
-        .single()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  // Fall back to anon key if service role is missing during build time
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-      if (error) {
-        console.error("Supabase Error fetching profile:", error)
-        // If it's an RLS error, data will be null and error will be populated.
-      }
+  const { data: profile, error } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .single()
 
-      if (data && data.listings) {
-        setProfile(data)
-        const found = data.listings.find((l: any) => l.id === listingId)
-        if (found) {
-          setListing(found)
-        }
-      }
-      setLoading(false)
+  if (error) {
+    console.error("Supabase Error fetching profile:", error)
+  }
 
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('print') === 'true') {
-        setTimeout(() => window.print(), 1000)
-      }
-    }
-    fetchReport()
-  }, [profileId, listingId])
+  let listing = null
 
-  if (loading) {
-    return <div className="min-h-screen bg-slate-100 flex items-center justify-center font-bold text-slate-400">Loading Report...</div>
+  if (profile && profile.listings) {
+    listing = profile.listings.find((l: any) => l.id === listingId)
   }
 
   if (!profile || !listing) {
@@ -52,18 +32,21 @@ export default function SellerReportPage({ params }: { params: Promise<{ profile
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-2xl font-black text-slate-800 mb-2">Report Not Found</h1>
         <p className="text-slate-500 max-w-md mx-auto mb-4">This listing might have been removed or the link is incorrect.</p>
-        <div className="bg-amber-50 text-amber-800 text-sm p-4 rounded-xl max-w-md border border-amber-200">
-          <strong>Agent Note:</strong> If you are testing this link and seeing this error, your Supabase <code>profiles</code> table is likely blocking unauthenticated access via Row Level Security (RLS). You must go to your Supabase Dashboard and add a Policy to allow public read access to the <code>profiles</code> table so your sellers can view this page!
-        </div>
+        {!process.env.SUPABASE_SERVICE_ROLE_KEY && (
+          <div className="bg-amber-50 text-amber-800 text-sm p-4 rounded-xl max-w-md border border-amber-200">
+            <strong>Security Warning:</strong> You are missing the <code>SUPABASE_SERVICE_ROLE_KEY</code> environment variable in your deployed environment.
+          </div>
+        )}
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
+      <AutoPrint />
       
       {/* Hide controls from print */}
-      <style jsx global>{`
+      <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
@@ -84,13 +67,7 @@ export default function SellerReportPage({ params }: { params: Promise<{ profile
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Seller Activity Report</span>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{listing.address}</h1>
           </div>
-          <button 
-            onClick={() => window.print()}
-            className="no-print bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-2 text-sm max-w-fit"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            Print / Save as PDF
-          </button>
+          <PrintButton />
         </div>
 
         {/* Activity Timeline */}
