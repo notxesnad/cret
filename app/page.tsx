@@ -429,7 +429,7 @@ function HomeContent() {
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'openhouse' && <OpenHouseView listings={listings} />}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
-          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={(theme) => renderAgentHeader(profile, theme)} switchView={switchView} />}
+          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} />}
           {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
           {currentView === 'driving' && <DrivingView />}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
@@ -443,7 +443,7 @@ function HomeContent() {
               uploading={uploading}
               handleImageUpload={handleImageUpload}
               savePdfLookSelection={savePdfLookSelection}
-              renderAgentHeader={(theme) => renderAgentHeader(profile, theme)}
+              renderAgentHeader={(theme: string | null) => renderAgentHeader(profile, theme)}
               handleNextStep={handleNextStep}
               switchView={switchView}
             />
