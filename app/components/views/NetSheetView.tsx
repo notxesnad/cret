@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-interface MakeMySellerHappyViewProps {
+interface NetSheetViewProps {
   netData: any;
   handleNetInputChange: (field: string, val: string) => void;
   calculatedNetProceeds: number;
@@ -8,21 +8,32 @@ interface MakeMySellerHappyViewProps {
   toggleFieldCheckbox: (fieldKey: string) => void;
   showCustomModal: (msg: string) => void;
   renderAgentHeader: () => React.ReactNode;
+  switchView: (viewId: string) => void;
 }
 
-export function MakeMySellerHappyView({
+export function NetSheetView({
   netData,
   handleNetInputChange,
   calculatedNetProceeds,
   activeFields,
   toggleFieldCheckbox,
   showCustomModal,
-  renderAgentHeader
-}: MakeMySellerHappyViewProps) {
+  renderAgentHeader,
+  switchView
+}: NetSheetViewProps) {
   const [netSheetView, setNetSheetView] = useState<string>('calc')
 
   return (
-    <div id="view-seller" className="app-view active bg-white text-slate-900 rounded-3xl p-6 shadow-2xl space-y-5">
+    <div id="view-netsheet" className="app-view active bg-white text-slate-900 rounded-3xl p-6 shadow-2xl space-y-5">
+      {/* Back Button */}
+      <button 
+        onClick={() => switchView('seller')}
+        className="flex items-center text-xs font-bold text-slate-500 hover:text-slate-800 transition"
+      >
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+        Back to Seller Tools
+      </button>
+
       {netSheetView === 'calc' ? (
         <>
           {renderAgentHeader()}

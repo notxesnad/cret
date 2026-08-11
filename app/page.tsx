@@ -7,7 +7,9 @@ import {
   SignInView,
   MoneyStuffView,
   OpenHouseView,
-  MakeMySellerHappyView,
+  SellerMenuView,
+  NetSheetView,
+  SellerTrackerView,
   DrivingView,
   BuyerView,
   SellerCallView,
@@ -87,6 +89,10 @@ function HomeContent() {
     repairCredits: 0
   })
 
+  // --- Seller Tracker State ---
+  const [trackerAddress, setTrackerAddress] = useState<string>('')
+  const [trackerActivities, setTrackerActivities] = useState<any[]>([])
+
   useEffect(() => {
     async function loadData() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -163,7 +169,7 @@ function HomeContent() {
   }
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'driving', 'buyer', 'sellercall', 'profile']
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
@@ -589,7 +595,9 @@ function HomeContent() {
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'openhouse' && <OpenHouseView />}
-          {currentView === 'seller' && <MakeMySellerHappyView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={renderAgentHeader} />}
+          {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
+          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={renderAgentHeader} switchView={switchView} />}
+          {currentView === 'sellertracker' && <SellerTrackerView trackerAddress={trackerAddress} setTrackerAddress={setTrackerAddress} trackerActivities={trackerActivities} setTrackerActivities={setTrackerActivities} showCustomModal={showCustomModal} switchView={switchView} />}
           {currentView === 'driving' && <DrivingView />}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
           {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} />}
