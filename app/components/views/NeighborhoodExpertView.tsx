@@ -44,11 +44,17 @@ export function NeighborhoodExpertView({
   const generatePrompt = (name: string, city: string) => {
     return `Act as an expert real estate data analyst. I need precise data about the neighborhood: "${name}" in "${city}". 
 Please provide:
+- Median Sale Price
 - Average price per square foot for NEW construction homes
 - Average price per square foot for RESALE homes
 - Average lot price
 - Average Days on Market
-- Top 3 amenities/features (comma separated string)
+- Average Monthly HOA Fees
+- Estimated Property Tax Rate
+- Average Year Built
+- Most Common Architectural Style
+- Top Rated Schools (Elementary, Middle, High)
+- Top 3 amenities/features
 
 Output this EXACTLY in CSV format with the headers: Category, Metric, Value. 
 Do not include any markdown formatting, no explanations, just the raw CSV text.`
@@ -75,18 +81,6 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
       },
       ...prev
     ])
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(promptText).catch(() => {})
-
-    // Simulate Email (or use mailto)
-    const mailto = `mailto:${userEmail || ''}?subject=AI Prompt for ${encodeURIComponent(newName)}&body=${encodeURIComponent(promptText)}`
-    
-    showCustomModal("Neighborhood added! The AI prompt has been copied to your clipboard. We will also open your email client so you have a backup copy.")
-    
-    setTimeout(() => {
-      window.open(mailto, '_blank')
-    }, 2000)
 
     setNewName('')
     setNewCity('')
@@ -126,10 +120,20 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
           fake2 = `${prefix}${Math.round(num * 1.15)}${suffix}`
           fake3 = `${prefix}${Math.round(num * 1.4)}${suffix}`
         } else {
-          // If it's text (like amenities)
-          fake1 = "Pool, Clubhouse, Tennis"
-          fake2 = "Walking Trails, Gated Entry, Golf"
-          fake3 = "No amenities listed"
+          // If it's text (like amenities, schools, styles)
+          if (metric.toLowerCase().includes('style')) {
+            fake1 = "Modern Farmhouse, Ranch"
+            fake2 = "Craftsman, Tudor"
+            fake3 = "Mediterranean, Contemporary"
+          } else if (metric.toLowerCase().includes('school')) {
+            fake1 = "Lincoln Elem, Washington Mid, Kennedy High"
+            fake2 = "Oak Creek Elem, Pine Mid, Cedar High"
+            fake3 = "Not assigned to top-rated schools"
+          } else {
+            fake1 = "Pool, Clubhouse, Tennis"
+            fake2 = "Walking Trails, Gated Entry, Golf"
+            fake3 = "No notable amenities listed"
+          }
         }
 
         // Shuffle options
