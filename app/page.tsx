@@ -1108,7 +1108,7 @@ function HomeContent() {
           </div>
 
           {/* TOOL 7: PROFILE BUILDER */}
-          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative flex flex-col h-[700px]">
+          <div id="view-profile" className="app-view bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden relative flex-col h-[700px]">
             
             {/* Duolingo style progress header */}
             <div className="flex items-center px-6 py-6 border-b border-slate-800">
