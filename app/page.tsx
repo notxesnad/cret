@@ -90,8 +90,7 @@ function HomeContent() {
   })
 
   // --- Seller Tracker State ---
-  const [trackerAddress, setTrackerAddress] = useState<string>('')
-  const [trackerActivities, setTrackerActivities] = useState<any[]>([])
+  const [trackerListings, setTrackerListings] = useState<any[]>([])
 
   useEffect(() => {
     async function loadData() {
@@ -597,7 +596,7 @@ function HomeContent() {
           {currentView === 'openhouse' && <OpenHouseView />}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={renderAgentHeader} switchView={switchView} />}
-          {currentView === 'sellertracker' && <SellerTrackerView trackerAddress={trackerAddress} setTrackerAddress={setTrackerAddress} trackerActivities={trackerActivities} setTrackerActivities={setTrackerActivities} showCustomModal={showCustomModal} switchView={switchView} />}
+          {currentView === 'sellertracker' && <SellerTrackerView trackerListings={trackerListings} setTrackerListings={setTrackerListings} showCustomModal={showCustomModal} switchView={switchView} />}
           {currentView === 'driving' && <DrivingView />}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
           {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} />}
