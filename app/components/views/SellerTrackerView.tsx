@@ -1,20 +1,20 @@
 import { useState } from 'react'
 
-interface Activity {
+export interface Activity {
   id: string;
   label: string;
   date: string;
 }
 
-interface Listing {
+export interface Listing {
   id: string;
   address: string;
   activities: Activity[];
 }
 
 interface SellerTrackerViewProps {
-  trackerListings: Listing[];
-  setTrackerListings: (updater: (prev: Listing[]) => Listing[]) => void;
+  listings: Listing[];
+  updateListings: (updater: (prev: Listing[]) => Listing[]) => void;
   showCustomModal: (msg: string) => void;
   switchView: (view: string) => void;
 }
@@ -35,8 +35,8 @@ const PRESET_ACTIVITIES = [
 ];
 
 export function SellerTrackerView({
-  trackerListings,
-  setTrackerListings,
+  listings,
+  updateListings,
   showCustomModal,
   switchView
 }: SellerTrackerViewProps) {
@@ -44,7 +44,7 @@ export function SellerTrackerView({
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
   const [customActivity, setCustomActivity] = useState('')
 
-  const activeListing = trackerListings.find(l => l.id === activeListingId)
+  const activeListing = listings.find(l => l.id === activeListingId)
 
   const handleAddListing = () => {
     const address = prompt("Enter the new listing address:")
@@ -54,7 +54,7 @@ export function SellerTrackerView({
         address: address.trim(),
         activities: []
       }
-      setTrackerListings(prev => [newListing, ...prev])
+      updateListings(prev => [newListing, ...prev])
       setActiveListingId(newListing.id)
       setStep(2)
     }
@@ -68,7 +68,7 @@ export function SellerTrackerView({
   const handleAddActivity = (label: string) => {
     if (!label.trim() || !activeListingId) return;
     
-    setTrackerListings(prev => prev.map(listing => {
+    updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
         return {
           ...listing,
@@ -89,7 +89,7 @@ export function SellerTrackerView({
 
   const handleRemoveActivity = (activityId: string) => {
     if (!activeListingId) return;
-    setTrackerListings(prev => prev.map(listing => {
+    updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
         return {
           ...listing,
@@ -145,13 +145,13 @@ export function SellerTrackerView({
             </button>
 
             <div className="space-y-3">
-              {trackerListings.length === 0 ? (
+              {listings.length === 0 ? (
                 <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
                   <div className="text-4xl mb-3 opacity-50">🏡</div>
-                    <p className="text-sm text-slate-400 font-medium">You don&apos;t have any listings yet.<br/>Click above to add your first one!</p>
+                  <p className="text-sm text-slate-400 font-medium">You don&apos;t have any listings yet.<br/>Click above to add your first one!</p>
                 </div>
               ) : (
-                trackerListings.map(listing => (
+                listings.map(listing => (
                   <div 
                     key={listing.id}
                     onClick={() => handleOpenListing(listing.id)}
@@ -193,10 +193,10 @@ export function SellerTrackerView({
                       onKeyDown={(e) => e.key === 'Enter' && handleAddActivity(customActivity)}
                       className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
                     />
-                    <button 
-                      onClick={() => handleAddActivity(customActivity)}
-                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl transition"
-                    >
+          <button 
+            onClick={() => handleAddActivity(customActivity)}
+            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
+          >
                       Add
                     </button>
                   </div>
@@ -207,7 +207,7 @@ export function SellerTrackerView({
                       <button 
                         key={preset}
                         onClick={() => handleAddActivity(preset)}
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg transition"
+                        className="bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 active:scale-95 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg transition-all duration-150"
                       >
                         + {preset}
                       </button>

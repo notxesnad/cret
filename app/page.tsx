@@ -89,8 +89,20 @@ function HomeContent() {
     repairCredits: 0
   })
 
-  // --- Seller Tracker State ---
-  const [trackerListings, setTrackerListings] = useState<any[]>([])
+  // --- Listings State ---
+  const [listings, setListings] = useState<any[]>([])
+
+  const updateListings = (updater: (prev: any[]) => any[]) => {
+    setListings(prev => {
+      const newListings = updater(prev)
+      if (user) {
+        supabase.from('profiles').update({ listings: newListings }).eq('id', user.id).then(({ error }) => {
+          if (error) console.error('Error saving listings:', error)
+        })
+      }
+      return newListings
+    })
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -127,6 +139,7 @@ function HomeContent() {
             pdf_look: data.pdf_look || 'look1',
             show_headshot: data.show_headshot !== false
           })
+          setListings(data.listings || [])
           // If they already finished setup before, stay home or let them edit
           if (savedStep === '2') {
             setProfileStep(2)
@@ -593,13 +606,13 @@ function HomeContent() {
           {currentView === 'home' && <HomeView switchView={switchView} />}
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
-          {currentView === 'openhouse' && <OpenHouseView />}
+          {currentView === 'openhouse' && <OpenHouseView listings={listings} />}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={renderAgentHeader} switchView={switchView} />}
-          {currentView === 'sellertracker' && <SellerTrackerView trackerListings={trackerListings} setTrackerListings={setTrackerListings} showCustomModal={showCustomModal} switchView={switchView} />}
+          {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} />}
           {currentView === 'driving' && <DrivingView />}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
-          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} />}
+          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={listings} />}
           {currentView === 'profile' && (
             <ProfileBuilderView 
               profileStep={profileStep} 

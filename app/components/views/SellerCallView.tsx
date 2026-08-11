@@ -1,4 +1,4 @@
-export function SellerCallView({ showCustomModal }: { showCustomModal: (msg: string) => void }) {
+export function SellerCallView({ showCustomModal, listings }: { showCustomModal: (msg: string) => void, listings: any[] }) {
   return (
     <div id="view-sellercall" className="app-view active bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
       <div>
@@ -9,9 +9,17 @@ export function SellerCallView({ showCustomModal }: { showCustomModal: (msg: str
       
       <div className="relative">
         <select className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-orange-500 transition-colors appearance-none cursor-pointer">
-          <option>124 Ocean Blvd</option>
-          <option>88 Palm Lane</option>
-          <option>456 Mountain View Rd</option>
+          {listings.length > 0 ? (
+            listings.map(listing => (
+              <option key={listing.id}>{listing.address}</option>
+            ))
+          ) : (
+            <>
+              <option>124 Ocean Blvd</option>
+              <option>88 Palm Lane</option>
+              <option>456 Mountain View Rd</option>
+            </>
+          )}
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
