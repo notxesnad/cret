@@ -15,7 +15,8 @@ import {
   BuyerView,
   SellerCallView,
   ProfileBuilderView,
-  NeighborhoodExpertView
+  NeighborhoodExpertView,
+  OutreachView
 } from './components/views'
 
 
@@ -94,6 +95,7 @@ function HomeContent() {
   // --- Listings & Neighborhoods State ---
   const [listings, setListings] = useState<any[]>([])
   const [neighborhoods, setNeighborhoods] = useState<any[]>([])
+  const [outreachCampaigns, setOutreachCampaigns] = useState<any[]>([])
 
   const updateListings = (updater: (prev: any[]) => any[]) => {
     setListings(prev => {
@@ -116,6 +118,18 @@ function HomeContent() {
         })
       }
       return newNeighborhoods
+    })
+  }
+
+  const updateOutreachCampaigns = (updater: (prev: any[]) => any[]) => {
+    setOutreachCampaigns(prev => {
+      const newCampaigns = updater(prev)
+      if (user) {
+        supabase.from('profiles').update({ outreach_campaigns: newCampaigns }).eq('id', user.id).then(({ error }) => {
+          if (error) console.error('Error saving outreach campaigns:', error)
+        })
+      }
+      return newCampaigns
     })
   }
 
@@ -156,6 +170,7 @@ function HomeContent() {
           })
           setListings(data.listings || [])
           setNeighborhoods(data.neighborhoods || [])
+          setOutreachCampaigns(data.outreach_campaigns || [])
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
           if (savedStep === '2') {
@@ -202,7 +217,7 @@ function HomeContent() {
   }
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods']
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
@@ -475,6 +490,15 @@ function HomeContent() {
               switchView={switchView}
               showCustomModal={showCustomModal}
               userEmail={user?.email}
+            />
+          )}
+          {currentView === 'outreach' && (
+            <OutreachView 
+              campaigns={outreachCampaigns}
+              updateCampaigns={updateOutreachCampaigns}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
             />
           )}
         </main>

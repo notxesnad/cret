@@ -14,6 +14,13 @@ export function HomeView({ switchView }: { switchView: (view: string) => void })
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Learn My Market</h2>
         </div>
 
+        {/* Client Outreach */}
+        <div onClick={() => switchView('outreach')} className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-transparent hover:border-sky-300">
+          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🤝</div>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Collect Advice & Feedback</span>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Ask for Advice</h2>
+        </div>
+
         {/* Profile Button */}
         <div onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
@@ -22,7 +29,7 @@ export function HomeView({ switchView }: { switchView: (view: string) => void })
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 pb-20 mt-[-60px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20 mt-[-60px]">
         {/* Category 1: Money Stuff */}
         <div onClick={() => switchView('money')} className="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:rotate-12">💵</div>
