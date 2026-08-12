@@ -34,6 +34,7 @@ function HomeContent() {
     brokerage: '',
     headshot_url: '',
     logo_url: '',
+    custom_header_url: '',
     pdf_look: 'look1',
     show_headshot: true 
   })
@@ -344,6 +345,7 @@ function HomeContent() {
         show_headshot: profile.show_headshot,
         headshot_url: profile.headshot_url,
         logo_url: profile.logo_url,
+        custom_header_url: profile.custom_header_url,
         updated_at: new Date()
       }
 
@@ -397,7 +399,7 @@ function HomeContent() {
     const updatedProfile = { ...profile, [fieldName]: publicUrl }
     setProfile(updatedProfile)
 
-    await supabase.from('profiles').upsert({
+    const { error: dbError } = await supabase.from('profiles').upsert({
       id: user.id,
       full_name: profile.full_name,
       email: profile.email || user.email,
@@ -406,6 +408,10 @@ function HomeContent() {
       [fieldName]: publicUrl,
       updated_at: new Date()
     })
+
+    if (dbError) {
+      showCustomModal('Database save failed (Image uploaded to storage though): ' + dbError.message)
+    }
 
     setUploading(false)
   }
