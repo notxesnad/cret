@@ -53,7 +53,7 @@ export function ProfileBuilderView({
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
             {/* --- STEP 1: Details --- */}
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
             <div className="space-y-4">
               <div>
@@ -100,7 +100,7 @@ export function ProfileBuilderView({
           </div>
 
             {/* --- STEP 2: Branding & Selection --- */}
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
             <div className="space-y-6">
@@ -160,7 +160,7 @@ export function ProfileBuilderView({
           </div>
 
             {/* --- STEP 3: Layout Selection --- */}
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
 
             <div className="space-y-6">
@@ -178,7 +178,17 @@ export function ProfileBuilderView({
                     { id: 'look6', title: '7. Classic Executive Framed' },
                     { id: 'look7', title: '8. Vibrant Gradient Edge' },
                     { id: 'look8', title: '9. Stark Monochrome' },
-                    { id: 'look10', title: '10. Glassmorphism Modern' }
+                    { id: 'look10', title: '10. Glassmorphism Modern' },
+                    { id: 'look11', title: '11. Indigo Edge (No Curve)' },
+                    { id: 'look12', title: '12. Rose Pop Minimal' },
+                    { id: 'look13', title: '13. Deep Emerald Card' },
+                    { id: 'look14', title: '14. Architect Studio (Square Cut)' },
+                    { id: 'look15', title: '15. Neon Tech Hub (Soft Square)' },
+                    { id: 'look16', title: '16. Gold Standard Arch' },
+                    { id: 'look17', title: '17. Cyan Studio Split' },
+                    { id: 'look18', title: '18. Pastel Sunset Standard' },
+                    { id: 'look19', title: '19. Brutalist Grid' },
+                    { id: 'look20', title: '20. Dark Mode Spotlight' }
                   ].map((look) => (
                     <div 
                       key={look.id}

@@ -165,7 +165,6 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       )
 
     case 'look10': 
-    default:
       return (
         <div className="bg-slate-100/50 backdrop-blur-md border border-white/60 p-4 rounded-2xl flex justify-between items-center mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
           <div className="flex flex-col justify-center">
@@ -174,6 +173,204 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <p className="text-[10px] text-slate-500">{phone}</p>
           </div>
           {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white" />}
+        </div>
+      )
+
+    case 'look11':
+      return (
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-none border-l-4 border-indigo-400 mb-5 shadow-md flex justify-between items-center">
+          <div className="flex-1">
+            <h3 className="font-black text-2xl tracking-tighter mb-1">{name}</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-6 h-0.5 bg-indigo-400"></span>
+              <p className="text-[10px] uppercase tracking-widest text-indigo-200">{brokerage}</p>
+            </div>
+            <p className="text-[11px] text-slate-400 font-mono">{phone}</p>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain brightness-0 invert opacity-90" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-sm border border-indigo-500/30 shadow-sm" />}
+          </div>
+        </div>
+      )
+
+    case 'look12':
+      return (
+        <div className="bg-white border-y-2 border-slate-200 py-6 mb-5 flex items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            {showHeadshot && (
+              <div className="relative">
+                <div className="absolute inset-0 bg-rose-500 translate-x-1 translate-y-1"></div>
+                <img src={headshot} alt="Agent" className="w-16 h-16 object-cover relative z-10 grayscale" />
+              </div>
+            )}
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-slate-900">{name}</h3>
+              <p className="text-xs text-rose-600 font-bold uppercase tracking-wider">{brokerage}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            {logo && <img src={logo} alt="Logo" className="h-10 w-auto max-w-[140px] object-contain object-right mb-1" />}
+            <p className="text-[11px] text-slate-500 font-medium">{phone}</p>
+          </div>
+        </div>
+      )
+
+    case 'look13':
+      return (
+        <div className="bg-emerald-950 p-5 rounded-3xl mb-5 text-emerald-50 flex items-center gap-5 shadow-xl">
+          {showHeadshot && (
+            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-emerald-800">
+              <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex-1 flex flex-col justify-center">
+            {logo && <img src={logo} alt="Logo" className="h-6 w-auto max-w-[120px] object-contain object-left mb-2 brightness-0 invert opacity-70" />}
+            <h3 className="text-xl font-bold text-white leading-none mb-1.5">{name}</h3>
+            <p className="text-[10px] uppercase tracking-widest text-emerald-400 font-semibold mb-1">{brokerage}</p>
+            <p className="text-[11px] text-emerald-200/70">{phone}</p>
+          </div>
+        </div>
+      )
+
+    case 'look14':
+      return (
+        <div className="bg-stone-100 border border-stone-200 p-1 mb-5">
+          <div className="border border-stone-300 p-4 flex justify-between items-center bg-white">
+            <div className="flex items-center gap-4">
+              {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-tl-xl rounded-br-xl shadow-sm" />}
+              <div>
+                <h3 className="font-serif text-lg font-bold text-stone-900">{name}</h3>
+                <p className="text-[10px] text-stone-500">{phone}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end border-l border-stone-200 pl-4">
+              {logo ? (
+                <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain object-right sepia opacity-80" />
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-700">{brokerage}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )
+
+    case 'look15':
+      return (
+        <div className="relative mb-5 bg-slate-900 rounded-lg p-6 overflow-hidden flex items-center justify-between text-white shadow-md">
+          <div className="absolute right-0 top-0 w-32 h-32 bg-sky-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/4"></div>
+          <div className="relative z-10 flex-1">
+            <h3 className="text-2xl font-black tracking-tight mb-0.5">{name}</h3>
+            <p className="text-[10px] uppercase tracking-widest text-sky-400 font-bold mb-2">{brokerage}</p>
+            <p className="text-xs text-slate-400">{phone}</p>
+          </div>
+          <div className="relative z-10 flex gap-4 items-center">
+            {logo && <img src={logo} alt="Logo" className="h-9 w-auto max-w-[100px] object-contain brightness-0 invert" />}
+            {showHeadshot && (
+              <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-md ring-1 ring-white/20" />
+            )}
+          </div>
+        </div>
+      )
+
+    case 'look16':
+      return (
+        <div className="bg-white border-b-4 border-amber-400 pb-4 mb-5 flex justify-between items-end px-2 pt-2">
+          <div className="flex flex-col">
+            {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[140px] object-contain object-left mb-3" />}
+            <h3 className="font-bold text-slate-900 text-xl leading-none">{name}</h3>
+            <p className="text-[11px] text-slate-500 mt-1">{phone}</p>
+          </div>
+          {showHeadshot && (
+            <div className="w-16 h-16 bg-slate-100 rounded-tr-2xl rounded-bl-2xl overflow-hidden shadow-inner border border-slate-200 flex-shrink-0">
+              <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+      )
+
+    case 'look17':
+      return (
+        <div className="flex items-stretch bg-white border border-slate-200 rounded-xl overflow-hidden mb-5 shadow-sm">
+          {showHeadshot && (
+            <div className="w-24 flex-shrink-0">
+              <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex-1 p-4 flex flex-col justify-center relative">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500"></div>
+            <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">{name}</h3>
+            <p className="text-[10px] text-slate-500 font-medium mb-2">{phone}</p>
+            {logo ? (
+              <img src={logo} alt="Logo" className="h-6 w-auto max-w-[120px] object-contain object-left mt-auto" />
+            ) : (
+              <span className="text-[10px] font-bold text-cyan-700 uppercase">{brokerage}</span>
+            )}
+          </div>
+        </div>
+      )
+
+    case 'look18':
+      return (
+        <div className="bg-slate-50 p-6 rounded-3xl mb-5 flex justify-between items-center border border-slate-100">
+          <div className="flex items-center gap-4">
+            {showHeadshot && (
+              <div className="w-14 h-14 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-fuchsia-500 to-orange-400">
+                <img src={headshot} alt="Agent" className="w-full h-full object-cover rounded-full border-2 border-white" />
+              </div>
+            )}
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">{name}</h3>
+              <p className="text-[11px] text-slate-600">{phone}</p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end text-right">
+            {logo ? (
+              <img src={logo} alt="Logo" className="h-8 w-auto max-w-[130px] object-contain object-right mb-1" />
+            ) : (
+              <span className="font-bold text-slate-800 text-sm">{brokerage}</span>
+            )}
+          </div>
+        </div>
+      )
+
+    case 'look19':
+      return (
+        <div className="border-2 border-slate-900 p-4 mb-5 bg-white relative">
+          <div className="absolute -top-3 left-4 bg-white px-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{brokerage}</span>
+          </div>
+          <div className="flex justify-between items-center mt-2">
+            <div>
+              <h3 className="font-serif text-2xl text-slate-900">{name}</h3>
+              <p className="text-xs text-slate-500 font-mono mt-1">{phone}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[100px] object-contain" />}
+              {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover border border-slate-900 p-0.5" />}
+            </div>
+          </div>
+        </div>
+      )
+
+    case 'look20':
+    default:
+      return (
+        <div className="bg-slate-900 p-5 rounded-2xl mb-5 flex items-center justify-between text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+          <div className="relative z-10">
+            <h3 className="font-bold text-xl mb-1">{name}</h3>
+            <div className="inline-block bg-white/10 rounded px-2 py-0.5 mb-2">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-white/90">{brokerage}</p>
+            </div>
+            <p className="text-xs text-white/60">{phone}</p>
+          </div>
+          <div className="relative z-10 flex items-center gap-4">
+            {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain brightness-0 invert" />}
+            {showHeadshot && (
+              <img src={headshot} alt="Agent" className="w-14 h-16 object-cover rounded-lg shadow-md" />
+            )}
+          </div>
         </div>
       )
   }
