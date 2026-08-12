@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Question } from '@/app/components/Questionnaire'
+import { QuizBuilder } from '@/app/components/QuizBuilder'
 
 export interface OutreachCampaign {
   id: string
@@ -20,8 +22,13 @@ interface OutreachViewProps {
 }
 
 export function OutreachView({ campaigns, updateCampaigns, switchView, showCustomModal, userId }: OutreachViewProps) {
-  const [step, setStep] = useState(1) // 1: list, 2: template select, 3: view campaign details
+  const [step, setStep] = useState(1) // 1: list, 2: template select, 3: view campaign details, 4: custom builder
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // Custom Builder State
+  const [customTitle, setCustomTitle] = useState('')
+  const [customDesc, setCustomDesc] = useState('')
+  const [customQuestions, setCustomQuestions] = useState<Question[]>([])
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
 
@@ -73,6 +80,33 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
     setStep(3)
   }
 
+  const handleCreateCustom = () => {
+    if (!customTitle.trim()) {
+      showCustomModal("Please enter a title for your campaign.")
+      return
+    }
+    if (customQuestions.length === 0) {
+      showCustomModal("Please add at least one question to your quiz.")
+      return
+    }
+
+    const newId = Math.random().toString(36).substring(2, 9)
+    updateCampaigns(prev => [
+      {
+        id: newId,
+        title: customTitle,
+        description: customDesc,
+        questions: customQuestions,
+        responses: [],
+        createdAt: new Date().toISOString()
+      },
+      ...(prev || [])
+    ])
+    
+    setActiveId(newId)
+    setStep(3)
+  }
+
   const handleShare = () => {
     if (!userId || !activeId) {
       showCustomModal("You must be fully logged in to share.")
@@ -90,7 +124,13 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       {/* HEADER */}
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => setStep(1)} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => {
+            if (step === 4) {
+              setStep(2)
+            } else {
+              setStep(1)
+            }
+          }} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
             <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
           </button>
@@ -156,6 +196,30 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
               <h2 className="text-2xl font-black text-white mb-6">Select a Template</h2>
               
               <div className="space-y-4">
+                
+                {/* Build Custom Quiz Button */}
+                <div 
+                  className="bg-sky-500/10 border-2 border-dashed border-sky-500/50 rounded-xl p-5 hover:bg-sky-500/20 hover:border-sky-500 transition cursor-pointer flex flex-col items-center justify-center text-center mb-6 min-h-[140px]" 
+                  onClick={() => {
+                    setCustomTitle('')
+                    setCustomDesc('')
+                    setCustomQuestions([])
+                    setStep(4)
+                  }}
+                >
+                  <div className="w-10 h-10 bg-sky-500 text-white rounded-full flex items-center justify-center mb-2 shadow-lg">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-sky-400">Build from Scratch</h3>
+                  <p className="text-sm text-sky-300/70">Create a completely custom questionnaire</p>
+                </div>
+
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-slate-800"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase tracking-widest">Or choose template</span>
+                  <div className="flex-grow border-t border-slate-800"></div>
+                </div>
+
                 {templates.map((tpl, i) => (
                   <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-sky-500 transition cursor-pointer" onClick={() => handleCreate(tpl)}>
                     <h3 className="text-lg font-bold text-white mb-2">{tpl.title}</h3>
@@ -166,6 +230,41 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Custom Builder */}
+          {step === 4 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-black text-white mb-6">Build Custom Quiz</h2>
+              
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Campaign Title</label>
+                  <input 
+                    type="text" 
+                    value={customTitle}
+                    onChange={e => setCustomTitle(e.target.value)}
+                    placeholder="e.g. Past Client Survey" 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Intro Text (Optional)</label>
+                  <textarea 
+                    value={customDesc}
+                    onChange={e => setCustomDesc(e.target.value)}
+                    placeholder="This text appears on the first question to explain why you are asking for their advice..."
+                    rows={3}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-300 text-sm focus:outline-none focus:border-sky-500 resize-none"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="mb-8 border-t border-slate-800 pt-6">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-4">Quiz Questions</label>
+                <QuizBuilder questions={customQuestions} onChange={setCustomQuestions} />
               </div>
             </div>
           )}
@@ -220,6 +319,22 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
 
         </div>
       </div>
+
+      {/* FOOTER */}
+      {step === 4 && (
+        <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+          <button 
+            onClick={handleCreateCustom}
+            className={`w-full font-black py-4 rounded-xl shadow-lg transition text-lg uppercase tracking-wide ${
+              customTitle.trim() && customQuestions.length > 0
+                ? 'bg-sky-500 hover:bg-sky-400 text-slate-900'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            Save Campaign
+          </button>
+        </div>
+      )}
     </div>
   )
 }

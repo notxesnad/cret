@@ -16,6 +16,7 @@ export function AdviceClient({ profileId, campaignId, campaign }: any) {
       questions={campaign.questions}
       onSubmit={handleSubmit}
       accentColor="sky"
+      theme="dark"
     />
   )
 }

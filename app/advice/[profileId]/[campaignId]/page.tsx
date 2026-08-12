@@ -27,15 +27,15 @@ export default async function AdvicePage({ params }: { params: Promise<{ profile
 
   if (!profile || !campaign) {
     return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-2xl font-black text-slate-800 mb-2">Campaign Not Found</h1>
-        <p className="text-slate-500 max-w-md mx-auto mb-4">This questionnaire may have been removed or the link is incorrect.</p>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-black text-slate-100 mb-2">Campaign Not Found</h1>
+        <p className="text-slate-400 max-w-md mx-auto mb-4">This questionnaire may have been removed or the link is incorrect.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-50 font-sans pb-20">
       
       {/* Brand Header */}
       <div className="max-w-xl mx-auto pt-6 px-4 md:px-8">
