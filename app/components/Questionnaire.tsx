@@ -97,7 +97,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
         <div className={`absolute top-0 left-0 h-full ${bgClass} transition-all duration-500 ease-out`} style={{ width: `${progress}%` }}></div>
       </div>
 
-      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-y-auto">
+      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-y-auto hide-scrollbar">
         <div className="mb-8">
           {currentIndex === 0 && description && (
             <p className={`text-xs font-bold tracking-widest uppercase mb-4 ${descClasses}`}>{title}</p>
