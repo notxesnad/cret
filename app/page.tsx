@@ -503,10 +503,12 @@ function HomeContent() {
           )}
         </main>
 
-        {/* Global Footer */}
-        <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
-          coolrealestatetools.com • $29/mo
-        </footer>
+        {/* Global Footer (Only on Home View) */}
+        {currentView === 'home' && (
+          <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
+            coolrealestatetools.com • $29/mo
+          </footer>
+        )}
 
         {/* Custom Safe Modal Box */}
         <div id="custom-modal" className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
