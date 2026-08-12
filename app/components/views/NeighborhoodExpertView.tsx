@@ -432,7 +432,8 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
       </div>
 
       {/* FOOTER BUTTONS (Pinned) */}
-      <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe absolute bottom-0 w-full z-20">
+      {(step === 2 || step === 4) && (
+        <div className="absolute bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
         
         {step === 2 && (
           <button 
@@ -471,6 +472,7 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
           </button>
         )}
       </div>
+      )}
 
     </div>
   )

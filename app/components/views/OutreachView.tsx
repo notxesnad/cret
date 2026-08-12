@@ -143,7 +143,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900 pb-20">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900 pb-36">
         <div className="p-6">
 
           {/* STEP 1: Dashboard / List */}
