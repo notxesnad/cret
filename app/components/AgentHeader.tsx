@@ -354,7 +354,6 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       )
 
     case 'look20':
-    default:
       return (
         <div className="bg-slate-900 p-5 rounded-2xl mb-5 flex items-center justify-between text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
@@ -371,6 +370,35 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
               <img src={headshot} alt="Agent" className="w-14 h-16 object-cover rounded-lg shadow-md" />
             )}
           </div>
+        </div>
+      )
+
+    case 'custom':
+    default:
+      if (look === 'custom' && profile.custom_header_url) {
+        return (
+          <div className="mb-5 w-full">
+            <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-contain" />
+          </div>
+        )
+      }
+      if (look === 'custom') {
+        return (
+          <div className="p-8 mb-5 bg-slate-100 text-center text-slate-500 border-2 border-dashed border-slate-300 rounded-xl">
+            <p className="text-xs font-bold uppercase tracking-wider mb-1">No Custom Header Uploaded</p>
+            <p className="text-[10px]">Upload a Canva image in Step 2 to use this layout.</p>
+          </div>
+        )
+      }
+      // Fallback to look10
+      return (
+        <div className="bg-slate-100/50 backdrop-blur-md border border-white/60 p-4 rounded-2xl flex justify-between items-center mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+          <div className="flex flex-col justify-center">
+            {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[140px] object-contain object-left mb-1.5" />}
+            <h3 className="font-semibold text-slate-800 text-sm">{name}</h3>
+            <p className="text-[10px] text-slate-500">{phone}</p>
+          </div>
+          {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white" />}
         </div>
       )
   }

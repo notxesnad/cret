@@ -141,6 +141,26 @@ export function ProfileBuilderView({
                     </label>
                   </div>
                 </div>
+
+                <div className="border-t border-slate-700/50 pt-6">
+                  <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Custom Canva Header</label>
+                  <p className="text-[10px] text-slate-400 mb-3">Optional. Perfect size is 2550x600px. Overrides logo & headshot layouts.</p>
+                  <div className="flex flex-col gap-4">
+                    {profile.custom_header_url && (
+                      <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover bg-slate-900 border border-slate-700 rounded-md" />
+                    )}
+                    <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
+                      <span>{profile.custom_header_url ? 'Change Canva Image' : 'Upload Canva Image'}</span>
+                      <input 
+                        type="file" 
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleImageUpload(e, 'custom_header_url')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
               </div>
 
@@ -188,7 +208,8 @@ export function ProfileBuilderView({
                     { id: 'look17', title: '17. Cyan Studio Split' },
                     { id: 'look18', title: '18. Pastel Sunset Standard' },
                     { id: 'look19', title: '19. Brutalist Grid' },
-                    { id: 'look20', title: '20. Dark Mode Spotlight' }
+                    { id: 'look20', title: '20. Dark Mode Spotlight' },
+                    { id: 'custom', title: '21. Custom Image (Canva Upload)' }
                   ].map((look) => (
                     <div 
                       key={look.id}
