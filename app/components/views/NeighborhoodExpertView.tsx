@@ -247,7 +247,7 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto bg-slate-900">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900">
         <div className="p-6">
 
           {/* STEP 1: Dashboard / List */}

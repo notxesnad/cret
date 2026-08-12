@@ -194,11 +194,11 @@ export function SellerTrackerView({
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
           {/* --- STEP 1: Listings --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <div className="text-center mb-8">
               <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Tracker Report</span>
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
@@ -344,7 +344,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 3: Edit Activity --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-32">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             {activeActivity && (
               <>
                 <div className="mb-6">
@@ -422,7 +422,7 @@ export function SellerTrackerView({
 
       {/* Static Action Footer for Step 2 */}
       {step === 2 && (
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <div className="flex gap-3">
             <button 
               onClick={handlePrintPDF} 
