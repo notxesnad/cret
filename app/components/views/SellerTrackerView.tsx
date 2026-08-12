@@ -169,7 +169,7 @@ export function SellerTrackerView({
   }
 
   return (
-    <div id="view-sellertracker" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50">
+    <div id="view-sellertracker" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       
       {/* Header */}
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
@@ -194,7 +194,7 @@ export function SellerTrackerView({
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 relative h-[calc(100vh-72px)]">
+      <div className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
           {/* --- STEP 1: Listings --- */}

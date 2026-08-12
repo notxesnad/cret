@@ -247,7 +247,7 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-900 pb-32">
+      <div className="flex-1 overflow-y-auto bg-slate-900">
         <div className="p-6">
 
           {/* STEP 1: Dashboard / List */}
@@ -433,7 +433,7 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
 
       {/* FOOTER BUTTONS (Pinned) */}
       {(step === 2 || step === 4) && (
-        <div className="absolute bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+        <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
         
         {step === 2 && (
           <button 
