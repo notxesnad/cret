@@ -119,10 +119,10 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
   }
 
   return (
-    <div id="view-outreach" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
+    <div id="view-outreach" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl relative mx-auto w-full max-w-xl min-h-screen z-50 flex flex-col">
       
       {/* HEADER */}
-      <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
+      <div className="sticky top-0 h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md z-30 pt-safe">
         {step > 1 ? (
           <button onClick={() => {
             if (step === 4) {
@@ -143,7 +143,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+      <div className="flex-1 pb-32 bg-slate-900">
         <div className="p-6">
 
           {/* STEP 1: Dashboard / List */}
@@ -322,7 +322,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
 
       {/* FOOTER */}
       {step === 4 && (
-        <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+        <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-xl border-t border-slate-800 bg-slate-900/95 backdrop-blur p-4 pb-safe z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
           <button 
             onClick={handleCreateCustom}
             className={`w-full font-black py-4 rounded-xl shadow-lg transition text-lg uppercase tracking-wide ${

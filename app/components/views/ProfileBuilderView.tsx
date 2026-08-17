@@ -26,10 +26,10 @@ export function ProfileBuilderView({
   switchView
 }: ProfileBuilderViewProps) {
   return (
-    <div id="view-profile" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50">
+    <div id="view-profile" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl relative mx-auto w-full max-w-xl min-h-screen z-50 flex flex-col">
       
       {/* Duolingo style progress header */}
-      <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
+      <div className="sticky top-0 h-[72px] flex-none flex items-center px-6 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md z-30 pt-safe">
         {profileStep > 1 ? (
           <button onClick={() => setProfileStep(profileStep - 1)} className="text-slate-400 hover:text-white transition">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
@@ -49,8 +49,8 @@ export function ProfileBuilderView({
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 relative">
-        <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+      <div className="flex-1 pb-32">
+        <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
             {/* --- STEP 1: Details --- */}
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
@@ -248,7 +248,7 @@ export function ProfileBuilderView({
       </div>
 
       {/* Static Action Footer */}
-      <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-xl border-t border-slate-800 bg-slate-900/95 backdrop-blur p-4 pb-safe z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
         <button 
           onClick={handleNextStep} 
           className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
