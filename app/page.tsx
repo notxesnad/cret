@@ -568,7 +568,7 @@ function HomeContent() {
 
         {/* Main Container */}
         <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
-          {currentView === 'home' && <HomeView switchView={switchView} />}
+          {currentView === 'home' && <HomeView switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'openhouse' && <OpenHouseView listings={listings} />}

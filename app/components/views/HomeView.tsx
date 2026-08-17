@@ -1,4 +1,43 @@
-export function HomeView({ switchView }: { switchView: (view: string) => void }) {
+import { useState, useEffect } from 'react'
+
+export function HomeView({ switchView, showCustomModal }: { switchView: (view: string) => void, showCustomModal: (msg: string) => void }) {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault()
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      // Show the install prompt for Android/Chrome
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt')
+      }
+      setDeferredPrompt(null)
+    } else {
+      // For iOS Safari or if already installed
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+      if (isIOS) {
+        showCustomModal("To install this app on your iPhone: Tap the 'Share' icon at the bottom of Safari, then scroll down and tap 'Add to Home Screen'.")
+      } else {
+        showCustomModal("It looks like the app is already installed or your browser doesn't support automatic installation. You can usually install it from your browser's menu (look for 'Install app' or 'Add to Home screen').")
+      }
+    }
+  }
+
   return (
     <div id="view-home" className="app-view active space-y-4">
       <div className="text-center mb-6">
@@ -26,6 +65,13 @@ export function HomeView({ switchView }: { switchView: (view: string) => void })
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Brand your tools &amp; PDF styles</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Make My Profile</h2>
+        </div>
+
+        {/* Install App Button */}
+        <div onClick={handleInstallClick} className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-slate-700 hover:border-slate-600">
+          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">📱</div>
+          <span className="text-xs font-bold tracking-wider text-emerald-400 uppercase opacity-90">Progressive Web App</span>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Install to Phone</h2>
         </div>
       </div>
 
