@@ -195,10 +195,10 @@ export function SellerTrackerView({
 
       {/* Scrollable content area */}
       <div className="flex-1 pb-32">
-        <div className="flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+        <div className="flex transition-transform duration-500 ease-in-out" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
           {/* --- STEP 1: Listings --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
             <div className="text-center mb-8">
               <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Tracker Report</span>
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
@@ -257,7 +257,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 2: Activities --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
             {activeListing && (
               <>
                 <div className="mb-6">
@@ -344,7 +344,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 3: Edit Activity --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
             {activeActivity && (
               <>
                 <div className="mb-6">

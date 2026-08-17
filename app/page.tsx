@@ -457,6 +457,22 @@ function HomeContent() {
               <div id="nav-action" style={{ display: 'none' }}>
                 <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
               </div>
+              
+              <button 
+                onClick={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(err => console.log(err))
+                  } else {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err))
+                  }
+                }}
+                className="hidden md:flex text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 px-3 py-1.5 rounded-full transition items-center gap-1"
+                title="Toggle Fullscreen"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                Fullscreen
+              </button>
+
               {user ? (
                 <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
                   Sign Out
