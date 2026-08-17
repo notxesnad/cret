@@ -143,8 +143,8 @@ export function ProfileBuilderView({
                 </div>
 
                 <div className="border-t border-slate-700/50 pt-6">
-                  <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Custom Canva Header</label>
-                  <p className="text-[10px] text-slate-400 mb-3"><span className="text-fuchsia-400 font-bold uppercase tracking-wider">Optional:</span> Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
+                  <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider"><span className="text-fuchsia-400">OPTIONAL:</span> Custom Canva Header</label>
+                  <p className="text-xs text-slate-400 mb-3">Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
                   <div className="flex flex-col gap-4">
                     {profile.custom_header_url && (
                       <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover bg-slate-900 border border-slate-700 rounded-md" />
@@ -168,7 +168,7 @@ export function ProfileBuilderView({
 
             {/* --- STEP 3: Layout Selection --- */}
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Signature Look</h3>
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Pick Your Header</h3>
 
             <div className="space-y-6">
               {/* Toggles */}
@@ -222,8 +222,7 @@ export function ProfileBuilderView({
                     { id: 'look17', title: '17. Cyan Studio Split' },
                     { id: 'look18', title: '18. Pastel Sunset Standard' },
                     { id: 'look19', title: '19. Brutalist Grid' },
-                    { id: 'look20', title: '20. Dark Mode Spotlight' },
-                    { id: 'custom', title: '21. Custom Image (Canva Upload)' }
+                    { id: 'look20', title: '20. Dark Mode Spotlight' }
                   ].map((look) => (
                     <div 
                       key={look.id}

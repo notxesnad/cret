@@ -183,6 +183,16 @@ function HomeContent() {
           }
         } else {
           setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
+          
+          // If they just registered via the SignIn page, they won't have a profile row yet.
+          // We must create it here so that subsequent updates to listings/campaigns don't silently fail.
+          supabase.from('profiles').upsert({ 
+            id: currentUser.id, 
+            email: currentUser.email || '' 
+          }).then(({ error }) => {
+            if (error) console.error('Error creating initial profile:', error)
+          })
+
           if (savedStep === '2') {
             setProfileStep(2)
             // clear it so it doesn't persist forever
