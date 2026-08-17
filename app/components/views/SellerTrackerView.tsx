@@ -169,10 +169,10 @@ export function SellerTrackerView({
   }
 
   return (
-    <div id="view-sellertracker" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl relative mx-auto w-full max-w-xl min-h-screen z-50 flex flex-col">
+    <div id="view-sellertracker" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       
       {/* Header */}
-      <div className="sticky top-0 h-[72px] flex-none flex items-center px-6 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md z-30 pt-safe">
+      <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
           <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
@@ -194,11 +194,11 @@ export function SellerTrackerView({
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 pb-32">
-        <div className="flex transition-transform duration-500 ease-in-out" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
+      <div className="flex-1 min-h-0 relative">
+        <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
           {/* --- STEP 1: Listings --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <div className="text-center mb-8">
               <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Tracker Report</span>
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
@@ -257,7 +257,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 2: Activities --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar pb-40">
             {activeListing && (
               <>
                 <div className="mb-6">
@@ -344,7 +344,7 @@ export function SellerTrackerView({
           </div>
 
           {/* --- STEP 3: Edit Activity --- */}
-          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6">
+          <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             {activeActivity && (
               <>
                 <div className="mb-6">
@@ -422,7 +422,7 @@ export function SellerTrackerView({
 
       {/* Static Action Footer for Step 2 */}
       {step === 2 && (
-        <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-xl border-t border-slate-800 bg-slate-900/95 backdrop-blur p-4 pb-safe z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <div className="flex gap-3">
             <button 
               onClick={handlePrintPDF} 
