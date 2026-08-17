@@ -42,6 +42,11 @@ function HomeContent() {
   const [uploading, setUploading] = useState<boolean>(false)
 
 
+  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
+  const [modalEmail, setModalEmail] = useState('')
+  const [modalAuthSent, setModalAuthSent] = useState(false)
+  const [modalAuthError, setModalAuthError] = useState('')
+
   const switchView = useCallback((viewId: string) => {
     router.push(`?view=${viewId}`, { scroll: false })
   }, [router])
@@ -213,18 +218,32 @@ function HomeContent() {
   }
 
   const showCustomModal = (msg: string) => {
-    const modalMsg = document.getElementById('modal-message')
-    const modal = document.getElementById('custom-modal')
-    if (modalMsg && modal) {
-      modalMsg.innerText = msg
-      modal.classList.remove('hidden')
-    }
+    const requiresAuth = msg.toLowerCase().includes('logged in')
+    setModalData({ isOpen: true, msg, requiresAuth })
+    setModalAuthSent(false)
+    setModalEmail('')
+    setModalAuthError('')
   }
 
   const closeCustomModal = () => {
-    const modal = document.getElementById('custom-modal')
-    if (modal) {
-      modal.classList.add('hidden')
+    setModalData(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const handleModalAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setModalAuthError('')
+    if(!modalEmail) return
+    const { error } = await supabase.auth.signInWithOtp({ 
+      email: modalEmail,
+      options: { 
+        shouldCreateUser: true,
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+      }
+    })
+    if (error) {
+      setModalAuthError(error.message)
+    } else {
+      setModalAuthSent(true)
     }
   }
 
@@ -530,13 +549,49 @@ function HomeContent() {
         )}
 
         {/* Custom Safe Modal Box */}
-        <div id="custom-modal" className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <div className="text-3xl">✨</div>
-            <p id="modal-message" className="text-sm font-bold text-white"></p>
-            <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
+        {modalData.isOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
+              <div className="text-3xl mb-4">✨</div>
+              
+              {!modalData.requiresAuth ? (
+                <div className="space-y-4">
+                  <p className="text-sm font-bold text-white">{modalData.msg}</p>
+                  <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
+                </div>
+              ) : (
+                <div>
+                  {!modalAuthSent ? (
+                    <div className="space-y-4 text-left">
+                      <p className="text-sm font-bold text-white text-center mb-2">Enter your email address so that we can get you logged in or create your account.</p>
+                      <form onSubmit={handleModalAuth} className="space-y-3">
+                        <input 
+                          type="email"
+                          placeholder="name@example.com"
+                          value={modalEmail}
+                          onChange={e => setModalEmail(e.target.value)}
+                          required
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                        />
+                        <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">
+                          Send Magic Link
+                        </button>
+                      </form>
+                      {modalAuthError && <p className="text-xs text-rose-400 text-center">{modalAuthError}</p>}
+                      <button onClick={closeCustomModal} className="w-full text-xs text-slate-500 hover:text-slate-300 py-2">Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 text-center">
+                      <h3 className="font-black text-xl text-emerald-400">Link Sent!</h3>
+                      <p className="text-sm text-slate-300">Check your email inbox and click the link to log straight in.</p>
+                      <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Close</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </>
