@@ -563,7 +563,8 @@ function HomeContent() {
                 <div>
                   {!modalAuthSent ? (
                     <div className="space-y-4 text-left">
-                      <p className="text-sm font-bold text-white text-center mb-2">Enter your email address so that we can get you logged in or create your account.</p>
+                      <p className="text-sm font-bold text-rose-400 text-center mb-1">{modalData.msg}</p>
+                      <p className="text-xs font-medium text-slate-300 text-center mb-4">Enter your email address so that we can get you logged in or create your account.</p>
                       <form onSubmit={handleModalAuth} className="space-y-3">
                         <input 
                           type="email"

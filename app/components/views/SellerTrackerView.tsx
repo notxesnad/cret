@@ -67,6 +67,7 @@ export function SellerTrackerView({
   const [editActivityForm, setEditActivityForm] = useState<Partial<Activity>>({})
 
   const activityLogRef = useRef<HTMLDivElement>(null)
+  const activityLogHeaderRef = useRef<HTMLHeadingElement>(null)
 
   const activeListing = listings.find(l => l.id === activeListingId)
   const activeActivity = activeListing?.activities.find(a => a.id === activeActivityId)
@@ -117,9 +118,9 @@ export function SellerTrackerView({
     }))
     setCustomActivity('')
 
-    // Scroll to activity log top smoothly
+    // Scroll to activity log smoothly
     setTimeout(() => {
-      activityLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      activityLogHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 100)
   }
 
@@ -164,8 +165,12 @@ export function SellerTrackerView({
   }
 
   const handleShareLink = () => {
-    if (!userId || !activeListingId) {
-      showCustomModal("You must be fully logged in and have an active listing to share.")
+    if (!userId) {
+      showCustomModal("You must be fully logged in to share.")
+      return
+    }
+    if (!activeListingId) {
+      showCustomModal("You must select an active listing to share.")
       return
     }
     const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}`
@@ -317,7 +322,7 @@ export function SellerTrackerView({
 
                 {/* Logged Activities */}
                 <div className="space-y-3 scroll-mt-6" ref={activityLogRef}>
-                  <h3 className="text-sm font-bold text-white flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center justify-between" ref={activityLogHeaderRef}>
                     Activity Log
                     <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">{activeListing.activities.length} total</span>
                   </h3>

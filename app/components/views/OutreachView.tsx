@@ -108,8 +108,12 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
   }
 
   const handleShare = () => {
-    if (!userId || !activeId) {
+    if (!userId) {
       showCustomModal("You must be fully logged in to share.")
+      return
+    }
+    if (!activeId) {
+      showCustomModal("You must select a campaign to share.")
       return
     }
     const url = `${window.location.origin}/advice/${userId}/${activeId}`
