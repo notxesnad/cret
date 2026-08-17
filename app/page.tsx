@@ -158,6 +158,16 @@ function HomeContent() {
           } catch (e) {}
         }
 
+        // Check for pending data from before they logged in
+        let pendingData: any = null
+        const pendingDataStr = localStorage.getItem('crt_pending_data')
+        if (pendingDataStr) {
+          try {
+            pendingData = JSON.parse(pendingDataStr)
+            localStorage.removeItem('crt_pending_data')
+          } catch (e) {}
+        }
+
         const { data } = await supabase
           .from('profiles')
           .select('*')
@@ -175,9 +185,43 @@ function HomeContent() {
             pdf_look: data.pdf_look || 'look1',
             show_headshot: data.show_headshot !== false
           })
-          setListings(data.listings || [])
-          setNeighborhoods(data.neighborhoods || [])
-          setOutreachCampaigns(data.outreach_campaigns || [])
+          
+          let dbListings = data.listings || []
+          let dbNeighborhoods = data.neighborhoods || []
+          let dbCampaigns = data.outreach_campaigns || []
+
+          if (pendingData) {
+            // Merge unauthenticated local data with database data
+            const mergeArrays = (dbArr: any[], pendingArr: any[]) => {
+              if (!pendingArr || !Array.isArray(pendingArr)) return dbArr
+              const dbIds = new Set(dbArr.map(item => item.id))
+              const newItems = pendingArr.filter(item => item.id && !dbIds.has(item.id))
+              return [...newItems, ...dbArr]
+            }
+
+            dbListings = mergeArrays(dbListings, pendingData.listings)
+            dbNeighborhoods = mergeArrays(dbNeighborhoods, pendingData.neighborhoods)
+            dbCampaigns = mergeArrays(dbCampaigns, pendingData.outreachCampaigns)
+
+            // Save merged data back to the database automatically
+            supabase.from('profiles').update({
+              listings: dbListings,
+              neighborhoods: dbNeighborhoods,
+              outreach_campaigns: dbCampaigns
+            }).eq('id', currentUser.id).then(({ error }) => {
+               if (error) console.error("Error saving pending data to DB", error)
+            })
+            
+            // Redirect to their previous view if it wasn't already in the URL
+            if (pendingData.view) {
+              switchView(pendingData.view)
+            }
+          }
+
+          setListings(dbListings)
+          setNeighborhoods(dbNeighborhoods)
+          setOutreachCampaigns(dbCampaigns)
+
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
           if (savedStep === '2') {
@@ -189,14 +233,29 @@ function HomeContent() {
         } else {
           setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
           
+          let newListings = pendingData?.listings || []
+          let newNeighborhoods = pendingData?.neighborhoods || []
+          let newCampaigns = pendingData?.outreachCampaigns || []
+
           // If they just registered via the SignIn page, they won't have a profile row yet.
           // We must create it here so that subsequent updates to listings/campaigns don't silently fail.
           supabase.from('profiles').upsert({ 
             id: currentUser.id, 
-            email: currentUser.email || '' 
+            email: currentUser.email || '',
+            listings: newListings,
+            neighborhoods: newNeighborhoods,
+            outreach_campaigns: newCampaigns
           }).then(({ error }) => {
             if (error) console.error('Error creating initial profile:', error)
           })
+
+          setListings(newListings)
+          setNeighborhoods(newNeighborhoods)
+          setOutreachCampaigns(newCampaigns)
+
+          if (pendingData?.view) {
+            switchView(pendingData.view)
+          }
 
           if (savedStep === '2') {
             setProfileStep(2)
@@ -233,11 +292,23 @@ function HomeContent() {
     e.preventDefault()
     setModalAuthError('')
     if(!modalEmail) return
+
+    // Save pending unauthenticated data so it's restored after login
+    const pendingData = {
+      view: currentView,
+      listings,
+      neighborhoods,
+      outreachCampaigns
+    }
+    localStorage.setItem('crt_pending_data', JSON.stringify(pendingData))
+
+    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
+
     const { error } = await supabase.auth.signInWithOtp({ 
       email: modalEmail,
       options: { 
         shouldCreateUser: true,
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+        emailRedirectTo: redirectUrl
       }
     })
     if (error) {
