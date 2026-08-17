@@ -23,21 +23,32 @@ interface SellerTrackerViewProps {
 }
 
 const PRESET_ACTIVITIES = [
-  "🌐 Listed In the MLS",
-  "🪧 Yard Sign & Lockbox Installed",
+  "📋 Pre-Listing Inspection Completed",
+  "🧹 Professional Deep Clean Completed",
+  "🛋️ Professional Staging Completed",
   "📸 Professional Photography Completed",
+  "🚁 Drone/Aerial Photography Completed",
   "🎥 Video Completed",
-  "🚀 Syndicated to Zillow, Trulia, Realtor.com",
-  "📱 Social Media Blast",
+  "📏 Floorplan & 3D Tour Created",
+  "📄 Property Brochures & Flyers Printed",
   "💻 Property Website Launched",
+  "🪧 Yard Sign & Lockbox Installed",
+  "🌐 Listed In the MLS",
+  "🚀 Syndicated to Zillow, Trulia, Realtor.com",
   "🏢 Internal Email to My Associates",
   "📧 Sent Email Blast to Agent Network",
   "💌 Sent Email to My Database",
+  "📱 Social Media Blast",
   "📮 Just Listed Postcards Mailed",
+  "🚪 Door Knocking Campaign in Neighborhood",
   "🥂 Hosted Broker's Open",
   "🏡 Hosted Public Open House",
   "📞 Followed Up With Showing Agents",
-  "🤝 Received an Offer"
+  "💬 Weekly Showing Feedback Shared",
+  "🤝 Received an Offer",
+  "📝 Under Contract / Escrow Opened",
+  "🔍 Buyer's Appraisal Completed",
+  "✅ Clear to Close Received"
 ];
 
 export function SellerTrackerView({
