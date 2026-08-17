@@ -5,8 +5,9 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
   const brokerage = profile.brokerage || 'Luxury Real Estate'
   const phone = profile.phone || '(555) 123-4567'
   const showHeadshot = profile.show_headshot !== false && !!profile.headshot_url
+  const showLogo = profile.show_logo !== false && !!profile.logo_url
   const headshot = profile.headshot_url
-  const logo = profile.logo_url
+  const logo = showLogo ? profile.logo_url : null
 
   switch(look) {
     case 'look1': 

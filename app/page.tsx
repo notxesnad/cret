@@ -36,7 +36,8 @@ function HomeContent() {
     logo_url: '',
     custom_header_url: '',
     pdf_look: 'look1',
-    show_headshot: true 
+    show_headshot: true,
+    show_logo: true
   })
   const [uploading, setUploading] = useState<boolean>(false)
 
@@ -316,6 +317,7 @@ function HomeContent() {
         brokerage: profile.brokerage,
         pdf_look: profile.pdf_look,
         show_headshot: profile.show_headshot,
+        show_logo: profile.show_logo,
         updated_at: new Date(),
       }
 
@@ -343,6 +345,7 @@ function HomeContent() {
         brokerage: profile.brokerage,
         pdf_look: profile.pdf_look,
         show_headshot: profile.show_headshot,
+        show_logo: profile.show_logo,
         headshot_url: profile.headshot_url,
         logo_url: profile.logo_url,
         custom_header_url: profile.custom_header_url,

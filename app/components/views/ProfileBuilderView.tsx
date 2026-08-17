@@ -54,7 +54,7 @@ export function ProfileBuilderView({
             
             {/* --- STEP 1: Details --- */}
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-            <h3 className="text-xl font-black text-white mb-6">Design PDF Header</h3>
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design Your PDF HEADER</h3>
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Full Name</label>
@@ -107,24 +107,6 @@ export function ProfileBuilderView({
               {/* File Uploads */}
               <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-6">
                 <div>
-                  <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Brokerage Logo</label>
-                  <div className="flex flex-col gap-4">
-                    {profile.logo_url && (
-                      <img src={profile.logo_url} alt="Logo" className="h-16 w-auto object-contain bg-white p-2 rounded max-w-full" />
-                    )}
-                    <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
-                      <span>{profile.logo_url ? 'Change File' : 'Choose File'}</span>
-                      <input 
-                        type="file" 
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => handleImageUpload(e, 'logo_url')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-700/50 pt-6">
                   <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Agent Headshot</label>
                   <div className="flex flex-col gap-4">
                     {profile.headshot_url && (
@@ -143,8 +125,26 @@ export function ProfileBuilderView({
                 </div>
 
                 <div className="border-t border-slate-700/50 pt-6">
+                  <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Brokerage Logo</label>
+                  <div className="flex flex-col gap-4">
+                    {profile.logo_url && (
+                      <img src={profile.logo_url} alt="Logo" className="h-16 w-auto object-contain bg-white p-2 rounded max-w-full" />
+                    )}
+                    <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
+                      <span>{profile.logo_url ? 'Change File' : 'Choose File'}</span>
+                      <input 
+                        type="file" 
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleImageUpload(e, 'logo_url')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-700/50 pt-6">
                   <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Custom Canva Header</label>
-                  <p className="text-[10px] text-slate-400 mb-3">Optional. Perfect size is 2550x600px. Overrides logo & headshot layouts.</p>
+                  <p className="text-[10px] text-slate-400 mb-3"><span className="text-fuchsia-400 font-bold uppercase tracking-wider">Optional:</span> Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
                   <div className="flex flex-col gap-4">
                     {profile.custom_header_url && (
                       <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover bg-slate-900 border border-slate-700 rounded-md" />
@@ -163,27 +163,41 @@ export function ProfileBuilderView({
 
                 {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
               </div>
-
-              {/* Big Headshot Toggle */}
-              <label className="flex items-center justify-between cursor-pointer p-4 bg-slate-800 rounded-2xl border border-slate-700 hover:border-slate-600 transition">
-                <div>
-                  <span className="block text-sm font-bold text-white">Show Headshot in PDFs</span>
-                  <span className="block text-[10px] text-slate-400 mt-0.5 max-w-[200px]">Turn this off if you prefer the focus to be solely on your brokerage logo.</span>
-                </div>
-                <div className="relative flex-shrink-0 ml-4">
-                  <input type="checkbox" className="sr-only" checked={profile.show_headshot} onChange={() => setProfile({...profile, show_headshot: !profile.show_headshot})} />
-                  <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
-                </div>
-              </label>
             </div>
           </div>
 
             {/* --- STEP 3: Layout Selection --- */}
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-            <h3 className="text-xl font-black text-white mb-6">Pick Your PDF Header Design</h3>
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Signature Look</h3>
 
             <div className="space-y-6">
+              {/* Toggles */}
+              <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-4">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="block text-sm font-bold text-white">Show Headshot in PDFs</span>
+                  </div>
+                  <div className="relative flex-shrink-0 ml-4">
+                    <input type="checkbox" className="sr-only" checked={profile.show_headshot} onChange={() => setProfile({...profile, show_headshot: !profile.show_headshot})} />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </label>
+                
+                <div className="h-px bg-slate-700 w-full"></div>
+                
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="block text-sm font-bold text-white">Show Brokerage Logo</span>
+                  </div>
+                  <div className="relative flex-shrink-0 ml-4">
+                    <input type="checkbox" className="sr-only" checked={profile.show_logo !== false} onChange={() => setProfile({...profile, show_logo: profile.show_logo === false ? true : false})} />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo !== false ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo !== false ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </label>
+              </div>
+
               {/* Choose PDF Layout */}
               <div>
                 <div className="grid grid-cols-1 gap-4">
