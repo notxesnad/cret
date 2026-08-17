@@ -42,22 +42,28 @@ export function NeighborhoodExpertView({
 
   // -- Prompt Generation --
   const generatePrompt = (name: string, city: string) => {
-    return `Act as an expert real estate data analyst. I need precise data about the neighborhood: "${name}" in "${city}". 
-Please provide:
+    return `Act as an expert real estate data analyst and instructional designer. I need to create a training quiz about the neighborhood: "${name}" in "${city}" for real estate agents.
+
+Please generate a 10-question multiple-choice quiz covering the most important data an agent should know about this neighborhood, such as:
 - Median Sale Price
-- Average price per square foot for NEW construction homes
-- Average price per square foot for RESALE homes
+- Average price per square foot (new vs resale)
 - Average lot price
 - Average Days on Market
 - Average Monthly HOA Fees
 - Estimated Property Tax Rate
 - Average Year Built
 - Most Common Architectural Style
-- Top Rated Schools (Elementary, Middle, High)
-- Top 3 amenities/features
+- Top Rated Schools
+- Key amenities
 
-Output this EXACTLY in CSV format with the headers: Category, Metric, Value. 
-Do not include any markdown formatting, no explanations, just the raw CSV text.`
+For each question, provide 1 correct answer, 3 plausible but incorrect answers, and a short explanation for the correct answer.
+
+Output this EXACTLY in CSV format with the following headers: 
+Question,CorrectAnswer,WrongAnswer1,WrongAnswer2,WrongAnswer3,Explanation
+
+Rules:
+- Do not use commas inside the questions, answers, or explanations. Use dashes or semicolons if punctuation is needed so the CSV parses cleanly.
+- Do not include any markdown formatting, intro, or outro text. Just the raw CSV text.`
   }
 
   // -- Step 1: Add New Neighborhood --
@@ -91,57 +97,47 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
 
   // -- Step 3: Handle CSV Data Parsing --
   const parseCSVToQuestions = (csv: string) => {
+    const parseLine = (line: string) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        if (line[i] === '"') {
+          inQuotes = !inQuotes;
+        } else if (line[i] === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += line[i];
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
     const lines = csv.split('\n').map(l => l.trim()).filter(l => l)
     if (lines.length < 2) return []
 
     const questions: any[] = []
     
-    // We assume structure is Category, Metric, Value
     // Skip header line[0]
     for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',').map(p => p.trim())
-      if (parts.length >= 3) {
-        // e.g., Pricing, Price/SqFt (New), $250
-        // e.g., parts[0], parts[1], parts[2]
-        const metric = parts[1].replace(/['"]/g, '')
-        const correctAnswer = parts.slice(2).join(',').replace(/['"]/g, '') // Join in case value had commas
-        
-        // Generate some fake dummy answers for the multiple choice
-        let fake1, fake2, fake3
-        
-        // Very basic fake generator logic based on numbers
-        const numMatch = correctAnswer.match(/[\d.]+/)
-        if (numMatch) {
-          const num = parseFloat(numMatch[0])
-          const prefix = correctAnswer.split(numMatch[0])[0]
-          const suffix = correctAnswer.split(numMatch[0])[1]
-          
-          fake1 = `${prefix}${Math.round(num * 0.85)}${suffix}`
-          fake2 = `${prefix}${Math.round(num * 1.15)}${suffix}`
-          fake3 = `${prefix}${Math.round(num * 1.4)}${suffix}`
-        } else {
-          // If it's text (like amenities, schools, styles)
-          if (metric.toLowerCase().includes('style')) {
-            fake1 = "Modern Farmhouse, Ranch"
-            fake2 = "Craftsman, Tudor"
-            fake3 = "Mediterranean, Contemporary"
-          } else if (metric.toLowerCase().includes('school')) {
-            fake1 = "Lincoln Elem, Washington Mid, Kennedy High"
-            fake2 = "Oak Creek Elem, Pine Mid, Cedar High"
-            fake3 = "Not assigned to top-rated schools"
-          } else {
-            fake1 = "Pool, Clubhouse, Tennis"
-            fake2 = "Walking Trails, Gated Entry, Golf"
-            fake3 = "No notable amenities listed"
-          }
-        }
+      const parts = parseLine(lines[i])
+      if (parts.length >= 6) {
+        const question = parts[0].replace(/^["']|["']$/g, '')
+        const correctAnswer = parts[1].replace(/^["']|["']$/g, '')
+        const wrong1 = parts[2].replace(/^["']|["']$/g, '')
+        const wrong2 = parts[3].replace(/^["']|["']$/g, '')
+        const wrong3 = parts[4].replace(/^["']|["']$/g, '')
+        const explanation = parts[5].replace(/^["']|["']$/g, '')
 
         // Shuffle options
-        const options = [correctAnswer, fake1, fake2, fake3].sort(() => 0.5 - Math.random())
+        const options = [correctAnswer, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random())
 
         questions.push({
-          question: `What is the ${metric}?`,
+          question,
           correctAnswer,
+          explanation,
           options
         })
       }
@@ -424,6 +420,17 @@ Do not include any markdown formatting, no explanations, just the raw CSV text.`
                   )
                 })}
               </div>
+
+              {quizStatus !== 'answering' && activeNeighborhood.questions[quizIndex].explanation && (
+                <div className={`mt-6 p-5 rounded-2xl border-2 animate-fade-in-up ${quizStatus === 'correct' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
+                  <h3 className={`font-black text-sm uppercase tracking-wider mb-2 ${quizStatus === 'correct' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {quizStatus === 'correct' ? 'Excellent!' : 'Not Quite!'}
+                  </h3>
+                  <p className="text-slate-300 leading-relaxed text-sm">
+                    {activeNeighborhood.questions[quizIndex].explanation}
+                  </p>
+                </div>
+              )}
 
             </div>
           )}
