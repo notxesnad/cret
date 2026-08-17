@@ -423,9 +423,11 @@ function HomeContent() {
     setProfile((prev: any) => ({ ...prev, pdf_look: lookKey }))
   }
 
+  const isFullScreenTool = ['profile', 'sellertracker', 'neighborhoods', 'outreach'].includes(currentView)
+
   return (
     <>
-      <div className="min-h-screen flex flex-col justify-between p-4 md:p-8 bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif]">
+      <div className={`min-h-screen flex flex-col justify-between bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif] ${isFullScreenTool ? 'p-0' : 'p-4 md:p-8'}`}>
         
         <style jsx global>{`
           .font-money { font-family: 'VT323', monospace; }
@@ -446,28 +448,30 @@ function HomeContent() {
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
 
-        <header className="max-w-xl mx-auto w-full flex justify-between items-center mb-6">
-          <div onClick={() => switchView('home')} className="text-xs font-bold tracking-widest text-slate-400 uppercase cursor-pointer hover:text-slate-300 transition">
-            Cool<span className="text-emerald-400">RealEstate</span>Tools.com
-          </div>
-          <div className="flex items-center gap-3">
-            <div id="nav-action" style={{ display: 'none' }}>
-              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
+        {!isFullScreenTool && (
+          <header className="max-w-xl mx-auto w-full flex justify-between items-center mb-6">
+            <div onClick={() => switchView('home')} className="text-xs font-bold tracking-widest text-slate-400 uppercase cursor-pointer hover:text-slate-300 transition">
+              Cool<span className="text-emerald-400">RealEstate</span>Tools.com
             </div>
-            {user ? (
-              <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
-                Sign Out
-              </button>
-            ) : (
-              <button onClick={() => switchView('signin')} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
-                Sign In
-              </button>
-            )}
-          </div>
-        </header>
+            <div className="flex items-center gap-3">
+              <div id="nav-action" style={{ display: 'none' }}>
+                <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
+              </div>
+              {user ? (
+                <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
+                  Sign Out
+                </button>
+              ) : (
+                <button onClick={() => switchView('signin')} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
+                  Sign In
+                </button>
+              )}
+            </div>
+          </header>
+        )}
 
         {/* Main Container */}
-        <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
+        <main className={`max-w-xl mx-auto w-full flex-1 flex flex-col ${isFullScreenTool ? '' : 'justify-center my-4 sm:my-8'} relative`}>
           {currentView === 'home' && <HomeView switchView={switchView} />}
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
@@ -513,7 +517,7 @@ function HomeContent() {
         </main>
 
         {/* Global Footer (Only on Home View) */}
-        {currentView === 'home' && (
+        {!isFullScreenTool && currentView === 'home' && (
           <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
             coolrealestatetools.com • $29/mo
           </footer>
