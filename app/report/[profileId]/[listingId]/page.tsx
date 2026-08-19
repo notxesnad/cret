@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
-import { AutoPrint, PrintButton } from '@/app/components/PrintControls'
+import { PrintButtons } from '@/app/components/PrintControls'
 
 export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
   const { profileId, listingId } = await params
@@ -43,7 +43,6 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
-      <AutoPrint />
       
       {/* Hide controls from print */}
       <style>{`
@@ -67,7 +66,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Seller Activity Report</span>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{listing.address}</h1>
           </div>
-          <PrintButton />
+          <PrintButtons />
         </div>
 
         {/* Activity Timeline */}
@@ -88,20 +87,20 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
                     <div className={`absolute w-3.5 h-3.5 rounded-full -left-[9px] top-1.5 border-2 border-white ${isCompleted ? 'bg-emerald-500' : isUpcoming ? 'bg-cyan-400' : 'bg-amber-400'}`}></div>
                     
                     <div className="flex flex-wrap gap-2 mb-1">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${isCompleted ? 'text-slate-500 bg-slate-100' : isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isCompleted ? 'text-slate-500 bg-slate-100' : isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
                         {act.date}
                       </span>
                       {!isCompleted && (
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
                           {act.status}
                         </span>
                       )}
                     </div>
                     
-                    <h3 className={`text-base font-bold ${!isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>{act.label}</h3>
+                    <h3 className={`text-lg font-bold mt-1 ${!isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>{act.label}</h3>
                     
                     {act.notes && (
-                      <p className="text-sm text-slate-500 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
+                      <p className="text-base text-slate-500 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">
                         {act.notes}
                       </p>
                     )}

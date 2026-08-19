@@ -183,7 +183,7 @@ export function SellerTrackerView({
 
   const handlePrintPDF = () => {
     if (!userId || !activeListingId) return
-    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}?print=true`
+    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}`
     window.open(shareUrl, '_blank')
   }
 
@@ -339,12 +339,12 @@ export function SellerTrackerView({
                         >
                           <div>
                             <div className="flex gap-2 mb-1">
-                              <span className="text-[9px] font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{act.date}</span>
-                              {act.status === 'upcoming' && <span className="text-[9px] font-black text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded inline-block uppercase">Upcoming</span>}
-                              {act.status === 'pending' && <span className="text-[9px] font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded inline-block uppercase">Pending</span>}
+                              <span className="text-xs font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{act.date}</span>
+                              {act.status === 'upcoming' && <span className="text-xs font-black text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded inline-block uppercase">Upcoming</span>}
+                              {act.status === 'pending' && <span className="text-xs font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded inline-block uppercase">Pending</span>}
                             </div>
-                            <p className="text-sm font-bold text-white leading-tight">{act.label}</p>
-                            {act.notes && <p className="text-xs text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
+                            <p className="text-base font-bold text-white leading-tight mt-1">{act.label}</p>
+                            {act.notes && <p className="text-sm text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
                           </div>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleRemoveActivity(act.id); }}
