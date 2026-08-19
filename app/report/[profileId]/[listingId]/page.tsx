@@ -49,7 +49,13 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
         @media print {
           .no-print { display: none !important; }
           html, body { background: white !important; }
-          .print-break-inside-avoid { break-inside: avoid; }
+          #report-print-root table { width: 100%; border-collapse: collapse; }
+          #report-print-root thead { display: table-header-group; }
+          #report-print-root td { padding: 0; }
+          .print-break-inside-avoid {
+            break-inside: avoid-page !important;
+            page-break-inside: avoid !important;
+          }
           #report-print-root, #report-print-root * {
             box-shadow: none !important;
             text-shadow: none !important;
@@ -61,11 +67,22 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
       `}</style>
 
       <div id="report-print-root" className="max-w-3xl mx-auto pt-6 px-4 md:px-8 space-y-6">
-        {/* Brand Header */}
-        {renderAgentHeader(profile)}
-
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <td>
+                <div id="report-print-header">
+                  {renderAgentHeader(profile)}
+                </div>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div className="space-y-6">
         {/* Report Title */}
-        <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4">
+        <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
           <div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Seller Activity Report</span>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{listing.address}</h1>
@@ -114,6 +131,11 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
             </div>
           )}
         </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   )

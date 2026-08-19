@@ -78,35 +78,71 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       const margin = 36
       const destWidth = pageWidth - margin * 2
       const destHeight = pageHeight - margin * 2
-      const scale = destWidth / canvas.width
-      const pageHeightPx = destHeight / scale
+      const pdfScale = destWidth / canvas.width
+      const canvasScale = canvas.width / element.scrollWidth
+      const rootRect = element.getBoundingClientRect()
 
-      let srcY = 0
-      let page = 0
-      while (srcY < canvas.height - 1) {
-        if (page > 0) pdf.addPage()
+      const blocks = Array.from(element.querySelectorAll('.print-break-inside-avoid')).map((node) => {
+        const r = (node as HTMLElement).getBoundingClientRect()
+        return {
+          top: (r.top - rootRect.top) * canvasScale,
+          bottom: (r.bottom - rootRect.top) * canvasScale
+        }
+      })
 
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - srcY)
+      const headerEl = document.getElementById('report-print-header')
+      const headerRect = headerEl?.getBoundingClientRect()
+      const headerBottom = headerRect ? (headerRect.bottom - rootRect.top) * canvasScale : 0
+
+      const snapEnd = (startY: number, maxEndY: number) => {
+        let end = maxEndY
+        for (const b of blocks) {
+          if (b.top > startY && b.top < maxEndY && b.bottom > maxEndY) {
+            end = Math.min(end, b.top)
+          }
+        }
+        if (end <= startY + 24) return maxEndY
+        return Math.min(end, canvas.height)
+      }
+
+      const drawSlice = (srcY: number, sliceHeight: number, destY: number) => {
         const sliceCanvas = document.createElement('canvas')
         sliceCanvas.width = canvas.width
-        sliceCanvas.height = sliceHeight
+        sliceCanvas.height = Math.max(1, sliceHeight)
         const ctx = sliceCanvas.getContext('2d')
         if (ctx) {
           ctx.fillStyle = '#ffffff'
           ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height)
           ctx.drawImage(canvas, 0, srcY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
         }
-
         pdf.addImage(
           sliceCanvas.toDataURL('image/jpeg', 0.95),
           'JPEG',
           margin,
-          margin,
+          destY,
           destWidth,
-          sliceHeight * scale
+          sliceHeight * pdfScale
         )
+      }
 
-        srcY += sliceHeight
+      let srcY = 0
+      let page = 0
+      while (srcY < canvas.height - 1) {
+        if (page > 0) pdf.addPage()
+
+        let destY = margin
+        let availablePt = destHeight
+
+        if (page > 0 && headerBottom > 0) {
+          drawSlice(0, headerBottom, margin)
+          destY = margin + headerBottom * pdfScale + 8
+          availablePt = pageHeight - destY - margin
+        }
+
+        const maxEnd = Math.min(canvas.height, srcY + availablePt / pdfScale)
+        const endY = snapEnd(srcY, maxEnd)
+        drawSlice(srcY, endY - srcY, destY)
+        srcY = endY
         page += 1
       }
 
