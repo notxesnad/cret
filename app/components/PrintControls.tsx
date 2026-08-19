@@ -25,16 +25,22 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       maxWidth: element.style.maxWidth,
       padding: element.style.padding,
       margin: element.style.margin,
-      boxSizing: element.style.boxSizing
+      boxSizing: element.style.boxSizing,
+      backgroundColor: element.style.backgroundColor,
+      className: element.className
     }
 
     try {
       // Lay the report out at letter width so the snapshot is portrait and fills the page.
+      element.classList.remove('px-4', 'md:px-8', 'pt-6')
       element.style.boxSizing = 'border-box'
       element.style.width = '816px'
       element.style.maxWidth = '816px'
-      element.style.padding = '0'
+      element.style.setProperty('padding', '0', 'important')
+      element.style.setProperty('padding-left', '0', 'important')
+      element.style.setProperty('padding-right', '0', 'important')
       element.style.margin = '0'
+      element.style.backgroundColor = '#ffffff'
 
       await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
 
@@ -45,10 +51,19 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#ffffff',
         logging: false,
         width: element.scrollWidth,
-        windowWidth: element.scrollWidth
+        windowWidth: element.scrollWidth,
+        onclone: (doc) => {
+          const clone = doc.getElementById('report-print-root')
+          if (!clone) return
+          clone.classList.remove('px-4', 'md:px-8', 'pt-6')
+          clone.style.setProperty('padding', '0', 'important')
+          clone.style.setProperty('padding-left', '0', 'important')
+          clone.style.setProperty('padding-right', '0', 'important')
+          clone.style.setProperty('background-color', '#ffffff', 'important')
+        }
       })
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' })
@@ -71,7 +86,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
         sliceCanvas.height = sliceHeight
         const ctx = sliceCanvas.getContext('2d')
         if (ctx) {
-          ctx.fillStyle = '#f8fafc'
+          ctx.fillStyle = '#ffffff'
           ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height)
           ctx.drawImage(canvas, 0, srcY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
         }
@@ -93,11 +108,13 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
     } catch (e) {
       setStatusMsg(e instanceof Error ? e.message : 'Failed to save PDF')
     } finally {
+      element.className = original.className
       element.style.width = original.width
       element.style.maxWidth = original.maxWidth
       element.style.padding = original.padding
       element.style.margin = original.margin
       element.style.boxSizing = original.boxSizing
+      element.style.backgroundColor = original.backgroundColor
       hidden.forEach((el) => { el.style.visibility = '' })
       setSaving(false)
     }
