@@ -20,7 +20,24 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
     const hidden = Array.from(element.querySelectorAll('.no-print')) as HTMLElement[]
     hidden.forEach((el) => { el.style.visibility = 'hidden' })
 
+    const original = {
+      width: element.style.width,
+      maxWidth: element.style.maxWidth,
+      padding: element.style.padding,
+      margin: element.style.margin,
+      boxSizing: element.style.boxSizing
+    }
+
     try {
+      // Lay the report out at letter width so the snapshot is portrait and fills the page.
+      element.style.boxSizing = 'border-box'
+      element.style.width = '816px'
+      element.style.maxWidth = '816px'
+      element.style.padding = '32px'
+      element.style.margin = '0'
+
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+
       const html2canvas = (await import('html2canvas-pro')).default
       const { jsPDF } = await import('jspdf')
       const filename = `${listingAddress.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'seller-report'}.pdf`
@@ -29,34 +46,58 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
         scale: 2,
         useCORS: true,
         backgroundColor: '#f8fafc',
-        logging: false
+        logging: false,
+        width: element.scrollWidth,
+        windowWidth: element.scrollWidth
       })
 
-      const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' })
-      const pageWidth = 8.5
-      const pageHeight = 11
-      const margin = 0.4
-      const imgWidth = pageWidth - margin * 2
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      const imgData = canvas.toDataURL('image/jpeg', 0.95)
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const margin = 28
+      const destWidth = pageWidth - margin * 2
+      const destHeight = pageHeight - margin * 2
+      const scale = destWidth / canvas.width
+      const pageHeightPx = destHeight / scale
 
-      let remaining = imgHeight
-      let offset = margin
+      let srcY = 0
+      let page = 0
+      while (srcY < canvas.height - 1) {
+        if (page > 0) pdf.addPage()
 
-      pdf.addImage(imgData, 'JPEG', margin, offset, imgWidth, imgHeight)
-      remaining -= (pageHeight - margin * 2)
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - srcY)
+        const sliceCanvas = document.createElement('canvas')
+        sliceCanvas.width = canvas.width
+        sliceCanvas.height = sliceHeight
+        const ctx = sliceCanvas.getContext('2d')
+        if (ctx) {
+          ctx.fillStyle = '#f8fafc'
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height)
+          ctx.drawImage(canvas, 0, srcY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
+        }
 
-      while (remaining > 0) {
-        offset -= (pageHeight - margin * 2)
-        pdf.addPage()
-        pdf.addImage(imgData, 'JPEG', margin, offset, imgWidth, imgHeight)
-        remaining -= (pageHeight - margin * 2)
+        pdf.addImage(
+          sliceCanvas.toDataURL('image/jpeg', 0.95),
+          'JPEG',
+          margin,
+          margin,
+          destWidth,
+          sliceHeight * scale
+        )
+
+        srcY += sliceHeight
+        page += 1
       }
 
       pdf.save(filename)
     } catch (e) {
       setStatusMsg(e instanceof Error ? e.message : 'Failed to save PDF')
     } finally {
+      element.style.width = original.width
+      element.style.maxWidth = original.maxWidth
+      element.style.padding = original.padding
+      element.style.margin = original.margin
+      element.style.boxSizing = original.boxSizing
       hidden.forEach((el) => { el.style.visibility = '' })
       setSaving(false)
     }

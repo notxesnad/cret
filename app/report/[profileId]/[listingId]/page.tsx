@@ -42,7 +42,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
   }
 
   return (
-    <div id="report-print-root" className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       
       {/* Hide controls from print */}
       <style>{`
@@ -53,13 +53,10 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
         }
       `}</style>
 
-      {/* Brand Header */}
-      <div className="max-w-3xl mx-auto pt-6 px-4 md:px-8">
+      <div id="report-print-root" className="max-w-3xl mx-auto pt-6 px-4 md:px-8 space-y-6">
+        {/* Brand Header */}
         {renderAgentHeader(profile)}
-      </div>
 
-      <div className="max-w-3xl mx-auto px-4 md:px-8 space-y-6">
-        
         {/* Report Title */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4">
           <div>
