@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { sendPdfEmail } from '@/app/actions/email'
+import { sendPdfEmail } from '../actions/email'
 
 export function AutoPrint() {
   useEffect(() => {
