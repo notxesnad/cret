@@ -346,6 +346,13 @@ export function SellerTrackerView({
                             <p className="text-base font-bold text-white leading-tight mt-1">{act.label}</p>
                             {act.notes && <p className="text-sm text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
                           </div>
+                          <div className="flex items-start gap-1 ml-3">
+                          <span
+                            className="text-slate-400 group-hover:text-amber-400 p-1 transition"
+                            title="Edit activity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
+                          </span>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleRemoveActivity(act.id); }}
                             className="text-slate-500 hover:text-rose-400 p-1 opacity-50 group-hover:opacity-100 transition"
@@ -353,6 +360,7 @@ export function SellerTrackerView({
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                           </button>
+                          </div>
                         </div>
                       ))}
                     </div>
