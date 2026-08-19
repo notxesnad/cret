@@ -12,11 +12,29 @@ export function AutoPrint() {
   return null
 }
 
-export function PrintButtons() {
-  const handleEmail = () => {
-    const subject = encodeURIComponent("Your Property Report")
-    const body = encodeURIComponent(`Here is the link to view your property report:\n\n${window.location.href.replace('?print=true', '')}`)
-    window.location.href = `mailto:?subject=${subject}&body=${body}`
+export function PrintButtons({ userEmail, listingAddress }: { userEmail: string, listingAddress: string }) {
+  const handleEmail = async () => {
+    // Show some temporary visual feedback that it is sending
+    const btn = document.getElementById('email-btn')
+    const originalText = btn?.innerHTML || ''
+    if (btn) btn.innerHTML = 'Sending...'
+
+    const reportUrl = window.location.href.replace('?print=true', '')
+    
+    // Call server action to send the email directly
+    const { sendPdfEmail } = await import('@/app/actions/email')
+    const result = await sendPdfEmail(userEmail, listingAddress, reportUrl)
+    
+    if (btn) {
+      if (result.error) {
+        btn.innerHTML = 'Error Sending'
+        alert(result.error)
+        setTimeout(() => { btn.innerHTML = originalText }, 3000)
+      } else {
+        btn.innerHTML = 'Sent Successfully!'
+        setTimeout(() => { btn.innerHTML = originalText }, 3000)
+      }
+    }
   }
 
   return (
@@ -29,8 +47,9 @@ export function PrintButtons() {
         Print
       </button>
       <button 
+        id="email-btn"
         onClick={handleEmail}
-        className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-2 text-sm"
+        className="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2.5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm min-w-[140px]"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
         Email PDF

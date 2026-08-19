@@ -312,7 +312,7 @@ export function SellerTrackerView({
                       <button 
                         key={preset}
                         onClick={() => handleAddActivity(preset)}
-                        className="bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 active:scale-95 text-slate-300 hover:text-white border border-slate-700 text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg transition-all duration-150"
+                        className="bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 active:scale-95 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold py-1.5 px-3 rounded-lg transition-all duration-150"
                       >
                         + {preset}
                       </button>

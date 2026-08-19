@@ -66,7 +66,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Seller Activity Report</span>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{listing.address}</h1>
           </div>
-          <PrintButtons />
+          <PrintButtons userEmail={profile.email} listingAddress={listing.address} />
         </div>
 
         {/* Activity Timeline */}
