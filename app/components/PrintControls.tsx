@@ -22,16 +22,24 @@ export function PrintButtons({ userEmail, listingAddress }: { userEmail: string,
     const reportUrl = window.location.href.replace('?print=true', '')
     
     // Call server action to send the email directly
-    const { sendPdfEmail } = await import('@/app/actions/email')
-    const result = await sendPdfEmail(userEmail, listingAddress, reportUrl)
-    
-    if (btn) {
-      if (result.error) {
+    try {
+      const { sendPdfEmail } = await import('../../app/actions/email')
+      const result = await sendPdfEmail(userEmail, listingAddress, reportUrl)
+      
+      if (btn) {
+        if (result.error) {
+          btn.innerHTML = 'Error Sending'
+          alert(result.error)
+          setTimeout(() => { btn.innerHTML = originalText }, 3000)
+        } else {
+          btn.innerHTML = 'Sent Successfully!'
+          setTimeout(() => { btn.innerHTML = originalText }, 3000)
+        }
+      }
+    } catch (e) {
+      if (btn) {
         btn.innerHTML = 'Error Sending'
-        alert(result.error)
-        setTimeout(() => { btn.innerHTML = originalText }, 3000)
-      } else {
-        btn.innerHTML = 'Sent Successfully!'
+        alert(e instanceof Error ? e.message : 'Failed to import email action')
         setTimeout(() => { btn.innerHTML = originalText }, 3000)
       }
     }
