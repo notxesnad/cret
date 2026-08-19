@@ -21,20 +21,39 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
     hidden.forEach((el) => { el.style.visibility = 'hidden' })
 
     try {
-      const html2pdf = (await import('html2pdf.js')).default
+      const html2canvas = (await import('html2canvas-pro')).default
+      const { jsPDF } = await import('jspdf')
       const filename = `${listingAddress.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'seller-report'}.pdf`
 
-      await html2pdf()
-        .set({
-          margin: [0.4, 0.4, 0.4, 0.4],
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#f8fafc' },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
-        })
-        .from(element)
-        .save()
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#f8fafc',
+        logging: false
+      })
+
+      const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' })
+      const pageWidth = 8.5
+      const pageHeight = 11
+      const margin = 0.4
+      const imgWidth = pageWidth - margin * 2
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      const imgData = canvas.toDataURL('image/jpeg', 0.95)
+
+      let remaining = imgHeight
+      let offset = margin
+
+      pdf.addImage(imgData, 'JPEG', margin, offset, imgWidth, imgHeight)
+      remaining -= (pageHeight - margin * 2)
+
+      while (remaining > 0) {
+        offset -= (pageHeight - margin * 2)
+        pdf.addPage()
+        pdf.addImage(imgData, 'JPEG', margin, offset, imgWidth, imgHeight)
+        remaining -= (pageHeight - margin * 2)
+      }
+
+      pdf.save(filename)
     } catch (e) {
       setStatusMsg(e instanceof Error ? e.message : 'Failed to save PDF')
     } finally {
