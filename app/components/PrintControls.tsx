@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { sendPdfEmail } from '@/app/actions/email'
 import { supabase } from '@/utils/supabase'
 
 export function AutoPrint() {
@@ -14,48 +13,51 @@ export function AutoPrint() {
   return null
 }
 
-export function PrintButtons({ userEmail, listingAddress }: { userEmail?: string, listingAddress: string }) {
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'form' | 'sending' | 'success' | 'error'>('idle')
-  const [toEmail, setToEmail] = useState(userEmail || '')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [sentTo, setSentTo] = useState('')
-
-  useEffect(() => {
-    if (toEmail) return
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) setToEmail(session.user.email)
-    })
-  }, [toEmail])
+export function PrintButtons({ listingAddress }: { listingAddress: string }) {
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [statusMsg, setStatusMsg] = useState('')
 
   const handleEmail = async () => {
-    if (emailStatus === 'idle') {
-      setEmailStatus('form')
+    setStatusMsg('')
+    setEmailStatus('sending')
+
+    const { data: { session } } = await supabase.auth.getSession()
+    const email = session?.user?.email
+    if (!email) {
+      setStatusMsg('You must be logged in to email this report.')
+      setEmailStatus('error')
       return
     }
 
-    setErrorMsg('')
-    setEmailStatus('sending')
-    const reportUrl = window.location.href.replace('?print=true', '')
-    
     try {
-      const result = await sendPdfEmail(toEmail, listingAddress, reportUrl)
-      
-      if (result.error) {
-        setErrorMsg(result.error)
+      const res = await fetch('/api/send-report-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          listingAddress,
+          reportUrl: window.location.href.replace('?print=true', '')
+        })
+      })
+      const result = await res.json()
+
+      if (!res.ok || result.error) {
+        setStatusMsg(result.error || 'Failed to send email.')
         setEmailStatus('error')
-      } else {
-        setSentTo(result.to || toEmail)
-        setEmailStatus('success')
-        setTimeout(() => { setEmailStatus('idle') }, 4000)
+        return
       }
+
+      setStatusMsg(`Sent to ${result.to || email}. Check inbox and spam.`)
+      setEmailStatus('success')
+      setTimeout(() => { setEmailStatus('idle'); setStatusMsg('') }, 5000)
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'Failed to send email')
+      setStatusMsg(e instanceof Error ? e.message : 'Failed to send email')
       setEmailStatus('error')
     }
   }
 
   return (
-    <div className="flex flex-col items-stretch md:items-end gap-3 no-print">
+    <div className="flex flex-col items-stretch md:items-end gap-2 no-print">
       <div className="flex flex-wrap gap-3">
         <button 
           onClick={() => window.print()}
@@ -70,26 +72,13 @@ export function PrintButtons({ userEmail, listingAddress }: { userEmail?: string
           className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-5 py-2.5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm min-w-[140px]"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-          {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'success' ? 'Sent!' : emailStatus === 'idle' ? 'Email PDF' : 'Send'}
+          {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'success' ? 'Sent!' : 'Email PDF'}
         </button>
       </div>
-
-      {(emailStatus === 'form' || emailStatus === 'error') && (
-        <div className="w-full md:w-80 text-left">
-          <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Send this report to</label>
-          <input
-            type="email"
-            value={toEmail}
-            onChange={(e) => setToEmail(e.target.value)}
-            placeholder="you@email.com"
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-amber-500"
-          />
-          {errorMsg && <p className="text-xs text-rose-500 font-bold mt-2">{errorMsg}</p>}
-        </div>
-      )}
-
-      {emailStatus === 'success' && (
-        <p className="text-xs text-emerald-600 font-bold">Sent to {sentTo}. Check inbox and spam.</p>
+      {statusMsg && (
+        <p className={`text-xs font-bold max-w-xs ${emailStatus === 'error' ? 'text-rose-500' : 'text-emerald-600'}`}>
+          {statusMsg}
+        </p>
       )}
     </div>
   )
