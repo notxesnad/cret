@@ -48,8 +48,15 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
       <style>{`
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
+          html, body { background: white !important; }
           .print-break-inside-avoid { break-inside: avoid; }
+          #report-print-root, #report-print-root * {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
         }
       `}</style>
 

@@ -63,13 +63,19 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
           clone.style.setProperty('padding-left', '0', 'important')
           clone.style.setProperty('padding-right', '0', 'important')
           clone.style.setProperty('background-color', '#ffffff', 'important')
+          clone.querySelectorAll('*').forEach((node) => {
+            const el = node as HTMLElement
+            el.style.setProperty('box-shadow', 'none', 'important')
+            el.style.setProperty('filter', 'none', 'important')
+            el.style.setProperty('text-shadow', 'none', 'important')
+          })
         }
       })
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' })
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
-      const margin = 0
+      const margin = 36
       const destWidth = pageWidth - margin * 2
       const destHeight = pageHeight - margin * 2
       const scale = destWidth / canvas.width
