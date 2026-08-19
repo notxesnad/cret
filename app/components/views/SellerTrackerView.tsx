@@ -65,6 +65,7 @@ export function SellerTrackerView({
   const [isAddingListing, setIsAddingListing] = useState(false)
   const [newListingAddress, setNewListingAddress] = useState('')
   const [editActivityForm, setEditActivityForm] = useState<Partial<Activity>>({})
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const activityLogRef = useRef<HTMLDivElement>(null)
   const activityLogHeaderRef = useRef<HTMLHeadingElement>(null)
@@ -151,17 +152,20 @@ export function SellerTrackerView({
     setStep(2)
   }
 
-  const handleRemoveActivity = (activityId: string) => {
-    if (!activeListingId) return;
+  const handleRemoveActivity = () => {
+    if (!activeListingId || !activeActivityId) return
     updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
         return {
           ...listing,
-          activities: listing.activities.filter(a => a.id !== activityId)
+          activities: listing.activities.filter(a => a.id !== activeActivityId)
         }
       }
       return listing
     }))
+    setConfirmDelete(false)
+    setActiveActivityId(null)
+    setStep(2)
   }
 
   const handleShareLink = () => {
@@ -346,21 +350,12 @@ export function SellerTrackerView({
                             <p className="text-base font-bold text-white leading-tight mt-1">{act.label}</p>
                             {act.notes && <p className="text-sm text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
                           </div>
-                          <div className="flex items-start gap-1 ml-3">
                           <span
-                            className="text-slate-400 group-hover:text-amber-400 p-1 transition"
+                            className="text-slate-400 group-hover:text-amber-400 p-1 ml-3 transition"
                             title="Edit activity"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
                           </span>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleRemoveActivity(act.id); }}
-                            className="text-slate-500 hover:text-rose-400 p-1 opacity-50 group-hover:opacity-100 transition"
-                            title="Remove activity"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                          </button>
-                          </div>
                         </div>
                       ))}
                     </div>
@@ -425,21 +420,6 @@ export function SellerTrackerView({
                     />
                   </div>
                 </div>
-
-                <div className="mt-8 flex gap-3">
-                  <button 
-                    onClick={handleUpdateActivity}
-                    className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow"
-                  >
-                    Save Changes
-                  </button>
-                  <button 
-                    onClick={() => setStep(2)}
-                    className="flex-[1] bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition border border-slate-700"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </>
             )}
           </div>
@@ -463,6 +443,49 @@ export function SellerTrackerView({
             >
               Share Live Link
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Static Action Footer for Step 3 */}
+      {step === 3 && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setConfirmDelete(true)}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition border border-slate-700"
+            >
+              Delete
+            </button>
+            <button 
+              onClick={handleUpdateActivity}
+              className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div className="text-3xl">🗑️</div>
+            <p className="text-sm font-bold text-white">Delete this activity? This can&apos;t be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition"
+              >
+                Keep it
+              </button>
+              <button
+                onClick={handleRemoveActivity}
+                className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
