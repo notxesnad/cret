@@ -42,7 +42,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
+    <div id="report-print-root" className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       
       {/* Hide controls from print */}
       <style>{`

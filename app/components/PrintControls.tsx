@@ -1,58 +1,45 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/utils/supabase'
-
-export function AutoPrint() {
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('print') === 'true') {
-      setTimeout(() => window.print(), 1000)
-    }
-  }, [])
-  return null
-}
+import { useState } from 'react'
 
 export function PrintButtons({ listingAddress }: { listingAddress: string }) {
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [saving, setSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
 
-  const handleEmail = async () => {
+  const handleSavePdf = async () => {
     setStatusMsg('')
-    setEmailStatus('sending')
+    setSaving(true)
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const email = session?.user?.email
-    if (!email) {
-      setStatusMsg('You must be logged in to email this report.')
-      setEmailStatus('error')
+    const element = document.getElementById('report-print-root')
+    if (!element) {
+      setStatusMsg('Could not find the report to save.')
+      setSaving(false)
       return
     }
 
+    const hidden = Array.from(element.querySelectorAll('.no-print')) as HTMLElement[]
+    hidden.forEach((el) => { el.style.visibility = 'hidden' })
+
     try {
-      const res = await fetch('/api/send-report-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          listingAddress,
-          reportUrl: window.location.href.replace('?print=true', '')
+      const html2pdf = (await import('html2pdf.js')).default
+      const filename = `${listingAddress.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'seller-report'}.pdf`
+
+      await html2pdf()
+        .set({
+          margin: [0.4, 0.4, 0.4, 0.4],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#f8fafc' },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] }
         })
-      })
-      const result = await res.json()
-
-      if (!res.ok || result.error) {
-        setStatusMsg(result.error || 'Failed to send email.')
-        setEmailStatus('error')
-        return
-      }
-
-      setStatusMsg(`Sent to ${result.to || email}. Check inbox and spam.`)
-      setEmailStatus('success')
-      setTimeout(() => { setEmailStatus('idle'); setStatusMsg('') }, 5000)
+        .from(element)
+        .save()
     } catch (e) {
-      setStatusMsg(e instanceof Error ? e.message : 'Failed to send email')
-      setEmailStatus('error')
+      setStatusMsg(e instanceof Error ? e.message : 'Failed to save PDF')
+    } finally {
+      hidden.forEach((el) => { el.style.visibility = '' })
+      setSaving(false)
     }
   }
 
@@ -67,18 +54,16 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
           Print
         </button>
         <button 
-          onClick={handleEmail}
-          disabled={emailStatus === 'sending'}
+          onClick={handleSavePdf}
+          disabled={saving}
           className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-5 py-2.5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm min-w-[140px]"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-          {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'success' ? 'Sent!' : 'Email PDF'}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          {saving ? 'Saving...' : 'Save PDF'}
         </button>
       </div>
       {statusMsg && (
-        <p className={`text-xs font-bold max-w-xs ${emailStatus === 'error' ? 'text-rose-500' : 'text-emerald-600'}`}>
-          {statusMsg}
-        </p>
+        <p className="text-xs font-bold max-w-xs text-rose-500">{statusMsg}</p>
       )}
     </div>
   )
