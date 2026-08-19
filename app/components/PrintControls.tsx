@@ -33,7 +33,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       element.style.boxSizing = 'border-box'
       element.style.width = '816px'
       element.style.maxWidth = '816px'
-      element.style.padding = '32px'
+      element.style.padding = '0'
       element.style.margin = '0'
 
       await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
@@ -54,7 +54,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' })
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
-      const margin = 28
+      const margin = 0
       const destWidth = pageWidth - margin * 2
       const destHeight = pageHeight - margin * 2
       const scale = destWidth / canvas.width
