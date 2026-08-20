@@ -103,6 +103,7 @@ function HomeContent() {
   const [listings, setListings] = useState<any[]>([])
   const [neighborhoods, setNeighborhoods] = useState<any[]>([])
   const [outreachCampaigns, setOutreachCampaigns] = useState<any[]>([])
+  const [clients, setClients] = useState<any[]>([])
 
   const updateListings = (updater: (prev: any[]) => any[]) => {
     setListings(prev => {
@@ -137,6 +138,18 @@ function HomeContent() {
         })
       }
       return newCampaigns
+    })
+  }
+
+  const updateClients = (updater: (prev: any[]) => any[]) => {
+    setClients(prev => {
+      const newClients = updater(prev)
+      if (user) {
+        supabase.from('profiles').update({ clients: newClients }).eq('id', user.id).then(({ error }) => {
+          if (error) console.error('Error saving clients:', error)
+        })
+      }
+      return newClients
     })
   }
 
@@ -189,6 +202,7 @@ function HomeContent() {
           let dbListings = data.listings || []
           let dbNeighborhoods = data.neighborhoods || []
           let dbCampaigns = data.outreach_campaigns || []
+          let dbClients = data.clients || []
 
           if (pendingData) {
             // Merge unauthenticated local data with database data
@@ -202,12 +216,14 @@ function HomeContent() {
             dbListings = mergeArrays(dbListings, pendingData.listings)
             dbNeighborhoods = mergeArrays(dbNeighborhoods, pendingData.neighborhoods)
             dbCampaigns = mergeArrays(dbCampaigns, pendingData.outreachCampaigns)
+            dbClients = mergeArrays(dbClients, pendingData.clients)
 
             // Save merged data back to the database automatically
             supabase.from('profiles').update({
               listings: dbListings,
               neighborhoods: dbNeighborhoods,
-              outreach_campaigns: dbCampaigns
+              outreach_campaigns: dbCampaigns,
+              clients: dbClients
             }).eq('id', currentUser.id).then(({ error }) => {
                if (error) console.error("Error saving pending data to DB", error)
             })
@@ -221,6 +237,7 @@ function HomeContent() {
           setListings(dbListings)
           setNeighborhoods(dbNeighborhoods)
           setOutreachCampaigns(dbCampaigns)
+          setClients(dbClients)
 
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
@@ -236,6 +253,7 @@ function HomeContent() {
           let newListings = pendingData?.listings || []
           let newNeighborhoods = pendingData?.neighborhoods || []
           let newCampaigns = pendingData?.outreachCampaigns || []
+          let newClients = pendingData?.clients || []
 
           // If they just registered via the SignIn page, they won't have a profile row yet.
           // We must create it here so that subsequent updates to listings/campaigns don't silently fail.
@@ -244,7 +262,8 @@ function HomeContent() {
             email: currentUser.email || '',
             listings: newListings,
             neighborhoods: newNeighborhoods,
-            outreach_campaigns: newCampaigns
+            outreach_campaigns: newCampaigns,
+            clients: newClients
           }).then(({ error }) => {
             if (error) console.error('Error creating initial profile:', error)
           })
@@ -252,6 +271,7 @@ function HomeContent() {
           setListings(newListings)
           setNeighborhoods(newNeighborhoods)
           setOutreachCampaigns(newCampaigns)
+          setClients(newClients)
 
           if (pendingData?.view) {
             switchView(pendingData.view)
@@ -298,7 +318,8 @@ function HomeContent() {
       view: currentView,
       listings,
       neighborhoods,
-      outreachCampaigns
+      outreachCampaigns,
+      clients
     }
     localStorage.setItem('crt_pending_data', JSON.stringify(pendingData))
 
@@ -386,47 +407,47 @@ function HomeContent() {
         return
       }
 
-      // Save draft state to localStorage so we recover it after magic link verification
-      localStorage.setItem('crt_profile_step', '2')
-      localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
+    // Save draft state to localStorage so we recover it after magic link verification
+    localStorage.setItem('crt_profile_step', '2')
+    localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
 
-      if (!user) {
-        const { error: authError } = await supabase.auth.signInWithOtp({
-          email: profile.email,
-          options: { 
-            shouldCreateUser: true,
-            emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
-          }
-        })
-
-        if (authError) {
-          showCustomModal('Error sending verification link: ' + authError.message)
-          return
+    if (!user) {
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: profile.email,
+        options: { 
+          shouldCreateUser: true,
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
         }
+      })
 
-        showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
+      if (authError) {
+        showCustomModal('Error sending verification link: ' + authError.message)
         return
       }
 
-      // If user is already logged in, save data immediately
-      const updates = {
-        id: user.id,
-        full_name: profile.full_name,
-        email: profile.email,
-        phone: profile.phone,
-        brokerage: profile.brokerage,
-        pdf_look: profile.pdf_look,
-        show_headshot: profile.show_headshot,
+      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
+      return
+    }
+
+    // If user is already logged in, save data immediately
+    const updates = {
+      id: user.id,
+      full_name: profile.full_name,
+      email: profile.email,
+      phone: profile.phone,
+      brokerage: profile.brokerage,
+      pdf_look: profile.pdf_look,
+      show_headshot: profile.show_headshot,
         show_logo: profile.show_logo,
-        updated_at: new Date(),
-      }
+      updated_at: new Date(),
+    }
 
-      const { error } = await supabase.from('profiles').upsert(updates)
+    const { error } = await supabase.from('profiles').upsert(updates)
 
-      if (error) {
-        showCustomModal('Error saving profile: ' + error.message)
-      } else {
-        setProfileStep(2)
+    if (error) {
+      showCustomModal('Error saving profile: ' + error.message)
+    } else {
+      setProfileStep(2)
       }
     } else if (profileStep === 2) {
       setProfileStep(3)
@@ -536,7 +557,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; animation: fadeIn 0.3s ease-out; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active { display: flex !important; flex-direction: column !important; }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -575,7 +596,15 @@ function HomeContent() {
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} />}
           {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
-          {currentView === 'driving' && <DrivingView />}
+          {currentView === 'driving' && (
+            <DrivingView
+              clients={clients}
+              updateClients={updateClients}
+              showCustomModal={showCustomModal}
+              switchView={switchView}
+              userId={user?.id}
+            />
+          )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
           {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={listings} />}
           {currentView === 'profile' && (
@@ -614,9 +643,9 @@ function HomeContent() {
 
         {/* Global Footer (Only on Home View) */}
         {currentView === 'home' && (
-          <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
-            coolrealestatetools.com • $29/mo
-          </footer>
+        <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
+          coolrealestatetools.com • $29/mo
+        </footer>
         )}
 
         {/* Custom Safe Modal Box */}
@@ -628,27 +657,27 @@ function HomeContent() {
               {!modalData.requiresAuth ? (
                 <div className="space-y-4">
                   <p className="text-sm font-bold text-white">{modalData.msg}</p>
-                  <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
-                </div>
+            <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
+          </div>
               ) : (
-                <div>
+          <div>
                   {!modalAuthSent ? (
                     <div className="space-y-4 text-left">
                       <p className="text-sm font-bold text-rose-400 text-center mb-1">{modalData.msg}</p>
                       <p className="text-xs font-medium text-slate-300 text-center mb-4">Enter your email address so that we can get you logged in or create your account.</p>
                       <form onSubmit={handleModalAuth} className="space-y-3">
-                        <input 
-                          type="email"
-                          placeholder="name@example.com"
+            <input 
+              type="email"
+              placeholder="name@example.com"
                           value={modalEmail}
                           onChange={e => setModalEmail(e.target.value)}
-                          required
+              required
                           className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
-                        />
+            />
                         <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">
                           Send Magic Link
-                        </button>
-                      </form>
+          </button>
+        </form>
                       {modalAuthError && <p className="text-xs text-rose-400 text-center">{modalAuthError}</p>}
                       <button onClick={closeCustomModal} className="w-full text-xs text-slate-500 hover:text-slate-300 py-2">Cancel</button>
                     </div>
@@ -657,11 +686,11 @@ function HomeContent() {
                       <h3 className="font-black text-xl text-emerald-400">Link Sent!</h3>
                       <p className="text-sm text-slate-300">Check your email inbox and click the link to log straight in.</p>
                       <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Close</button>
-                    </div>
-                  )}
+        </div>
+      )}
                 </div>
-              )}
-            </div>
+      )}
+    </div>
           </div>
         )}
 
