@@ -438,12 +438,19 @@ export function DrivingView({
                       onChange={e => setNewTourTitle(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
-                    <input
-                      type="date"
-                      value={newTourDate}
-                      onChange={e => setNewTourDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500 [color-scheme:dark]"
-                    />
+                    <div className="relative">
+                      {!newTourDate && (
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-base">
+                          Tour date (optional)
+                        </span>
+                      )}
+                      <input
+                        type="date"
+                        value={newTourDate}
+                        onChange={e => setNewTourDate(e.target.value)}
+                        className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-rose-500 [color-scheme:dark] ${newTourDate ? 'text-white' : 'text-transparent'}`}
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button onClick={confirmAddTour} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Save</button>
                       <button onClick={() => { setIsAddingTour(false); setNewTourTitle(''); setNewTourDate(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
@@ -521,8 +528,7 @@ export function DrivingView({
                       inputMode="numeric"
                       placeholder="Price (optional)"
                       value={newHomePrice}
-                      onChange={e => setNewHomePrice(e.target.value)}
-                      onBlur={() => setNewHomePrice(prev => formatPrice(prev) || prev)}
+                      onChange={e => setNewHomePrice(formatPrice(e.target.value))}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
                     <div className="flex gap-2">
@@ -568,8 +574,10 @@ export function DrivingView({
                         onClick={() => openHome(home.id)}
                       >
                         <div className="flex-1">
-                          <span className="text-sm font-black bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded">STOP #{index + 1}</span>
-                          {stop.time && <span className="text-sm font-black text-slate-300 bg-slate-900 px-2 py-0.5 rounded ml-1">{formatTimeDisplay(stop.time)}</span>}
+                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            <span className="text-3xl font-normal text-rose-400">Stop {index + 1}</span>
+                            {stop.time && <span className="text-3xl font-bold text-white">{formatTimeDisplay(stop.time)}</span>}
+                          </div>
                           <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
                           {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
                         </div>
@@ -590,7 +598,7 @@ export function DrivingView({
               <>
                 <div className="mb-6">
                   <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Edit Home</span>
-                  <h3 className="text-xl font-black text-white mt-1">Stop Details</h3>
+                  <h3 className="text-xl font-black text-white mt-1">Home Details</h3>
                   <p className="text-base text-slate-400 mt-1">This home stays on {activeClient?.name}&apos;s list for future tools.</p>
                 </div>
 
@@ -611,8 +619,7 @@ export function DrivingView({
                       inputMode="numeric"
                       placeholder="$1,250,000"
                       value={editHomeForm.price || ''}
-                      onChange={e => setEditHomeForm({ ...editHomeForm, price: e.target.value })}
-                      onBlur={() => setEditHomeForm(prev => ({ ...prev, price: formatPrice(prev.price || '') || prev.price }))}
+                      onChange={e => setEditHomeForm({ ...editHomeForm, price: formatPrice(e.target.value) })}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500"
                     />
                   </div>

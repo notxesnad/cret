@@ -82,11 +82,13 @@ export default async function TourItineraryPage({
                 <div className="space-y-6">
                   <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
                     <div>
-                      <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Buyer Tour Itinerary</span>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Tour Itinerary</span>
                       <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{tour.title}</h1>
+                      {tour.date && (
+                        <p className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">{formatDateDisplay(tour.date)}</p>
+                      )}
                       <p className="text-base text-slate-500 mt-2">
                         Prepared for {client.name}
-                        {tour.date ? ` • ${formatDateDisplay(tour.date)}` : ''}
                         {` • ${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`}
                       </p>
                     </div>
@@ -106,10 +108,12 @@ export default async function TourItineraryPage({
                         <div className="p-6 md:p-8">
                           <div className="flex justify-between items-start gap-4 mb-3">
                             <div>
-                              <span className="text-sm font-black bg-rose-100 text-rose-600 px-2 py-0.5 rounded">STOP #{item.index + 1}</span>
-                              {item.time && (
-                                <span className="text-sm font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-1">{formatTimeDisplay(item.time)}</span>
-                              )}
+                              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                <span className="text-3xl font-normal text-rose-600">Stop {item.index + 1}</span>
+                                {item.time && (
+                                  <span className="text-3xl font-bold text-slate-900">{formatTimeDisplay(item.time)}</span>
+                                )}
+                              </div>
                               <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
                             </div>
                             {item.home.price && (

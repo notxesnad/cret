@@ -1,5 +1,5 @@
 export function formatPrice(raw: string): string {
-  const digits = raw.replace(/[^\d.]/g, '')
+  const digits = raw.replace(/\D/g, '')
   if (!digits) return ''
   const num = Number(digits)
   if (Number.isNaN(num)) return raw
