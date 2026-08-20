@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
+import { formatDateDisplay, formatTimeDisplay, formatPrice, sortStopsByTime } from '@/app/lib/tourFormat'
 
 export default async function TourItineraryPage({
   params
@@ -27,7 +28,7 @@ export default async function TourItineraryPage({
   const tour = client?.tours?.find((t: any) => t.id === tourId)
   const homes = client?.homes || []
 
-  const stops = (tour?.stops || []).map((stop: any, index: number) => {
+  const stops = sortStopsByTime(tour?.stops || []).map((stop: any, index: number) => {
     const home = homes.find((h: any) => h.id === stop.homeId)
     return home ? { ...stop, home, index } : null
   }).filter(Boolean)
@@ -81,11 +82,11 @@ export default async function TourItineraryPage({
                 <div className="space-y-6">
                   <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
                     <div>
-                      <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Buyer Tour Itinerary</span>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Buyer Tour Itinerary</span>
                       <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{tour.title}</h1>
-                      <p className="text-sm text-slate-500 mt-2">
+                      <p className="text-base text-slate-500 mt-2">
                         Prepared for {client.name}
-                        {tour.date ? ` • ${tour.date}` : ''}
+                        {tour.date ? ` • ${formatDateDisplay(tour.date)}` : ''}
                         {` • ${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`}
                       </p>
                     </div>
@@ -105,19 +106,19 @@ export default async function TourItineraryPage({
                         <div className="p-6 md:p-8">
                           <div className="flex justify-between items-start gap-4 mb-3">
                             <div>
-                              <span className="text-[10px] font-black bg-rose-100 text-rose-600 px-2 py-0.5 rounded">STOP #{item.index + 1}</span>
+                              <span className="text-sm font-black bg-rose-100 text-rose-600 px-2 py-0.5 rounded">STOP #{item.index + 1}</span>
                               {item.time && (
-                                <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-1">{item.time}</span>
+                                <span className="text-sm font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-1">{formatTimeDisplay(item.time)}</span>
                               )}
                               <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
                             </div>
                             {item.home.price && (
-                              <div className="text-lg font-black text-emerald-600 whitespace-nowrap">{item.home.price}</div>
+                              <div className="text-lg font-black text-emerald-600 whitespace-nowrap">{formatPrice(item.home.price) || item.home.price}</div>
                             )}
                           </div>
 
                           {item.home.notes && (
-                            <p className="text-sm text-slate-600 mb-4 whitespace-pre-wrap">{item.home.notes}</p>
+                            <p className="text-base text-slate-600 mb-4 whitespace-pre-wrap">{item.home.notes}</p>
                           )}
 
                           <div className="flex flex-wrap gap-2 no-print">
@@ -125,7 +126,7 @@ export default async function TourItineraryPage({
                               href={`https://maps.google.com/?q=${encodeURIComponent(item.home.address)}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs"
+                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm"
                             >
                               Open in Google Maps
                             </a>
@@ -134,7 +135,7 @@ export default async function TourItineraryPage({
                                 href={item.home.mls_pdf_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-xl font-bold text-xs"
+                                className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-xl font-bold text-sm"
                               >
                                 MLS Details PDF
                               </a>

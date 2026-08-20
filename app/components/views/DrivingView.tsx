@@ -2,6 +2,15 @@
 
 import { useState } from 'react'
 import { supabase } from '@/utils/supabase'
+import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
+import {
+  formatPrice,
+  toTimeInput,
+  formatTimeDisplay,
+  toDateInput,
+  formatDateDisplay,
+  sortStopsByTime,
+} from '@/app/lib/tourFormat'
 
 export interface ClientHome {
   id: string
@@ -76,7 +85,7 @@ export function DrivingView({
   const activeTour = activeClient?.tours.find(t => t.id === activeTourId)
   const activeHome = activeClient?.homes.find(h => h.id === activeHomeId)
 
-  const tourHomes = (activeTour?.stops || []).map(stop => {
+  const tourHomes = sortStopsByTime(activeTour?.stops || []).map(stop => {
     const home = activeClient?.homes.find(h => h.id === stop.homeId)
     return home ? { stop, home } : null
   }).filter(Boolean) as { stop: TourStop; home: ClientHome }[]
@@ -130,13 +139,13 @@ export function DrivingView({
     const home: ClientHome = {
       id: newId(),
       address: newHomeAddress.trim(),
-      price: newHomePrice.trim() || undefined
+      price: formatPrice(newHomePrice) || undefined
     }
     updateActiveClient(c => ({
       ...c,
       homes: [home, ...c.homes],
       tours: c.tours.map(t => t.id === activeTourId
-        ? { ...t, stops: [...t.stops, { homeId: home.id }] }
+        ? { ...t, stops: sortStopsByTime([...t.stops, { homeId: home.id }]) }
         : t)
     }))
     setNewHomeAddress('')
@@ -152,25 +161,8 @@ export function DrivingView({
     updateActiveClient(c => ({
       ...c,
       tours: c.tours.map(t => t.id === activeTourId && !t.stops.some(s => s.homeId === homeId)
-        ? { ...t, stops: [...t.stops, { homeId }] }
+        ? { ...t, stops: sortStopsByTime([...t.stops, { homeId }]) }
         : t)
-    }))
-  }
-
-  const moveStop = (index: number, direction: -1 | 1) => {
-    if (!activeTour) return
-    const next = index + direction
-    if (next < 0 || next >= activeTour.stops.length) return
-    updateActiveClient(c => ({
-      ...c,
-      tours: c.tours.map(t => {
-        if (t.id !== activeTourId) return t
-        const stops = [...t.stops]
-        const tmp = stops[index]
-        stops[index] = stops[next]
-        stops[next] = tmp
-        return { ...t, stops }
-      })
     }))
   }
 
@@ -191,7 +183,7 @@ export function DrivingView({
         ? {
             ...h,
             address: editHomeForm.address!.trim(),
-            price: editHomeForm.price?.trim() || undefined,
+            price: formatPrice(editHomeForm.price || '') || undefined,
             notes: editHomeForm.notes?.trim() || undefined,
             photo_url: editHomeForm.photo_url || h.photo_url,
             mls_pdf_url: editHomeForm.mls_pdf_url || h.mls_pdf_url
@@ -200,9 +192,9 @@ export function DrivingView({
       tours: c.tours.map(t => t.id === activeTourId
         ? {
             ...t,
-            stops: t.stops.map(s => s.homeId === activeHomeId
-              ? { ...s, time: editHomeForm.time?.trim() || undefined }
-              : s)
+            stops: sortStopsByTime(t.stops.map(s => s.homeId === activeHomeId
+              ? { ...s, time: toTimeInput(editHomeForm.time || '') || undefined }
+              : s))
           }
         : t)
     }))
@@ -239,15 +231,37 @@ export function DrivingView({
       showCustomModal('Please upload a JPEG, PNG, or WebP image.')
       return
     }
-    if (!isPhoto && file.type !== 'application/pdf') {
+    const looksLikePdf = file.type === 'application/pdf'
+      || file.type === 'application/x-pdf'
+      || file.name.toLowerCase().endsWith('.pdf')
+    if (!isPhoto && !looksLikePdf) {
       showCustomModal('Please upload a PDF from your MLS export.')
       return
     }
 
     setUploading(kind)
-    const fileExt = file.name.split('.').pop()
+
+    if (!isPhoto) {
+      await ensurePdfUploadsAllowed()
+    }
+
+    const fileExt = isPhoto ? (file.name.split('.').pop() || 'jpg') : 'pdf'
     const fileName = `${userId}/clients/${kind}-${newId()}.${fileExt}`
-    const { error } = await supabase.storage.from('profiles').upload(fileName, file, { upsert: true })
+    const preferredType = isPhoto ? (file.type || 'image/jpeg') : 'application/pdf'
+
+    let { error } = await supabase.storage.from('profiles').upload(fileName, file, {
+      upsert: true,
+      contentType: preferredType,
+    })
+
+    if (error && /mime/i.test(error.message)) {
+      const blob = new Blob([file], { type: 'application/octet-stream' })
+      const retry = await supabase.storage.from('profiles').upload(fileName, blob, {
+        upsert: true,
+        contentType: 'application/octet-stream',
+      })
+      error = retry.error
+    }
 
     if (error) {
       showCustomModal('Upload failed: ' + error.message)
@@ -255,7 +269,7 @@ export function DrivingView({
       return
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(fileName)
+    const publicUrl = supabase.storage.from('profiles').getPublicUrl(fileName).data.publicUrl
     if (kind === 'photo') {
       setEditHomeForm(prev => ({ ...prev, photo_url: publicUrl }))
       updateActiveClient(c => ({
@@ -309,12 +323,12 @@ export function DrivingView({
         {step > 1 ? (
           <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
+            <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
           </button>
         ) : (
           <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Close</span>
+            <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline-block">Close</span>
           </button>
         )}
 
@@ -335,9 +349,9 @@ export function DrivingView({
           {/* STEP 1: Clients */}
           <div className="w-[25%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <div className="text-center mb-8">
-              <span className="text-xs font-bold tracking-widest text-rose-400 uppercase font-driving">Tour Itinerary</span>
+              <span className="text-sm font-bold tracking-widest text-rose-400 uppercase font-driving">Tour Itinerary</span>
               <h3 className="text-2xl font-black text-white mt-1">My Clients</h3>
-              <p className="text-xs text-slate-400 mt-2">Clients and their homes are saved for every tool.</p>
+              <p className="text-base text-slate-400 mt-2">Clients and their homes are saved for every tool.</p>
             </div>
 
             {isAddingClient ? (
@@ -348,25 +362,25 @@ export function DrivingView({
                   placeholder="Client name"
                   value={newClientName}
                   onChange={e => setNewClientName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                 />
                 <input
                   type="email"
                   placeholder="Email (optional)"
                   value={newClientEmail}
                   onChange={e => setNewClientEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                 />
                 <input
                   type="tel"
                   placeholder="Phone (optional)"
                   value={newClientPhone}
                   onChange={e => setNewClientPhone(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                 />
                 <div className="flex gap-2">
-                  <button onClick={confirmAddClient} className="flex-1 bg-rose-500 text-white font-bold py-2 rounded-lg">Save</button>
-                  <button onClick={() => { setIsAddingClient(false); setNewClientName(''); setNewClientEmail(''); setNewClientPhone(''); }} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                  <button onClick={confirmAddClient} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Save</button>
+                  <button onClick={() => { setIsAddingClient(false); setNewClientName(''); setNewClientEmail(''); setNewClientPhone(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
                 </div>
               </div>
             ) : (
@@ -383,7 +397,7 @@ export function DrivingView({
               {clients.length === 0 ? (
                 <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
                   <div className="text-4xl mb-3 opacity-50">🚗</div>
-                  <p className="text-sm text-slate-400 font-medium">No clients yet.<br/>Add one to start building tours.</p>
+                  <p className="text-base text-slate-400 font-medium">No clients yet.<br/>Add one to start building tours.</p>
                 </div>
               ) : (
                 clients.map(client => (
@@ -394,7 +408,7 @@ export function DrivingView({
                   >
                     <div>
                       <h4 className="font-bold text-white text-lg">{client.name}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{client.tours.length} tours • {client.homes.length} homes</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{client.tours.length} tours • {client.homes.length} homes</p>
                     </div>
                     <div className="text-slate-500 group-hover:text-rose-400 transition">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
@@ -410,7 +424,7 @@ export function DrivingView({
             {activeClient && (
               <>
                 <div className="mb-6">
-                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Tours for</span>
+                  <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Tours for</span>
                   <h3 className="text-2xl font-black text-white mt-1">{activeClient.name}</h3>
                 </div>
 
@@ -422,18 +436,17 @@ export function DrivingView({
                       placeholder="Tour title (e.g. Saturday Buyer Tour)"
                       value={newTourTitle}
                       onChange={e => setNewTourTitle(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
                     <input
-                      type="text"
-                      placeholder="Date (optional)"
+                      type="date"
                       value={newTourDate}
                       onChange={e => setNewTourDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500 [color-scheme:dark]"
                     />
                     <div className="flex gap-2">
-                      <button onClick={confirmAddTour} className="flex-1 bg-rose-500 text-white font-bold py-2 rounded-lg">Save</button>
-                      <button onClick={() => { setIsAddingTour(false); setNewTourTitle(''); setNewTourDate(''); }} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                      <button onClick={confirmAddTour} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Save</button>
+                      <button onClick={() => { setIsAddingTour(false); setNewTourTitle(''); setNewTourDate(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -449,7 +462,7 @@ export function DrivingView({
                 <div className="space-y-3">
                   {activeClient.tours.length === 0 ? (
                     <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
-                      <p className="text-sm text-slate-400 font-medium">No tours yet for {activeClient.name}.</p>
+                      <p className="text-base text-slate-400 font-medium">No tours yet for {activeClient.name}.</p>
                     </div>
                   ) : (
                     activeClient.tours.map(tour => (
@@ -460,8 +473,8 @@ export function DrivingView({
                       >
                         <div>
                           <h4 className="font-bold text-white text-lg">{tour.title}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {tour.date ? `${tour.date} • ` : ''}{tour.stops.length} {tour.stops.length === 1 ? 'stop' : 'stops'}
+                          <p className="text-sm text-slate-400 mt-0.5">
+                            {tour.date ? `${formatDateDisplay(tour.date)} • ` : ''}{tour.stops.length} {tour.stops.length === 1 ? 'stop' : 'stops'}
                           </p>
                         </div>
                         <div className="text-slate-500 group-hover:text-rose-400 transition">
@@ -480,9 +493,17 @@ export function DrivingView({
             {activeTour && activeClient && (
               <>
                 <div className="mb-6">
-                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Itinerary</span>
+                  <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Itinerary</span>
                   <h3 className="text-2xl font-black text-white mt-1">{activeTour.title}</h3>
-                  {activeTour.date && <p className="text-sm text-slate-400 mt-1">{activeTour.date}</p>}
+                  <input
+                    type="date"
+                    value={toDateInput(activeTour.date || '')}
+                    onChange={e => updateActiveClient(c => ({
+                      ...c,
+                      tours: c.tours.map(t => t.id === activeTourId ? { ...t, date: e.target.value || undefined } : t)
+                    }))}
+                    className="mt-2 w-full max-w-xs bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 [color-scheme:dark]"
+                  />
                 </div>
 
                 {isAddingHome ? (
@@ -493,18 +514,20 @@ export function DrivingView({
                       placeholder="Home address"
                       value={newHomeAddress}
                       onChange={e => setNewHomeAddress(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
                     <input
                       type="text"
+                      inputMode="numeric"
                       placeholder="Price (optional)"
                       value={newHomePrice}
                       onChange={e => setNewHomePrice(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-rose-500"
+                      onBlur={() => setNewHomePrice(prev => formatPrice(prev) || prev)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
                     <div className="flex gap-2">
-                      <button onClick={confirmAddHome} className="flex-1 bg-rose-500 text-white font-bold py-2 rounded-lg">Add Home</button>
-                      <button onClick={() => { setIsAddingHome(false); setNewHomeAddress(''); setNewHomePrice(''); }} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                      <button onClick={confirmAddHome} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Add Home</button>
+                      <button onClick={() => { setIsAddingHome(false); setNewHomeAddress(''); setNewHomePrice(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -519,13 +542,13 @@ export function DrivingView({
 
                 {unusedHomes.length > 0 && (
                   <div className="mb-6">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">From {activeClient.name}&apos;s homes</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">From {activeClient.name}&apos;s homes</p>
                     <div className="flex flex-wrap gap-2">
                       {unusedHomes.map(home => (
                         <button
                           key={home.id}
                           onClick={() => addExistingHomeToTour(home.id)}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold py-1.5 px-3 rounded-lg transition"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-sm font-bold py-2 px-3 rounded-lg transition"
                         >
                           + {home.address}
                         </button>
@@ -536,25 +559,22 @@ export function DrivingView({
 
                 <div className="space-y-3">
                   {tourHomes.length === 0 ? (
-                    <p className="text-xs text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
+                    <p className="text-base text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
                   ) : (
                     tourHomes.map(({ stop, home }, index) => (
                       <div
                         key={home.id}
-                        className="bg-slate-800 border border-slate-700 rounded-xl p-3 flex gap-3 group hover:border-rose-400 transition-colors"
+                        className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex gap-3 group hover:border-rose-400 transition-colors cursor-pointer"
+                        onClick={() => openHome(home.id)}
                       >
-                        <div className="flex flex-col gap-1 pt-1">
-                          <button onClick={() => moveStop(index, -1)} className="text-slate-500 hover:text-white disabled:opacity-20" disabled={index === 0} title="Move up">▲</button>
-                          <button onClick={() => moveStop(index, 1)} className="text-slate-500 hover:text-white disabled:opacity-20" disabled={index === tourHomes.length - 1} title="Move down">▼</button>
-                        </div>
-                        <div className="flex-1 cursor-pointer" onClick={() => openHome(home.id)}>
-                          <span className="text-[9px] font-black bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded">STOP #{index + 1}</span>
-                          {stop.time && <span className="text-[9px] font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded ml-1">{stop.time}</span>}
-                          <h4 className="font-bold text-white mt-1">{home.address}</h4>
-                          {home.price && <p className="text-sm font-black text-emerald-400">{home.price}</p>}
+                        <div className="flex-1">
+                          <span className="text-sm font-black bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded">STOP #{index + 1}</span>
+                          {stop.time && <span className="text-sm font-black text-slate-300 bg-slate-900 px-2 py-0.5 rounded ml-1">{formatTimeDisplay(stop.time)}</span>}
+                          <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
+                          {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
                         </div>
                         <span className="text-slate-400 group-hover:text-rose-400 p-1 self-start" title="Edit home">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
                         </span>
                       </div>
                     ))
@@ -569,47 +589,48 @@ export function DrivingView({
             {activeHome && (
               <>
                 <div className="mb-6">
-                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Edit Home</span>
+                  <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Edit Home</span>
                   <h3 className="text-xl font-black text-white mt-1">Stop Details</h3>
-                  <p className="text-xs text-slate-400 mt-1">This home stays on {activeClient?.name}&apos;s list for future tools.</p>
+                  <p className="text-base text-slate-400 mt-1">This home stays on {activeClient?.name}&apos;s list for future tools.</p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Address</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Address</label>
                     <input
                       type="text"
                       value={editHomeForm.address || ''}
                       onChange={e => setEditHomeForm({ ...editHomeForm, address: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-rose-500"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Price</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Price</label>
                     <input
                       type="text"
+                      inputMode="numeric"
                       placeholder="$1,250,000"
                       value={editHomeForm.price || ''}
                       onChange={e => setEditHomeForm({ ...editHomeForm, price: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-rose-500"
+                      onBlur={() => setEditHomeForm(prev => ({ ...prev, price: formatPrice(prev.price || '') || prev.price }))}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Showing Time</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Showing Time</label>
                     <input
-                      type="text"
-                      placeholder="10:15 AM"
-                      value={editHomeForm.time || ''}
-                      onChange={e => setEditHomeForm({ ...editHomeForm, time: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-rose-500"
+                      type="time"
+                      value={toTimeInput(editHomeForm.time || '')}
+                      onChange={e => setEditHomeForm({ ...editHomeForm, time: e.target.value.slice(0, 5) })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500 [color-scheme:dark]"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Photo of the Home</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Photo of the Home</label>
                     {editHomeForm.photo_url && (
                       <img src={editHomeForm.photo_url} alt="Home" className="w-full h-36 object-cover rounded-xl mb-2 border border-slate-700" />
                     )}
-                    <label className="block w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-3 rounded-xl text-center cursor-pointer text-sm">
+                    <label className="block w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-3 rounded-xl text-center cursor-pointer text-base">
                       {uploading === 'photo' ? 'Uploading...' : editHomeForm.photo_url ? 'Replace Photo' : 'Upload Photo'}
                       <input
                         type="file"
@@ -621,15 +642,15 @@ export function DrivingView({
                     </label>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">MLS Details PDF</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">MLS Details PDF</label>
                     {editHomeForm.mls_pdf_url && (
-                      <a href={editHomeForm.mls_pdf_url} target="_blank" rel="noreferrer" className="block text-xs text-rose-400 font-bold mb-2 underline">View uploaded MLS PDF</a>
+                      <a href={editHomeForm.mls_pdf_url} target="_blank" rel="noreferrer" className="block text-base text-rose-400 font-bold mb-2 underline">View uploaded MLS PDF</a>
                     )}
-                    <label className="block w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-3 rounded-xl text-center cursor-pointer text-sm">
+                    <label className="block w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-3 rounded-xl text-center cursor-pointer text-base">
                       {uploading === 'mls' ? 'Uploading...' : editHomeForm.mls_pdf_url ? 'Replace MLS PDF' : 'Upload MLS PDF'}
                       <input
                         type="file"
-                        accept="application/pdf"
+                        accept="application/pdf,.pdf"
                         className="hidden"
                         disabled={!!uploading}
                         onChange={e => e.target.files?.[0] && uploadFile(e.target.files[0], 'mls')}
@@ -637,12 +658,12 @@ export function DrivingView({
                     </label>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Notes (Optional)</label>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Notes (Optional)</label>
                     <textarea
                       placeholder="Parking, gate code, things to point out..."
                       value={editHomeForm.notes || ''}
                       onChange={e => setEditHomeForm({ ...editHomeForm, notes: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500 min-h-[90px]"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500 min-h-[90px]"
                     />
                   </div>
                   {editHomeForm.address && (
@@ -650,7 +671,7 @@ export function DrivingView({
                       href={mapsUrl(editHomeForm.address)}
                       target="_blank"
                       rel="noreferrer"
-                      className="block bg-slate-800 text-center py-3 rounded-xl text-xs font-bold hover:bg-slate-700 transition"
+                      className="block bg-slate-800 text-center py-3 rounded-xl text-base font-bold hover:bg-slate-700 transition"
                     >
                       📍 Preview in Google Maps
                     </a>
@@ -667,13 +688,13 @@ export function DrivingView({
           <div className="flex gap-3">
             <button
               onClick={handlePrintPDF}
-              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow text-sm"
+              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow text-base"
             >
               PDF
             </button>
             <button
               onClick={handleShareLink}
-              className="flex-[2] bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-xl transition shadow text-sm"
+              className="flex-[2] bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-xl transition shadow text-base"
             >
               Share Live Link
             </button>
@@ -703,7 +724,7 @@ export function DrivingView({
       {confirmRemove && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
-            <p className="text-sm font-bold text-white">Remove this home from the tour? It will still stay on the client&apos;s home list.</p>
+            <p className="text-base font-bold text-white">Remove this home from the tour? It will still stay on the client&apos;s home list.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmRemove(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Keep it</button>
               <button onClick={handleRemoveFromTour} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition">Remove</button>
