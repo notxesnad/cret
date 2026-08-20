@@ -18,6 +18,7 @@ export async function ensurePdfUploadsAllowed() {
   }
 
   const { error: updateError } = await supabase.storage.updateBucket('profiles', {
+    public: bucket.public,
     allowedMimeTypes: [...existing, 'application/pdf', 'application/octet-stream'],
   })
 
