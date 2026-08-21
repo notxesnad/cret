@@ -52,6 +52,49 @@ interface DrivingViewProps {
 
 const newId = () => Math.random().toString(36).substr(2, 9)
 
+const openDatePicker = (input: HTMLInputElement) => {
+  try {
+    input.showPicker()
+  } catch {
+    // Unsupported browsers still get the native date control
+  }
+}
+
+const datePickerInputClass =
+  'relative w-full rounded-lg px-4 py-3 pr-10 text-base focus:outline-none focus:border-rose-500 [color-scheme:dark] cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0'
+
+function DateField({
+  value,
+  onChange,
+  placeholder,
+  className = 'bg-slate-900 border-slate-700',
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  className?: string
+}) {
+  return (
+    <div className="relative">
+      {!value && placeholder && (
+        <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-base text-slate-500">
+          {placeholder}
+        </span>
+      )}
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onClick={e => openDatePicker(e.currentTarget)}
+        className={`${datePickerInputClass} border ${className} ${value ? 'text-white' : 'text-transparent'}`}
+      />
+      <svg className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+      </svg>
+    </div>
+  )
+}
+
 export function DrivingView({
   clients,
   updateClients,
@@ -438,19 +481,11 @@ export function DrivingView({
                       onChange={e => setNewTourTitle(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
-                    <div className="relative">
-                      {!newTourDate && (
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-base">
-                          Tour date (optional)
-                        </span>
-                      )}
-                      <input
-                        type="date"
-                        value={newTourDate}
-                        onChange={e => setNewTourDate(e.target.value)}
-                        className={`w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-rose-500 [color-scheme:dark] ${newTourDate ? 'text-white' : 'text-transparent'}`}
-                      />
-                    </div>
+                    <DateField
+                      value={newTourDate}
+                      onChange={setNewTourDate}
+                      placeholder="Tour date (optional)"
+                    />
                     <div className="flex gap-2">
                       <button onClick={confirmAddTour} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Save</button>
                       <button onClick={() => { setIsAddingTour(false); setNewTourTitle(''); setNewTourDate(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
@@ -502,15 +537,17 @@ export function DrivingView({
                 <div className="mb-6">
                   <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Itinerary</span>
                   <h3 className="text-2xl font-black text-white mt-1">{activeTour.title}</h3>
-                  <input
-                    type="date"
-                    value={toDateInput(activeTour.date || '')}
-                    onChange={e => updateActiveClient(c => ({
-                      ...c,
-                      tours: c.tours.map(t => t.id === activeTourId ? { ...t, date: e.target.value || undefined } : t)
-                    }))}
-                    className="mt-2 w-full max-w-xs bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-base text-white focus:outline-none focus:border-rose-500 [color-scheme:dark]"
-                  />
+                  <div className="mt-2 max-w-xs">
+                    <DateField
+                      value={toDateInput(activeTour.date || '')}
+                      onChange={date => updateActiveClient(c => ({
+                        ...c,
+                        tours: c.tours.map(t => t.id === activeTourId ? { ...t, date: date || undefined } : t)
+                      }))}
+                      placeholder="Tour date (optional)"
+                      className="bg-slate-800 border-slate-700"
+                    />
+                  </div>
                 </div>
 
                 {isAddingHome ? (
@@ -574,10 +611,8 @@ export function DrivingView({
                         onClick={() => openHome(home.id)}
                       >
                         <div className="flex-1">
-                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <span className="text-3xl font-normal text-rose-400">Stop {index + 1}</span>
-                            {stop.time && <span className="text-3xl font-bold text-white">{formatTimeDisplay(stop.time)}</span>}
-                          </div>
+                          <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
+                          {stop.time && <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>}
                           <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
                           {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
                         </div>

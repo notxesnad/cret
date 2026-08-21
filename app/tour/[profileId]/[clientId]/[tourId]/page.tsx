@@ -108,12 +108,10 @@ export default async function TourItineraryPage({
                         <div className="p-6 md:p-8">
                           <div className="flex justify-between items-start gap-4 mb-3">
                             <div>
-                              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                <span className="text-3xl font-normal text-rose-600">Stop {item.index + 1}</span>
-                                {item.time && (
-                                  <span className="text-3xl font-bold text-slate-900">{formatTimeDisplay(item.time)}</span>
-                                )}
-                              </div>
+                              <span className="text-base font-black bg-rose-100 text-rose-600 px-2.5 py-1 rounded">Stop {item.index + 1}</span>
+                              {item.time && (
+                                <span className="text-base font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(item.time)}</span>
+                              )}
                               <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
                             </div>
                             {item.home.price && (
