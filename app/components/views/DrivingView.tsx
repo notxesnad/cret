@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, type PointerEvent } from 'react'
 import { supabase } from '@/utils/supabase'
 import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
 import {
@@ -9,7 +9,9 @@ import {
   formatTimeDisplay,
   toDateInput,
   formatDateDisplay,
-  sortStopsByTime,
+  arrayMove,
+  stopTimeConflicts,
+  suggestedTimeForIndex,
 } from '@/app/lib/tourFormat'
 
 export interface ClientHome {
@@ -123,12 +125,22 @@ export function DrivingView({
   const [editHomeForm, setEditHomeForm] = useState<Partial<ClientHome> & { time?: string }>({})
   const [uploading, setUploading] = useState<'photo' | 'mls' | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const dragFromRef = useRef<number | null>(null)
+  const dragOverRef = useRef<number | null>(null)
+  const [timeConflict, setTimeConflict] = useState<{
+    stops: TourStop[]
+    movedIndex: number
+    suggestedTime: string
+    currentTime: string
+  } | null>(null)
 
   const activeClient = clients.find(c => c.id === activeClientId)
   const activeTour = activeClient?.tours.find(t => t.id === activeTourId)
   const activeHome = activeClient?.homes.find(h => h.id === activeHomeId)
 
-  const tourHomes = sortStopsByTime(activeTour?.stops || []).map(stop => {
+  const tourHomes = (activeTour?.stops || []).map(stop => {
     const home = activeClient?.homes.find(h => h.id === stop.homeId)
     return home ? { stop, home } : null
   }).filter(Boolean) as { stop: TourStop; home: ClientHome }[]
@@ -188,7 +200,7 @@ export function DrivingView({
       ...c,
       homes: [home, ...c.homes],
       tours: c.tours.map(t => t.id === activeTourId
-        ? { ...t, stops: sortStopsByTime([...t.stops, { homeId: home.id }]) }
+        ? { ...t, stops: [...t.stops, { homeId: home.id }] }
         : t)
     }))
     setNewHomeAddress('')
@@ -204,7 +216,7 @@ export function DrivingView({
     updateActiveClient(c => ({
       ...c,
       tours: c.tours.map(t => t.id === activeTourId && !t.stops.some(s => s.homeId === homeId)
-        ? { ...t, stops: sortStopsByTime([...t.stops, { homeId }]) }
+        ? { ...t, stops: [...t.stops, { homeId }] }
         : t)
     }))
   }
@@ -235,9 +247,9 @@ export function DrivingView({
       tours: c.tours.map(t => t.id === activeTourId
         ? {
             ...t,
-            stops: sortStopsByTime(t.stops.map(s => s.homeId === activeHomeId
+            stops: t.stops.map(s => s.homeId === activeHomeId
               ? { ...s, time: toTimeInput(editHomeForm.time || '') || undefined }
-              : s))
+              : s)
           }
         : t)
     }))
@@ -255,6 +267,75 @@ export function DrivingView({
     setConfirmRemove(false)
     setActiveHomeId(null)
     setStep(3)
+  }
+
+  const applyStops = (stops: TourStop[]) => {
+    updateActiveClient(c => ({
+      ...c,
+      tours: c.tours.map(t => t.id === activeTourId ? { ...t, stops } : t)
+    }))
+  }
+
+  const finishReorder = (from: number, to: number) => {
+    if (!activeTour || from === to) return
+    const next = arrayMove(activeTour.stops, from, to)
+    if (stopTimeConflicts(next, to)) {
+      setTimeConflict({
+        stops: next,
+        movedIndex: to,
+        suggestedTime: suggestedTimeForIndex(next, to),
+        currentTime: next[to].time || '',
+      })
+      return
+    }
+    applyStops(next)
+  }
+
+  const startStopDrag = (e: PointerEvent<HTMLButtonElement>, index: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragFromRef.current = index
+    dragOverRef.current = index
+    setDragIndex(index)
+    setOverIndex(index)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const moveStopDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    if (dragFromRef.current === null) return
+    const node = document.elementFromPoint(e.clientX, e.clientY)
+    const row = node?.closest('[data-stop-index]') as HTMLElement | null
+    if (!row) return
+    const nextIndex = Number(row.dataset.stopIndex)
+    if (Number.isNaN(nextIndex) || nextIndex === dragOverRef.current) return
+    dragOverRef.current = nextIndex
+    setOverIndex(nextIndex)
+  }
+
+  const endStopDrag = () => {
+    const from = dragFromRef.current
+    const to = dragOverRef.current
+    dragFromRef.current = null
+    dragOverRef.current = null
+    setDragIndex(null)
+    setOverIndex(null)
+    if (from == null || to == null) return
+    finishReorder(from, to)
+  }
+
+  const resolveTimeConflict = (choice: 'update' | 'clear' | 'cancel') => {
+    if (!timeConflict) return
+    if (choice === 'cancel') {
+      setTimeConflict(null)
+      return
+    }
+    const stops = timeConflict.stops.map((stop, i) => {
+      if (i !== timeConflict.movedIndex) return stop
+      if (choice === 'clear') return { ...stop, time: undefined }
+      return { ...stop, time: timeConflict.suggestedTime }
+    })
+    applyStops(stops)
+    setTimeConflict(null)
   }
 
   const uploadFile = async (file: File, kind: 'photo' | 'mls') => {
@@ -604,23 +685,54 @@ export function DrivingView({
                   {tourHomes.length === 0 ? (
                     <p className="text-base text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
                   ) : (
-                    tourHomes.map(({ stop, home }, index) => (
-                      <div
-                        key={home.id}
-                        className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex gap-3 group hover:border-rose-400 transition-colors cursor-pointer"
-                        onClick={() => openHome(home.id)}
-                      >
-                        <div className="flex-1">
-                          <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
-                          {stop.time && <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>}
-                          <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
-                          {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
+                    <>
+                      <p className="text-sm text-slate-500">Drag the handle to change the order.</p>
+                      {tourHomes.map(({ stop, home }, index) => (
+                        <div
+                          key={home.id}
+                          data-stop-index={index}
+                          className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group transition-colors ${
+                            dragIndex === index
+                              ? 'border-rose-400 opacity-60'
+                              : overIndex === index
+                                ? 'border-rose-300'
+                                : 'border-slate-700 hover:border-rose-400'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            aria-label="Drag to reorder"
+                            className="touch-none cursor-grab active:cursor-grabbing self-center text-slate-500 hover:text-white p-1"
+                            onPointerDown={e => startStopDrag(e, index)}
+                            onPointerMove={moveStopDrag}
+                            onPointerUp={endStopDrag}
+                            onPointerCancel={endStopDrag}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+                            </svg>
+                          </button>
+                          <div className="flex-1 cursor-pointer" onClick={() => openHome(home.id)}>
+                            <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
+                            {stop.time ? (
+                              <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>
+                            ) : (
+                              <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded ml-1">Add a time</span>
+                            )}
+                            <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
+                            {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
+                          </div>
+                          <span
+                            className="text-slate-400 group-hover:text-rose-400 p-1 self-start cursor-pointer"
+                            title="Edit home"
+                            onClick={() => openHome(home.id)}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
+                          </span>
                         </div>
-                        <span className="text-slate-400 group-hover:text-rose-400 p-1 self-start" title="Edit home">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
-                        </span>
-                      </div>
-                    ))
+                      ))}
+                    </>
                   )}
                 </div>
               </>
@@ -770,6 +882,39 @@ export function DrivingView({
             <div className="flex gap-3">
               <button onClick={() => setConfirmRemove(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Keep it</button>
               <button onClick={handleRemoveFromTour} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition">Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {timeConflict && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <p className="text-base font-bold text-white">
+              {formatTimeDisplay(timeConflict.currentTime)} doesn&apos;t fit this spot in the tour.
+            </p>
+            <p className="text-sm text-slate-400">
+              Update it to {formatTimeDisplay(timeConflict.suggestedTime)}, clear the time, or cancel the move.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => resolveTimeConflict('update')}
+                className="w-full bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition"
+              >
+                Update to {formatTimeDisplay(timeConflict.suggestedTime)}
+              </button>
+              <button
+                onClick={() => resolveTimeConflict('clear')}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition"
+              >
+                Clear the time
+              </button>
+              <button
+                onClick={() => resolveTimeConflict('cancel')}
+                className="w-full text-slate-400 hover:text-white font-bold py-2"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

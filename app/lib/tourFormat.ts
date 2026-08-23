@@ -65,3 +65,64 @@ export function sortStopsByTime<T extends { time?: string }>(stops: T[]): T[] {
     return 0
   })
 }
+
+export function arrayMove<T>(arr: T[], from: number, to: number): T[] {
+  const next = [...arr]
+  const [item] = next.splice(from, 1)
+  next.splice(to, 0, item)
+  return next
+}
+
+function timeToMinutes(t: string): number | null {
+  const hhmm = toTimeInput(t)
+  if (!hhmm) return null
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+function minutesToTime(total: number): string {
+  const clamped = Math.max(0, Math.min(23 * 60 + 59, Math.round(total)))
+  const h = Math.floor(clamped / 60)
+  const m = clamped % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+export function stopTimeConflicts<T extends { time?: string }>(stops: T[], index: number): boolean {
+  const t = timeToMinutes(stops[index]?.time || '')
+  if (t == null) return false
+  for (let i = 0; i < index; i++) {
+    const prev = timeToMinutes(stops[i].time || '')
+    if (prev != null && prev > t) return true
+  }
+  for (let i = index + 1; i < stops.length; i++) {
+    const next = timeToMinutes(stops[i].time || '')
+    if (next != null && next < t) return true
+  }
+  return false
+}
+
+export function suggestedTimeForIndex<T extends { time?: string }>(stops: T[], index: number): string {
+  let prev: number | null = null
+  let next: number | null = null
+  for (let i = index - 1; i >= 0; i--) {
+    const t = timeToMinutes(stops[i].time || '')
+    if (t != null) {
+      prev = t
+      break
+    }
+  }
+  for (let i = index + 1; i < stops.length; i++) {
+    const t = timeToMinutes(stops[i].time || '')
+    if (t != null) {
+      next = t
+      break
+    }
+  }
+  const round5 = (n: number) => Math.round(n / 5) * 5
+  if (prev != null && next != null && next > prev) {
+    return minutesToTime(round5((prev + next) / 2))
+  }
+  if (prev != null) return minutesToTime(prev + 15)
+  if (next != null) return minutesToTime(Math.max(next - 15, 0))
+  return '09:00'
+}

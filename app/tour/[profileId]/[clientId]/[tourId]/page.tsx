@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
-import { formatDateDisplay, formatTimeDisplay, formatPrice, sortStopsByTime } from '@/app/lib/tourFormat'
+import { formatDateDisplay, formatTimeDisplay, formatPrice } from '@/app/lib/tourFormat'
 
 export default async function TourItineraryPage({
   params
@@ -28,7 +28,7 @@ export default async function TourItineraryPage({
   const tour = client?.tours?.find((t: any) => t.id === tourId)
   const homes = client?.homes || []
 
-  const stops = sortStopsByTime(tour?.stops || []).map((stop: any, index: number) => {
+  const stops = (tour?.stops || []).map((stop: any, index: number) => {
     const home = homes.find((h: any) => h.id === stop.homeId)
     return home ? { ...stop, home, index } : null
   }).filter(Boolean)
