@@ -155,6 +155,10 @@ export function DrivingView({
   const dragOverRef = useRef<number | null>(null)
   const dragPointerOffset = useRef({ x: 0, y: 0 })
   const dragGhostRef = useRef<HTMLDivElement | null>(null)
+  const stopListRef = useRef<HTMLDivElement | null>(null)
+  const cardRectRef = useRef<DOMRect | null>(null)
+  const pendingDragRef = useRef<{ index: number; x: number; y: number } | null>(null)
+  const dragActivatedRef = useRef(false)
   const [timeConflict, setTimeConflict] = useState<{
     stops: TourStop[]
     movedIndex: number
@@ -317,45 +321,88 @@ export function DrivingView({
     applyStops(next)
   }
 
-  const startStopDrag = (e: PointerEvent<HTMLButtonElement>, index: number) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const card = e.currentTarget.closest('[data-stop-index]') as HTMLElement | null
-    const rect = card?.getBoundingClientRect()
-    if (rect) {
-      dragPointerOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-      setDragGhost({ x: rect.left, y: rect.top, width: rect.width, height: rect.height })
-    }
-    dragFromRef.current = index
-    dragOverRef.current = index
-    setDragIndex(index)
-    setOverIndex(index)
-    e.currentTarget.setPointerCapture(e.pointerId)
+  const stopShift = (index: number) => {
+    if (dragIndex === null || overIndex === null || dragIndex === overIndex) return 0
+    const delta = (dragGhost?.height ?? 88) + 12
+    if (dragIndex < overIndex && index > dragIndex && index <= overIndex) return -delta
+    if (dragIndex > overIndex && index >= overIndex && index < dragIndex) return delta
+    return 0
   }
 
-  const moveStopDrag = (e: PointerEvent<HTMLButtonElement>) => {
-    if (dragFromRef.current === null) return
-    if (dragGhostRef.current) {
-      dragGhostRef.current.style.left = `${e.clientX - dragPointerOffset.current.x}px`
-      dragGhostRef.current.style.top = `${e.clientY - dragPointerOffset.current.y}px`
+  const updateOverFromPointer = (clientY: number) => {
+    const list = stopListRef.current
+    if (!list || dragFromRef.current === null) return
+    const rows = [...list.querySelectorAll<HTMLElement>('[data-stop-index]')]
+    const y = clientY - list.getBoundingClientRect().top
+    let next = rows.length - 1
+    for (const row of rows) {
+      const mid = row.offsetTop + row.offsetHeight / 2
+      if (y < mid) {
+        next = Number(row.dataset.stopIndex)
+        break
+      }
     }
-    const node = document.elementFromPoint(e.clientX, e.clientY)
-    const row = node?.closest('[data-stop-index]') as HTMLElement | null
-    if (!row) return
-    const nextIndex = Number(row.dataset.stopIndex)
-    if (Number.isNaN(nextIndex) || nextIndex === dragOverRef.current) return
-    dragOverRef.current = nextIndex
-    setOverIndex(nextIndex)
+    if (Number.isNaN(next) || next === dragOverRef.current) return
+    dragOverRef.current = next
+    setOverIndex(next)
+  }
+
+  const startStopDrag = (e: PointerEvent<HTMLDivElement>, index: number) => {
+    if (e.button !== 0) return
+    const card = e.currentTarget
+    const rect = card.getBoundingClientRect()
+    cardRectRef.current = rect
+    dragPointerOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    pendingDragRef.current = { index, x: e.clientX, y: e.clientY }
+    dragActivatedRef.current = false
+    card.setPointerCapture(e.pointerId)
+  }
+
+  const moveStopDrag = (e: PointerEvent<HTMLDivElement>) => {
+    if (!pendingDragRef.current && dragFromRef.current === null) return
+    if (!dragActivatedRef.current && pendingDragRef.current) {
+      const dist = Math.hypot(e.clientX - pendingDragRef.current.x, e.clientY - pendingDragRef.current.y)
+      if (dist < 8) return
+      const index = pendingDragRef.current.index
+      const rect = cardRectRef.current
+      dragActivatedRef.current = true
+      dragFromRef.current = index
+      dragOverRef.current = index
+      if (rect) {
+        setDragGhost({ x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+      }
+      setDragIndex(index)
+      setOverIndex(index)
+    }
+    if (!dragActivatedRef.current) return
+    e.preventDefault()
+    const ghostX = e.clientX - dragPointerOffset.current.x
+    const ghostY = e.clientY - dragPointerOffset.current.y
+    if (dragGhostRef.current) {
+      dragGhostRef.current.style.left = `${ghostX}px`
+      dragGhostRef.current.style.top = `${ghostY}px`
+    }
+    const ghostHeight = dragGhostRef.current?.offsetHeight || cardRectRef.current?.height || 88
+    updateOverFromPointer(ghostY + ghostHeight / 2)
   }
 
   const endStopDrag = () => {
+    const wasDrag = dragActivatedRef.current
     const from = dragFromRef.current
     const to = dragOverRef.current
+    const pendingIndex = pendingDragRef.current?.index
+    pendingDragRef.current = null
+    dragActivatedRef.current = false
     dragFromRef.current = null
     dragOverRef.current = null
     setDragIndex(null)
     setOverIndex(null)
     setDragGhost(null)
+    if (!wasDrag && pendingIndex != null) {
+      const home = tourHomes[pendingIndex]?.home
+      if (home) openHome(home.id)
+      return
+    }
     if (from == null || to == null) return
     finishReorder(from, to)
   }
@@ -718,50 +765,46 @@ export function DrivingView({
                   </div>
                 )}
 
-                <div className="space-y-3">
+                <div ref={stopListRef} className="relative space-y-3">
                   {tourHomes.length === 0 ? (
                     <p className="text-base text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
                   ) : (
                     <>
-                      <p className="text-sm text-slate-500">Drag the handle to change the order.</p>
-                      {tourHomes.map(({ stop, home }, index) => (
+                      <p className="text-sm text-slate-500">Drag a home to change the order. Tap to edit.</p>
+                      {tourHomes.map(({ stop, home }, index) => {
+                        const shift = stopShift(index)
+                        return (
                         <div
                           key={home.id}
                           data-stop-index={index}
-                          className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group transition-colors ${
+                          onPointerDown={e => startStopDrag(e, index)}
+                          onPointerMove={moveStopDrag}
+                          onPointerUp={endStopDrag}
+                          onPointerCancel={endStopDrag}
+                          className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group touch-none cursor-grab active:cursor-grabbing select-none ${
                             dragIndex === index
                               ? 'border-dashed border-rose-400/50 bg-slate-900/40'
-                              : overIndex === index
-                                ? 'border-rose-300'
-                                : 'border-slate-700 hover:border-rose-400'
-                          }`}
+                              : 'border-slate-700 hover:border-rose-400'
+                          } ${dragIndex === null ? '' : 'transition-transform duration-200 ease-out'}`}
+                          style={{ transform: shift ? `translateY(${shift}px)` : undefined }}
                         >
-                          <button
-                            type="button"
-                            aria-label="Drag to reorder"
-                            className="touch-none cursor-grab active:cursor-grabbing self-center text-slate-500 hover:text-white p-1"
-                            onPointerDown={e => startStopDrag(e, index)}
-                            onPointerMove={moveStopDrag}
-                            onPointerUp={endStopDrag}
-                            onPointerCancel={endStopDrag}
-                            onClick={e => e.stopPropagation()}
-                          >
+                          <div className={`self-center text-slate-500 p-1 ${dragIndex === index ? 'invisible' : ''}`} aria-hidden="true">
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
                             </svg>
-                          </button>
-                          <div className={`flex-1 cursor-pointer ${dragIndex === index ? 'invisible' : ''}`} onClick={() => openHome(home.id)}>
+                          </div>
+                          <div className={`flex-1 ${dragIndex === index ? 'invisible' : ''}`}>
                             <StopPreview stop={stop} home={home} index={index} />
                           </div>
                           <span
-                            className={`text-slate-400 group-hover:text-rose-400 p-1 self-start cursor-pointer ${dragIndex === index ? 'invisible' : ''}`}
+                            className={`text-slate-400 p-1 self-start ${dragIndex === index ? 'invisible' : ''}`}
                             title="Edit home"
-                            onClick={() => openHome(home.id)}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
                           </span>
                         </div>
-                      ))}
+                        )
+                      })}
                     </>
                   )}
                 </div>
