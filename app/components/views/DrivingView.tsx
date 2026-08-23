@@ -65,6 +65,29 @@ const openDatePicker = (input: HTMLInputElement) => {
 const datePickerInputClass =
   'relative w-full rounded-lg px-4 py-3 pr-10 text-base focus:outline-none focus:border-rose-500 [color-scheme:dark] cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0'
 
+function StopPreview({
+  stop,
+  home,
+  index,
+}: {
+  stop: TourStop
+  home: ClientHome
+  index: number
+}) {
+  return (
+    <>
+      <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
+      {stop.time ? (
+        <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>
+      ) : (
+        <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded ml-1">Add a time</span>
+      )}
+      <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
+      {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
+    </>
+  )
+}
+
 function DateField({
   value,
   onChange,
@@ -127,8 +150,11 @@ export function DrivingView({
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
+  const [dragGhost, setDragGhost] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
   const dragFromRef = useRef<number | null>(null)
   const dragOverRef = useRef<number | null>(null)
+  const dragPointerOffset = useRef({ x: 0, y: 0 })
+  const dragGhostRef = useRef<HTMLDivElement | null>(null)
   const [timeConflict, setTimeConflict] = useState<{
     stops: TourStop[]
     movedIndex: number
@@ -294,6 +320,12 @@ export function DrivingView({
   const startStopDrag = (e: PointerEvent<HTMLButtonElement>, index: number) => {
     e.preventDefault()
     e.stopPropagation()
+    const card = e.currentTarget.closest('[data-stop-index]') as HTMLElement | null
+    const rect = card?.getBoundingClientRect()
+    if (rect) {
+      dragPointerOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      setDragGhost({ x: rect.left, y: rect.top, width: rect.width, height: rect.height })
+    }
     dragFromRef.current = index
     dragOverRef.current = index
     setDragIndex(index)
@@ -303,6 +335,10 @@ export function DrivingView({
 
   const moveStopDrag = (e: PointerEvent<HTMLButtonElement>) => {
     if (dragFromRef.current === null) return
+    if (dragGhostRef.current) {
+      dragGhostRef.current.style.left = `${e.clientX - dragPointerOffset.current.x}px`
+      dragGhostRef.current.style.top = `${e.clientY - dragPointerOffset.current.y}px`
+    }
     const node = document.elementFromPoint(e.clientX, e.clientY)
     const row = node?.closest('[data-stop-index]') as HTMLElement | null
     if (!row) return
@@ -319,6 +355,7 @@ export function DrivingView({
     dragOverRef.current = null
     setDragIndex(null)
     setOverIndex(null)
+    setDragGhost(null)
     if (from == null || to == null) return
     finishReorder(from, to)
   }
@@ -693,7 +730,7 @@ export function DrivingView({
                           data-stop-index={index}
                           className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group transition-colors ${
                             dragIndex === index
-                              ? 'border-rose-400 opacity-60'
+                              ? 'border-dashed border-rose-400/50 bg-slate-900/40'
                               : overIndex === index
                                 ? 'border-rose-300'
                                 : 'border-slate-700 hover:border-rose-400'
@@ -713,18 +750,11 @@ export function DrivingView({
                               <path d="M8 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
                             </svg>
                           </button>
-                          <div className="flex-1 cursor-pointer" onClick={() => openHome(home.id)}>
-                            <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
-                            {stop.time ? (
-                              <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>
-                            ) : (
-                              <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded ml-1">Add a time</span>
-                            )}
-                            <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
-                            {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
+                          <div className={`flex-1 cursor-pointer ${dragIndex === index ? 'invisible' : ''}`} onClick={() => openHome(home.id)}>
+                            <StopPreview stop={stop} home={home} index={index} />
                           </div>
                           <span
-                            className="text-slate-400 group-hover:text-rose-400 p-1 self-start cursor-pointer"
+                            className={`text-slate-400 group-hover:text-rose-400 p-1 self-start cursor-pointer ${dragIndex === index ? 'invisible' : ''}`}
                             title="Edit home"
                             onClick={() => openHome(home.id)}
                           >
@@ -883,6 +913,27 @@ export function DrivingView({
               <button onClick={() => setConfirmRemove(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Keep it</button>
               <button onClick={handleRemoveFromTour} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition">Remove</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {dragGhost && dragIndex !== null && tourHomes[dragIndex] && (
+        <div
+          ref={dragGhostRef}
+          className="fixed z-[90] pointer-events-none bg-slate-800 border-2 border-rose-400 rounded-xl p-4 flex gap-3 shadow-2xl rotate-1"
+          style={{ width: dragGhost.width, height: dragGhost.height, left: dragGhost.x, top: dragGhost.y }}
+        >
+          <div className="self-center text-rose-400 p-1">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <StopPreview
+              stop={tourHomes[dragIndex].stop}
+              home={tourHomes[dragIndex].home}
+              index={dragIndex}
+            />
           </div>
         </div>
       )}
