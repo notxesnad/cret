@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, type PointerEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '@/utils/supabase'
 import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
 import {
@@ -159,6 +160,27 @@ export function DrivingView({
   const cardRectRef = useRef<DOMRect | null>(null)
   const pendingDragRef = useRef<{ index: number; x: number; y: number } | null>(null)
   const dragActivatedRef = useRef(false)
+  const snappingRef = useRef(false)
+  const moveDragRef = useRef<(e: globalThis.PointerEvent) => void>(() => {})
+  const endDragRef = useRef<() => void>(() => {})
+  const onWinMove = useRef((e: globalThis.PointerEvent) => {
+    moveDragRef.current(e)
+  }).current
+  const onWinUp = useRef(() => {
+    endDragRef.current()
+  }).current
+
+  const bindDragListeners = () => {
+    window.addEventListener('pointermove', onWinMove)
+    window.addEventListener('pointerup', onWinUp)
+    window.addEventListener('pointercancel', onWinUp)
+  }
+
+  const unbindDragListeners = () => {
+    window.removeEventListener('pointermove', onWinMove)
+    window.removeEventListener('pointerup', onWinUp)
+    window.removeEventListener('pointercancel', onWinUp)
+  }
   const [timeConflict, setTimeConflict] = useState<{
     stops: TourStop[]
     movedIndex: number
@@ -347,18 +369,50 @@ export function DrivingView({
     setOverIndex(next)
   }
 
+  const clearDragVisual = () => {
+    setDragIndex(null)
+    setOverIndex(null)
+    setDragGhost(null)
+  }
+
+  const snapGhostThen = (index: number, after: () => void) => {
+    const list = stopListRef.current
+    const row = list?.querySelector<HTMLElement>(`[data-stop-index="${index}"]`)
+    const ghost = dragGhostRef.current
+    if (!ghost || !row || !list) {
+      after()
+      return
+    }
+    const x = row.getBoundingClientRect().left
+    const y = list.getBoundingClientRect().top + row.offsetTop
+    ghost.style.transition = 'left 200ms ease-out, top 200ms ease-out, transform 200ms ease-out'
+    ghost.style.transform = 'rotate(0deg)'
+    ghost.style.left = `${x}px`
+    ghost.style.top = `${y}px`
+    let finished = false
+    const finish = () => {
+      if (finished) return
+      finished = true
+      ghost.removeEventListener('transitionend', finish)
+      after()
+    }
+    ghost.addEventListener('transitionend', finish)
+    window.setTimeout(finish, 260)
+  }
+
   const startStopDrag = (e: PointerEvent<HTMLDivElement>, index: number) => {
-    if (e.button !== 0) return
+    if (e.button !== 0 || snappingRef.current) return
     const card = e.currentTarget
     const rect = card.getBoundingClientRect()
     cardRectRef.current = rect
     dragPointerOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
     pendingDragRef.current = { index, x: e.clientX, y: e.clientY }
     dragActivatedRef.current = false
-    card.setPointerCapture(e.pointerId)
+    bindDragListeners()
   }
 
-  const moveStopDrag = (e: PointerEvent<HTMLDivElement>) => {
+  const moveStopDrag = (e: globalThis.PointerEvent) => {
+    if (snappingRef.current) return
     if (!pendingDragRef.current && dragFromRef.current === null) return
     if (!dragActivatedRef.current && pendingDragRef.current) {
       const dist = Math.hypot(e.clientX - pendingDragRef.current.x, e.clientY - pendingDragRef.current.y)
@@ -379,6 +433,7 @@ export function DrivingView({
     const ghostX = e.clientX - dragPointerOffset.current.x
     const ghostY = e.clientY - dragPointerOffset.current.y
     if (dragGhostRef.current) {
+      dragGhostRef.current.style.transition = 'none'
       dragGhostRef.current.style.left = `${ghostX}px`
       dragGhostRef.current.style.top = `${ghostY}px`
     }
@@ -387,25 +442,37 @@ export function DrivingView({
   }
 
   const endStopDrag = () => {
+    unbindDragListeners()
+    if (snappingRef.current) return
     const wasDrag = dragActivatedRef.current
     const from = dragFromRef.current
     const to = dragOverRef.current
     const pendingIndex = pendingDragRef.current?.index
     pendingDragRef.current = null
     dragActivatedRef.current = false
-    dragFromRef.current = null
-    dragOverRef.current = null
-    setDragIndex(null)
-    setOverIndex(null)
-    setDragGhost(null)
-    if (!wasDrag && pendingIndex != null) {
-      const home = tourHomes[pendingIndex]?.home
-      if (home) openHome(home.id)
+    if (!wasDrag) {
+      dragFromRef.current = null
+      dragOverRef.current = null
+      clearDragVisual()
+      if (pendingIndex != null) {
+        const home = tourHomes[pendingIndex]?.home
+        if (home) openHome(home.id)
+      }
       return
     }
-    if (from == null || to == null) return
-    finishReorder(from, to)
+    const dest = to ?? from ?? 0
+    snappingRef.current = true
+    snapGhostThen(dest, () => {
+      snappingRef.current = false
+      dragFromRef.current = null
+      dragOverRef.current = null
+      clearDragVisual()
+      if (from != null && to != null) finishReorder(from, to)
+    })
   }
+
+  moveDragRef.current = moveStopDrag
+  endDragRef.current = endStopDrag
 
   const resolveTimeConflict = (choice: 'update' | 'clear' | 'cancel') => {
     if (!timeConflict) return
@@ -778,9 +845,6 @@ export function DrivingView({
                           key={home.id}
                           data-stop-index={index}
                           onPointerDown={e => startStopDrag(e, index)}
-                          onPointerMove={moveStopDrag}
-                          onPointerUp={endStopDrag}
-                          onPointerCancel={endStopDrag}
                           className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group touch-none cursor-grab active:cursor-grabbing select-none ${
                             dragIndex === index
                               ? 'border-dashed border-rose-400/50 bg-slate-900/40'
@@ -960,11 +1024,17 @@ export function DrivingView({
         </div>
       )}
 
-      {dragGhost && dragIndex !== null && tourHomes[dragIndex] && (
+      {dragGhost && dragIndex !== null && tourHomes[dragIndex] && createPortal(
         <div
-          ref={dragGhostRef}
+          ref={el => {
+            dragGhostRef.current = el
+            if (el && !el.style.left) {
+              el.style.left = `${dragGhost.x}px`
+              el.style.top = `${dragGhost.y}px`
+            }
+          }}
           className="fixed z-[90] pointer-events-none bg-slate-800 border-2 border-rose-400 rounded-xl p-4 flex gap-3 shadow-2xl rotate-1"
-          style={{ width: dragGhost.width, height: dragGhost.height, left: dragGhost.x, top: dragGhost.y }}
+          style={{ width: dragGhost.width, height: dragGhost.height }}
         >
           <div className="self-center text-rose-400 p-1">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -978,7 +1048,8 @@ export function DrivingView({
               index={dragIndex}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {timeConflict && (
