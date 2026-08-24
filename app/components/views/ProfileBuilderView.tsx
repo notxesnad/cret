@@ -1,4 +1,7 @@
-import { Dispatch, SetStateAction } from 'react'
+'use client'
+
+import { Dispatch, SetStateAction, useState } from 'react'
+import { HeadshotCropper } from '@/app/components/HeadshotCropper'
 
 interface ProfileBuilderViewProps {
   profileStep: number;
@@ -6,7 +9,7 @@ interface ProfileBuilderViewProps {
   profile: any;
   setProfile: Dispatch<SetStateAction<any>>;
   uploading: boolean;
-  handleImageUpload: (e: any, fieldName: string) => void;
+  handleImageUpload: (source: File | React.ChangeEvent<HTMLInputElement>, fieldName: string, extra?: { headshot_shape?: 'square' | 'circle' }) => void;
   savePdfLookSelection: (lookKey: string) => void;
   renderAgentHeader: (themeOverride: string | null) => React.ReactNode;
   handleNextStep: () => void;
@@ -25,10 +28,40 @@ export function ProfileBuilderView({
   handleNextStep,
   switchView
 }: ProfileBuilderViewProps) {
+  const [cropFile, setCropFile] = useState<File | null>(null)
+
+  const toggleHeadshot = () => {
+    const next = !profile.show_headshot
+    setProfile({ ...profile, show_headshot: next })
+    if (next && !profile.headshot_url) setProfileStep(3)
+  }
+
+  const toggleLogo = () => {
+    const next = !profile.show_logo
+    setProfile({ ...profile, show_logo: next })
+    if (next && !profile.logo_url) setProfileStep(3)
+  }
+
+  const onHeadshotFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (file) setCropFile(file)
+  }
+
   return (
     <div id="view-profile" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50">
-      
-      {/* Duolingo style progress header */}
+      {cropFile && (
+        <HeadshotCropper
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onConfirm={(blob, shape) => {
+            const cropped = new File([blob], 'headshot.jpg', { type: 'image/jpeg' })
+            setCropFile(null)
+            handleImageUpload(cropped, 'headshot_url', { headshot_shape: shape })
+          }}
+        />
+      )}
+
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {profileStep > 1 ? (
           <button onClick={() => setProfileStep(profileStep - 1)} className="text-slate-400 hover:text-white transition">
@@ -48,11 +81,9 @@ export function ProfileBuilderView({
         </div>
       </div>
 
-      {/* Scrollable content area */}
       <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
-            {/* --- STEP 1: Details --- */}
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design Your PDF HEADER</h3>
             <div className="space-y-4">
@@ -99,25 +130,101 @@ export function ProfileBuilderView({
             </div>
           </div>
 
-            {/* --- STEP 2: Branding & Selection --- */}
+            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Header</h3>
+
+            <div className="space-y-6">
+              <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-4">
+                <button type="button" onClick={toggleHeadshot} className="w-full flex items-center justify-between text-left">
+                  <div>
+                    <span className="block text-sm font-bold text-white">Show Profile Pic</span>
+                    <span className="block text-xs text-slate-400 mt-0.5">Off until you turn it on</span>
+                  </div>
+                  <div className="relative flex-shrink-0 ml-4">
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </button>
+                
+                <div className="h-px bg-slate-700 w-full"></div>
+                
+                <button type="button" onClick={toggleLogo} className="w-full flex items-center justify-between text-left">
+                  <div>
+                    <span className="block text-sm font-bold text-white">Show Brokerage Logo</span>
+                    <span className="block text-xs text-slate-400 mt-0.5">Off until you turn it on</span>
+                  </div>
+                  <div className="relative flex-shrink-0 ml-4">
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </button>
+              </div>
+
+              <div>
+                <div className="grid grid-cols-1 gap-4">
+                  
+                  {[
+                    { id: 'look1', title: '1. Minimalist Core (Logo Hero)' },
+                    { id: 'look5', title: '2. The Agency (Massive Center Logo)' },
+                    { id: 'look3', title: '3. Coastal Elegance' },
+                    { id: 'look9', title: '4. Warm Florida Sunset' },
+                    { id: 'look2', title: '5. Obsidian Luxury Split' },
+                    { id: 'look4', title: '6. Editorial Serif Arch' },
+                    { id: 'look6', title: '7. Classic Executive Framed' },
+                    { id: 'look7', title: '8. Vibrant Gradient Edge' },
+                    { id: 'look8', title: '9. Stark Monochrome' },
+                    { id: 'look10', title: '10. Glassmorphism Modern' },
+                    { id: 'look11', title: '11. Indigo Edge (No Curve)' },
+                    { id: 'look12', title: '12. Rose Pop Minimal' },
+                    { id: 'look13', title: '13. Deep Emerald Card' },
+                    { id: 'look14', title: '14. Architect Studio (Square Cut)' },
+                    { id: 'look15', title: '15. Neon Tech Hub (Soft Square)' },
+                    { id: 'look16', title: '16. Gold Standard Arch' },
+                    { id: 'look17', title: '17. Cyan Studio Split' },
+                    { id: 'look18', title: '18. Pastel Sunset Standard' },
+                    { id: 'look19', title: '19. Brutalist Grid' },
+                    { id: 'look20', title: '20. Dark Mode Spotlight' }
+                  ].map((look) => (
+                    <div 
+                      key={look.id}
+                      onClick={() => savePdfLookSelection(look.id)}
+                      className={`p-1 rounded-xl border cursor-pointer transition ${profile.pdf_look === look.id ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
+                    >
+                      <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
+                        {look.title}
+                      </div>
+                      <div className="pointer-events-none transform scale-[0.95] origin-top">
+                        {renderAgentHeader(look.id)}
+                      </div>
+                    </div>
+                  ))}
+
+                </div>
+              </div>
+            </div>
+          </div>
+
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
             <div className="space-y-6">
-              {/* File Uploads */}
               <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-6">
                 <div>
                   <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Agent Headshot</label>
                   <div className="flex flex-col gap-4">
                     {profile.headshot_url && (
-                      <img src={profile.headshot_url} alt="Headshot" className="w-20 h-20 rounded-full object-cover border-2 border-slate-600 self-center" />
+                      <img
+                        src={profile.headshot_url}
+                        alt="Headshot"
+                        className={`w-20 h-20 object-cover border-2 border-slate-600 self-center ${profile.headshot_shape === 'square' ? 'rounded-none' : 'rounded-full'}`}
+                      />
                     )}
                     <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
                       <span>{profile.headshot_url ? 'Change File' : 'Choose File'}</span>
                       <input 
                         type="file" 
                         accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => handleImageUpload(e, 'headshot_url')}
+                        onChange={onHeadshotFile}
                         className="hidden"
                       />
                     </label>
@@ -166,93 +273,15 @@ export function ProfileBuilderView({
             </div>
           </div>
 
-            {/* --- STEP 3: Layout Selection --- */}
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Pick Your Header</h3>
-
-            <div className="space-y-6">
-              {/* Toggles */}
-              <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-4">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div>
-                    <span className="block text-sm font-bold text-white">Show Headshot in PDFs</span>
-                  </div>
-                  <div className="relative flex-shrink-0 ml-4">
-                    <input type="checkbox" className="sr-only" checked={profile.show_headshot} onChange={() => setProfile({...profile, show_headshot: !profile.show_headshot})} />
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
-                  </div>
-                </label>
-                
-                <div className="h-px bg-slate-700 w-full"></div>
-                
-                <label className="flex items-center justify-between cursor-pointer">
-                  <div>
-                    <span className="block text-sm font-bold text-white">Show Brokerage Logo</span>
-                  </div>
-                  <div className="relative flex-shrink-0 ml-4">
-                    <input type="checkbox" className="sr-only" checked={profile.show_logo !== false} onChange={() => setProfile({...profile, show_logo: profile.show_logo === false ? true : false})} />
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo !== false ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo !== false ? 'translate-x-6' : ''}`}></div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Choose PDF Layout */}
-              <div>
-                <div className="grid grid-cols-1 gap-4">
-                  
-                  {[
-                    { id: 'look1', title: '1. Minimalist Core (Logo Hero)' },
-                    { id: 'look5', title: '2. The Agency (Massive Center Logo)' },
-                    { id: 'look3', title: '3. Coastal Elegance' },
-                    { id: 'look9', title: '4. Warm Florida Sunset' },
-                    { id: 'look2', title: '5. Obsidian Luxury Split' },
-                    { id: 'look4', title: '6. Editorial Serif Arch' },
-                    { id: 'look6', title: '7. Classic Executive Framed' },
-                    { id: 'look7', title: '8. Vibrant Gradient Edge' },
-                    { id: 'look8', title: '9. Stark Monochrome' },
-                    { id: 'look10', title: '10. Glassmorphism Modern' },
-                    { id: 'look11', title: '11. Indigo Edge (No Curve)' },
-                    { id: 'look12', title: '12. Rose Pop Minimal' },
-                    { id: 'look13', title: '13. Deep Emerald Card' },
-                    { id: 'look14', title: '14. Architect Studio (Square Cut)' },
-                    { id: 'look15', title: '15. Neon Tech Hub (Soft Square)' },
-                    { id: 'look16', title: '16. Gold Standard Arch' },
-                    { id: 'look17', title: '17. Cyan Studio Split' },
-                    { id: 'look18', title: '18. Pastel Sunset Standard' },
-                    { id: 'look19', title: '19. Brutalist Grid' },
-                    { id: 'look20', title: '20. Dark Mode Spotlight' }
-                  ].map((look) => (
-                    <div 
-                      key={look.id}
-                      onClick={() => savePdfLookSelection(look.id)}
-                      className={`p-1 rounded-xl border cursor-pointer transition ${profile.pdf_look === look.id ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
-                    >
-                      <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
-                        {look.title}
-                      </div>
-                      <div className="pointer-events-none transform scale-[0.95] origin-top">
-                        {renderAgentHeader(look.id)}
-                      </div>
-                    </div>
-                  ))}
-
-                </div>
-              </div>
-            </div>
-          </div>
-
           </div>
       </div>
 
-      {/* Static Action Footer */}
       <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
         <button 
           onClick={handleNextStep} 
           className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
         >
-          {profileStep === 1 ? 'Continue to Brand Assets \u2192' : profileStep === 2 ? 'Continue to Layout \u2192' : (
+          {profileStep === 1 ? 'Continue to Header \u2192' : profileStep === 2 ? 'Continue to Uploads \u2192' : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
               Save All Preferences

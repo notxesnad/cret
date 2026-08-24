@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, Suspense, useCallback } from 'react'
+import { useState, useEffect, Suspense, useCallback, type ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
@@ -40,8 +40,9 @@ function HomeContent() {
     logo_url: '',
     custom_header_url: '',
     pdf_look: 'look1',
-    show_headshot: true,
-    show_logo: true
+    show_headshot: false,
+    show_logo: false,
+    headshot_shape: 'circle'
   })
   const [uploading, setUploading] = useState<boolean>(false)
 
@@ -199,8 +200,11 @@ function HomeContent() {
             brokerage: data.brokerage || '',
             headshot_url: data.headshot_url || '',
             logo_url: data.logo_url || '',
+            custom_header_url: data.custom_header_url || '',
             pdf_look: data.pdf_look || 'look1',
-            show_headshot: data.show_headshot !== false
+            show_headshot: data.show_headshot === true,
+            show_logo: data.show_logo === true,
+            headshot_shape: data.headshot_shape === 'square' ? 'square' : 'circle'
           })
           
           let dbListings = data.listings || []
@@ -429,7 +433,7 @@ function HomeContent() {
         return
       }
 
-      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Step 2.')
+      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Choose Your Header.')
       return
     }
 
@@ -442,7 +446,8 @@ function HomeContent() {
       brokerage: profile.brokerage,
       pdf_look: profile.pdf_look,
       show_headshot: profile.show_headshot,
-        show_logo: profile.show_logo,
+      show_logo: profile.show_logo,
+      headshot_shape: profile.headshot_shape,
       updated_at: new Date(),
     }
 
@@ -471,6 +476,7 @@ function HomeContent() {
         pdf_look: profile.pdf_look,
         show_headshot: profile.show_headshot,
         show_logo: profile.show_logo,
+        headshot_shape: profile.headshot_shape,
         headshot_url: profile.headshot_url,
         logo_url: profile.logo_url,
         custom_header_url: profile.custom_header_url,
@@ -479,8 +485,12 @@ function HomeContent() {
 
       const { error } = await supabase.from('profiles').upsert(finalPayload)
       if (error) {
-        showCustomModal('Error saving profile: ' + error.message)
-        return
+        const { headshot_shape: _shape, ...withoutShape } = finalPayload
+        const retry = await supabase.from('profiles').upsert(withoutShape)
+        if (retry.error) {
+          showCustomModal('Error saving profile: ' + retry.error.message)
+          return
+        }
       }
     }
 
@@ -490,8 +500,13 @@ function HomeContent() {
     switchView('home')
   }
 
-  const handleImageUpload = async (e: any, fieldName: string) => {
-    const file = e.target.files[0]
+  const handleImageUpload = async (
+    source: File | ChangeEvent<HTMLInputElement>,
+    fieldName: string,
+    extra?: { headshot_shape?: 'square' | 'circle' }
+  ) => {
+    const file = source instanceof File ? source : source.target.files?.[0]
+    if (source && !(source instanceof File) && source.target) source.target.value = ''
     if (!file || !user) return
 
     const maxSize = 5 * 1024 * 1024
@@ -524,18 +539,31 @@ function HomeContent() {
       .from('profiles')
       .getPublicUrl(fileName)
 
-    const updatedProfile = { ...profile, [fieldName]: publicUrl }
-    setProfile(updatedProfile)
+    const extras = extra?.headshot_shape
+      ? { headshot_shape: extra.headshot_shape, show_headshot: true }
+      : fieldName === 'logo_url'
+        ? { show_logo: true }
+        : {}
 
-    const { error: dbError } = await supabase.from('profiles').upsert({
+    setProfile((prev: any) => ({ ...prev, [fieldName]: publicUrl, ...extras }))
+
+    const payload: Record<string, unknown> = {
       id: user.id,
       full_name: profile.full_name,
       email: profile.email || user.email,
       phone: profile.phone,
       brokerage: profile.brokerage,
       [fieldName]: publicUrl,
+      ...extras,
       updated_at: new Date()
-    })
+    }
+
+    let { error: dbError } = await supabase.from('profiles').upsert(payload)
+    if (dbError && extra?.headshot_shape) {
+      const { headshot_shape: _shape, ...withoutShape } = payload
+      const retry = await supabase.from('profiles').upsert(withoutShape)
+      dbError = retry.error
+    }
 
     if (dbError) {
       showCustomModal('Database save failed (Image uploaded to storage though): ' + dbError.message)

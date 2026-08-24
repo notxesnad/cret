@@ -4,10 +4,12 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
   const name = profile.full_name || 'Jane Doe'
   const brokerage = profile.brokerage || 'Luxury Real Estate'
   const phone = profile.phone || '(555) 123-4567'
-  const showHeadshot = profile.show_headshot !== false && !!profile.headshot_url
-  const showLogo = profile.show_logo !== false && !!profile.logo_url
+  const email = profile.email || 'name@example.com'
+  const showHeadshot = profile.show_headshot === true && !!profile.headshot_url
+  const showLogo = profile.show_logo === true && !!profile.logo_url
   const headshot = profile.headshot_url
   const logo = showLogo ? profile.logo_url : null
+  const shot = profile.headshot_shape === 'square' ? 'rounded-none' : 'rounded-full'
 
   switch(look) {
     case 'look1': 
@@ -19,10 +21,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <h2 className="text-xl font-black text-slate-900 tracking-tight mb-4 uppercase">{brokerage}</h2>
           )}
           <div className="flex items-center gap-4">
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-full object-cover shadow-sm border border-slate-200" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover shadow-sm border border-slate-200`} />}
             <div className={showHeadshot ? "text-left" : "text-center"}>
               <h3 className="font-semibold text-slate-900 text-sm tracking-wide">{name}</h3>
               <p className="text-[10px] text-slate-500 font-medium tracking-widest uppercase">{phone}</p>
+              <p className="text-[10px] text-slate-500 font-medium">{email}</p>
             </div>
           </div>
         </div>
@@ -39,10 +42,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             )}
             <h3 className="font-serif text-lg tracking-wide text-white">{name}</h3>
             <p className="text-[10px] text-slate-400 tracking-widest">{phone}</p>
+            <p className="text-[10px] text-slate-400">{email}</p>
           </div>
           {showHeadshot && (
             <div className="ml-4 flex-shrink-0">
-              <img src={headshot} alt="Agent" className="w-14 h-14 rounded-full object-cover ring-2 ring-amber-500/30" />
+              <img src={headshot} alt="Agent" className={`w-14 h-14 ${shot} object-cover ring-2 ring-amber-500/30`} />
             </div>
           )}
         </div>
@@ -52,10 +56,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       return (
         <div className="w-full bg-teal-50/50 border-b border-teal-100 px-5 py-5 flex justify-between items-center mb-5">
           <div className="flex items-center gap-4">
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 rounded-xl object-cover shadow-sm" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 ${shot} object-cover shadow-sm`} />}
             <div>
               <h3 className="font-bold text-teal-950 text-lg">{name}</h3>
               <p className="text-[11px] text-teal-700 font-medium">{phone}</p>
+              <p className="text-[11px] text-teal-700 font-medium">{email}</p>
             </div>
           </div>
           <div className="text-right">
@@ -75,8 +80,9 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[150px] object-contain object-left mb-3 grayscale" />}
             <h3 className="font-serif text-2xl tracking-tight leading-none mb-1">{name}</h3>
             <p className="text-[9px] font-mono tracking-widest uppercase text-slate-500 mt-1">{phone} &mdash; {brokerage}</p>
+            <p className="text-[9px] font-mono text-slate-500">{email}</p>
           </div>
-          {showHeadshot && <img src={headshot} alt="Agent" className="w-16 h-16 object-cover grayscale contrast-125 rounded-tl-full rounded-tr-full" />}
+          {showHeadshot && <img src={headshot} alt="Agent" className={`w-16 h-16 object-cover grayscale contrast-125 ${shot}`} />}
         </div>
       )
 
@@ -90,10 +96,13 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           )}
           <div className="w-full border-t border-slate-200 pt-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              {showHeadshot && <img src={headshot} alt="Agent" className="w-10 h-10 rounded-full object-cover" />}
+              {showHeadshot && <img src={headshot} alt="Agent" className={`w-10 h-10 ${shot} object-cover`} />}
               <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wide">{name}</h3>
             </div>
-            <p className="text-[11px] font-medium text-slate-600">{phone}</p>
+            <div className="text-right">
+              <p className="text-[11px] font-medium text-slate-600">{phone}</p>
+              <p className="text-[11px] font-medium text-slate-600">{email}</p>
+            </div>
           </div>
         </div>
       )
@@ -109,10 +118,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
                 <p className="text-[10px] text-blue-900 uppercase font-semibold tracking-wider">{brokerage}</p>
               </div>
               <p className="text-[10px] text-slate-500 mt-1.5">{phone}</p>
+              <p className="text-[10px] text-slate-500">{email}</p>
             </div>
             <div className="flex items-center gap-4">
               {logo && <img src={logo} alt="Logo" className="h-10 w-auto max-w-[120px] object-contain" />}
-              {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded object-cover shadow-sm border border-slate-100" />}
+              {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover shadow-sm border border-slate-100`} />}
             </div>
           </div>
         </div>
@@ -127,8 +137,9 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
               {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[150px] object-contain object-left mb-2" />}
               <h3 className="font-black text-slate-900 text-lg">{name}</h3>
               <p className="text-[11px] font-medium text-slate-500">{phone}</p>
+              <p className="text-[11px] font-medium text-slate-500">{email}</p>
             </div>
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 rounded-2xl object-cover shadow-sm" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 ${shot} object-cover shadow-sm`} />}
           </div>
         </div>
       )
@@ -140,10 +151,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <h3 className="font-black text-black text-xl uppercase tracking-tighter">{name}</h3>
             <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">{brokerage}</p>
             <p className="text-[10px] font-medium text-slate-600 mt-1">{phone}</p>
+            <p className="text-[10px] font-medium text-slate-600">{email}</p>
           </div>
           <div className="flex items-center gap-3">
             {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[100px] object-contain grayscale" />}
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 object-cover grayscale border-2 border-black" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 object-cover grayscale border-2 border-black ${shot}`} />}
           </div>
         </div>
       )
@@ -152,7 +164,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       return (
         <div className="w-full bg-gradient-to-r from-orange-50 to-rose-50 border-b border-orange-100 px-5 py-5 flex justify-between items-center mb-5">
           <div className="flex items-center gap-4">
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover border-2 border-white shadow-sm`} />}
             <div>
               <h3 className="font-bold text-slate-900 text-base">{name}</h3>
               <p className="text-[10px] text-orange-800 font-medium uppercase tracking-wider">{brokerage}</p>
@@ -161,6 +173,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           <div className="text-right">
             {logo && <img src={logo} alt="Logo" className="h-9 w-auto max-w-[120px] object-contain object-right mix-blend-multiply" />}
             <p className="text-[10px] text-slate-500 font-medium mt-1">{phone}</p>
+            <p className="text-[10px] text-slate-500 font-medium">{email}</p>
           </div>
         </div>
       )
@@ -172,8 +185,9 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[140px] object-contain object-left mb-1.5" />}
             <h3 className="font-semibold text-slate-800 text-sm">{name}</h3>
             <p className="text-[10px] text-slate-500">{phone}</p>
+            <p className="text-[10px] text-slate-500">{email}</p>
           </div>
-          {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white" />}
+          {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover ring-2 ring-white`} />}
         </div>
       )
 
@@ -187,10 +201,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
               <p className="text-[10px] uppercase tracking-widest text-indigo-200">{brokerage}</p>
             </div>
             <p className="text-[11px] text-slate-400 font-mono">{phone}</p>
+            <p className="text-[11px] text-slate-400 font-mono">{email}</p>
           </div>
           <div className="flex flex-col items-end gap-3">
             {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain brightness-0 invert opacity-90" />}
-            {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-sm border border-indigo-500/30 shadow-sm" />}
+            {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} border border-indigo-500/30 shadow-sm`} />}
           </div>
         </div>
       )
@@ -202,7 +217,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             {showHeadshot && (
               <div className="relative">
                 <div className="absolute inset-0 bg-rose-500 translate-x-1 translate-y-1"></div>
-                <img src={headshot} alt="Agent" className="w-16 h-16 object-cover relative z-10 grayscale" />
+                <img src={headshot} alt="Agent" className={`w-16 h-16 object-cover relative z-10 grayscale ${shot}`} />
               </div>
             )}
             <div>
@@ -213,6 +228,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           <div className="text-right">
             {logo && <img src={logo} alt="Logo" className="h-10 w-auto max-w-[140px] object-contain object-right mb-1" />}
             <p className="text-[11px] text-slate-500 font-medium">{phone}</p>
+            <p className="text-[11px] text-slate-500 font-medium">{email}</p>
           </div>
         </div>
       )
@@ -221,7 +237,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       return (
         <div className="w-full bg-emerald-950 px-5 py-5 mb-5 text-emerald-50 flex items-center gap-5">
           {showHeadshot && (
-            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-emerald-800">
+            <div className={`w-20 h-20 ${shot} overflow-hidden flex-shrink-0 border-2 border-emerald-800`}>
               <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
             </div>
           )}
@@ -230,6 +246,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <h3 className="text-xl font-bold text-white leading-none mb-1.5">{name}</h3>
             <p className="text-[10px] uppercase tracking-widest text-emerald-400 font-semibold mb-1">{brokerage}</p>
             <p className="text-[11px] text-emerald-200/70">{phone}</p>
+            <p className="text-[11px] text-emerald-200/70">{email}</p>
           </div>
         </div>
       )
@@ -239,10 +256,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
         <div className="w-full bg-stone-100 border-b border-stone-200 p-1 mb-5">
           <div className="border border-stone-300 px-5 py-4 flex justify-between items-center bg-white">
             <div className="flex items-center gap-4">
-              {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-tl-xl rounded-br-xl shadow-sm" />}
+              {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} shadow-sm`} />}
               <div>
                 <h3 className="font-serif text-lg font-bold text-stone-900">{name}</h3>
                 <p className="text-[10px] text-stone-500">{phone}</p>
+                <p className="text-[10px] text-stone-500">{email}</p>
               </div>
             </div>
             <div className="flex flex-col items-end border-l border-stone-200 pl-4">
@@ -264,11 +282,12 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <h3 className="text-2xl font-black tracking-tight mb-0.5">{name}</h3>
             <p className="text-[10px] uppercase tracking-widest text-sky-400 font-bold mb-2">{brokerage}</p>
             <p className="text-xs text-slate-400">{phone}</p>
+            <p className="text-xs text-slate-400">{email}</p>
           </div>
           <div className="relative z-10 flex gap-4 items-center">
             {logo && <img src={logo} alt="Logo" className="h-9 w-auto max-w-[100px] object-contain brightness-0 invert" />}
             {showHeadshot && (
-              <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-md ring-1 ring-white/20" />
+              <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} ring-1 ring-white/20`} />
             )}
           </div>
         </div>
@@ -281,9 +300,10 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[140px] object-contain object-left mb-3" />}
             <h3 className="font-bold text-slate-900 text-xl leading-none">{name}</h3>
             <p className="text-[11px] text-slate-500 mt-1">{phone}</p>
+            <p className="text-[11px] text-slate-500">{email}</p>
           </div>
           {showHeadshot && (
-            <div className="w-16 h-16 bg-slate-100 rounded-tr-2xl rounded-bl-2xl overflow-hidden shadow-inner border border-slate-200 flex-shrink-0">
+            <div className={`w-16 h-16 bg-slate-100 ${shot} overflow-hidden shadow-inner border border-slate-200 flex-shrink-0`}>
               <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
             </div>
           )}
@@ -294,14 +314,15 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       return (
         <div className="flex items-stretch w-full bg-white border-b border-slate-200 overflow-hidden mb-5">
           {showHeadshot && (
-            <div className="w-24 flex-shrink-0">
-              <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
+            <div className="w-24 flex-shrink-0 flex items-center justify-center p-2">
+              <img src={headshot} alt="Agent" className={`w-20 h-20 object-cover ${shot}`} />
             </div>
           )}
           <div className="flex-1 p-4 flex flex-col justify-center relative">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500"></div>
             <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">{name}</h3>
             <p className="text-[10px] text-slate-500 font-medium mb-2">{phone}</p>
+            <p className="text-[10px] text-slate-500 font-medium mb-2">{email}</p>
             {logo ? (
               <img src={logo} alt="Logo" className="h-6 w-auto max-w-[120px] object-contain object-left mt-auto" />
             ) : (
@@ -316,13 +337,14 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
         <div className="w-full bg-slate-50 px-5 py-6 mb-5 flex justify-between items-center border-b border-slate-100">
           <div className="flex items-center gap-4">
             {showHeadshot && (
-              <div className="w-14 h-14 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-fuchsia-500 to-orange-400">
-                <img src={headshot} alt="Agent" className="w-full h-full object-cover rounded-full border-2 border-white" />
+              <div className={`w-14 h-14 ${shot} overflow-hidden p-0.5 bg-gradient-to-tr from-fuchsia-500 to-orange-400`}>
+                <img src={headshot} alt="Agent" className={`w-full h-full object-cover ${shot} border-2 border-white`} />
               </div>
             )}
             <div>
               <h3 className="font-bold text-slate-900 text-base">{name}</h3>
               <p className="text-[11px] text-slate-600">{phone}</p>
+              <p className="text-[11px] text-slate-600">{email}</p>
             </div>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -345,10 +367,11 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             <div>
               <h3 className="font-serif text-2xl text-slate-900">{name}</h3>
               <p className="text-xs text-slate-500 font-mono mt-1">{phone}</p>
+              <p className="text-xs text-slate-500 font-mono">{email}</p>
             </div>
             <div className="flex items-center gap-3">
               {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[100px] object-contain" />}
-              {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover border border-slate-900 p-0.5" />}
+              {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover border border-slate-900 p-0.5 ${shot}`} />}
             </div>
           </div>
         </div>
@@ -364,11 +387,12 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
               <p className="text-[10px] uppercase tracking-widest font-semibold text-white/90">{brokerage}</p>
             </div>
             <p className="text-xs text-white/60">{phone}</p>
+            <p className="text-xs text-white/60">{email}</p>
           </div>
           <div className="relative z-10 flex items-center gap-4">
             {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain brightness-0 invert" />}
             {showHeadshot && (
-              <img src={headshot} alt="Agent" className="w-14 h-16 object-cover rounded-lg shadow-md" />
+              <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} shadow-md`} />
             )}
           </div>
         </div>
@@ -387,7 +411,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
         return (
           <div className="w-full px-5 py-8 mb-5 bg-slate-100 text-center text-slate-500 border-b-2 border-dashed border-slate-300">
             <p className="text-xs font-bold uppercase tracking-wider mb-1">No Custom Header Uploaded</p>
-            <p className="text-[10px]">Upload a Canva image in Step 2 to use this layout.</p>
+            <p className="text-[10px]">Upload a Canva image in the Upload step to use this layout.</p>
           </div>
         )
       }
@@ -398,8 +422,9 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[140px] object-contain object-left mb-1.5" />}
             <h3 className="font-semibold text-slate-800 text-sm">{name}</h3>
             <p className="text-[10px] text-slate-500">{phone}</p>
+            <p className="text-[10px] text-slate-500">{email}</p>
           </div>
-          {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white" />}
+          {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover ring-2 ring-white`} />}
         </div>
       )
   }
