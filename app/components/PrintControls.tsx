@@ -18,7 +18,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
     }
 
     const hidden = Array.from(element.querySelectorAll('.no-print')) as HTMLElement[]
-    hidden.forEach((el) => { el.style.visibility = 'hidden' })
+    hidden.forEach((el) => { el.style.display = 'none' })
 
     const original = {
       width: element.style.width,
@@ -32,6 +32,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
 
     try {
       // Lay the report out at letter width so the snapshot is portrait and fills the page.
+      element.classList.add('pdf-capture')
       element.classList.remove('px-4', 'md:px-8', 'pt-6')
       element.style.boxSizing = 'border-box'
       element.style.width = '816px'
@@ -42,7 +43,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       element.style.margin = '0'
       element.style.backgroundColor = '#ffffff'
 
-      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null))))
 
       const html2canvas = (await import('html2canvas-pro')).default
       const { jsPDF } = await import('jspdf')
@@ -58,11 +59,38 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
         onclone: (doc) => {
           const clone = doc.getElementById('report-print-root')
           if (!clone) return
+          clone.classList.add('pdf-capture')
           clone.classList.remove('px-4', 'md:px-8', 'pt-6')
+          clone.querySelectorAll('.no-print').forEach((node) => {
+            (node as HTMLElement).style.setProperty('display', 'none', 'important')
+          })
           clone.style.setProperty('padding', '0', 'important')
           clone.style.setProperty('padding-left', '0', 'important')
           clone.style.setProperty('padding-right', '0', 'important')
           clone.style.setProperty('background-color', '#ffffff', 'important')
+          clone.querySelectorAll('.itinerary-stop').forEach((node) => {
+            const stop = node as HTMLElement
+            stop.style.setProperty('display', 'flex', 'important')
+            stop.style.setProperty('flex-direction', 'row', 'important')
+            stop.style.setProperty('align-items', 'stretch', 'important')
+            stop.style.setProperty('overflow', 'hidden', 'important')
+          })
+          clone.querySelectorAll('.itinerary-stop .stop-photo').forEach((node) => {
+            const photo = node as HTMLElement
+            photo.style.setProperty('width', '168px', 'important')
+            photo.style.setProperty('min-width', '168px', 'important')
+            photo.style.setProperty('height', '140px', 'important')
+            photo.style.setProperty('max-height', '140px', 'important')
+            photo.style.setProperty('flex-shrink', '0', 'important')
+            photo.style.setProperty('overflow', 'hidden', 'important')
+          })
+          clone.querySelectorAll('.itinerary-stop .stop-photo img').forEach((node) => {
+            const img = node as HTMLElement
+            img.style.setProperty('width', '168px', 'important')
+            img.style.setProperty('height', '140px', 'important')
+            img.style.setProperty('max-width', 'none', 'important')
+            img.style.setProperty('object-fit', 'cover', 'important')
+          })
           clone.querySelectorAll('*').forEach((node) => {
             const el = node as HTMLElement
             el.style.setProperty('box-shadow', 'none', 'important')
@@ -82,13 +110,15 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       const canvasScale = canvas.width / element.scrollWidth
       const rootRect = element.getBoundingClientRect()
 
-      const blocks = Array.from(element.querySelectorAll('.print-break-inside-avoid')).map((node) => {
-        const r = (node as HTMLElement).getBoundingClientRect()
-        return {
-          top: (r.top - rootRect.top) * canvasScale,
-          bottom: (r.bottom - rootRect.top) * canvasScale
-        }
-      })
+      const blocks = Array.from(element.querySelectorAll('.print-break-inside-avoid'))
+        .filter((node) => !(node.parentElement?.closest('.print-break-inside-avoid')))
+        .map((node) => {
+          const r = (node as HTMLElement).getBoundingClientRect()
+          return {
+            top: (r.top - rootRect.top) * canvasScale,
+            bottom: (r.bottom - rootRect.top) * canvasScale
+          }
+        })
 
       const headerEl = document.getElementById('report-print-header')
       const headerRect = headerEl?.getBoundingClientRect()
@@ -96,16 +126,13 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
 
       const snapEnd = (startY: number, maxEndY: number) => {
         let end = maxEndY
-        const fullPagePx = destHeight / pdfScale
         for (const b of blocks) {
           if (b.bottom <= startY + 1 || b.top >= maxEndY) continue
-          if (b.top > startY + 24 && b.bottom > maxEndY) {
+          if (b.bottom > maxEndY && b.top > startY + 8) {
             end = Math.min(end, b.top)
-          } else if (Math.abs(b.top - startY) <= 24 && b.bottom > maxEndY && b.bottom - b.top <= fullPagePx) {
-            end = Math.max(end, Math.min(b.bottom + 8, canvas.height))
           }
         }
-        if (end <= startY + 24) return maxEndY
+        if (end <= startY + 8) return maxEndY
         return Math.min(end, canvas.height)
       }
 
@@ -161,7 +188,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
       element.style.margin = original.margin
       element.style.boxSizing = original.boxSizing
       element.style.backgroundColor = original.backgroundColor
-      hidden.forEach((el) => { el.style.visibility = '' })
+      hidden.forEach((el) => { el.style.display = '' })
       setSaving(false)
     }
   }

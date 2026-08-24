@@ -45,6 +45,33 @@ export default async function TourItineraryPage({
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       <style>{`
+        .pdf-capture .itinerary-stop {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: stretch !important;
+          max-width: 560px !important;
+          overflow: hidden !important;
+        }
+        .pdf-capture .itinerary-stop .stop-photo {
+          width: 168px !important;
+          min-width: 168px !important;
+          height: 140px !important;
+          max-height: 140px !important;
+          flex-shrink: 0 !important;
+          overflow: hidden !important;
+        }
+        .pdf-capture .itinerary-stop .stop-photo img {
+          width: 168px !important;
+          height: 140px !important;
+          max-width: none !important;
+          max-height: none !important;
+          object-fit: cover !important;
+        }
+        .pdf-capture .itinerary-stop .stop-body {
+          flex: 1 !important;
+          min-width: 0 !important;
+          padding: 0.85rem 1rem !important;
+        }
         @media print {
           .no-print { display: none !important; }
           html, body { background: white !important; }
@@ -61,17 +88,32 @@ export default async function TourItineraryPage({
             page-break-inside: avoid !important;
           }
           .itinerary-stop {
-            max-width: 420px;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: stretch !important;
+            max-width: 560px;
             margin-left: auto;
             margin-right: auto;
+            overflow: hidden !important;
           }
-          .itinerary-stop img {
-            max-height: 140px !important;
+          .itinerary-stop .stop-photo {
+            width: 168px !important;
+            min-width: 168px !important;
             height: 140px !important;
-            object-fit: cover;
+            max-height: 140px !important;
+            flex-shrink: 0 !important;
+            overflow: hidden !important;
+          }
+          .itinerary-stop .stop-photo img {
+            width: 168px !important;
+            height: 140px !important;
+            max-width: none !important;
+            object-fit: cover !important;
           }
           .itinerary-stop .stop-body {
-            padding: 1rem 1.25rem !important;
+            flex: 1;
+            min-width: 0;
+            padding: 0.85rem 1rem !important;
           }
           #report-print-root, #report-print-root * {
             box-shadow: none !important;
@@ -128,7 +170,9 @@ export default async function TourItineraryPage({
                   <td>
                     <div className="itinerary-stop max-w-md mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden print-break-inside-avoid">
                       {item.home.photo_url && (
-                        <img src={item.home.photo_url} alt={item.home.address} className="w-full h-40 object-cover" />
+                        <div className="stop-photo w-full h-40 overflow-hidden">
+                          <img src={item.home.photo_url} alt={item.home.address} className="w-full h-full object-cover" />
+                        </div>
                       )}
                       <div className="stop-body p-5">
                         <div className="flex justify-between items-start gap-4 mb-3">
