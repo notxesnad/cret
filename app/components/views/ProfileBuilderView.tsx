@@ -285,7 +285,7 @@ export function ProfileBuilderView({
                       <img
                         src={profile.headshot_url}
                         alt="Headshot"
-                        className={`w-20 h-20 object-cover border-2 border-slate-600 self-center ${profile.headshot_shape === 'square' ? 'rounded-none' : 'rounded-full'}`}
+                        className={`w-20 h-20 object-cover border-2 border-slate-600 self-center ${profile.headshot_shape === 'circle' ? 'rounded-full' : 'rounded-none'}`}
                       />
                     )}
                     <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">

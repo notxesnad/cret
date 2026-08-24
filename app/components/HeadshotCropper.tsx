@@ -17,7 +17,7 @@ export function HeadshotCropper({
   const imgRef = useRef<HTMLImageElement | null>(null)
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
   const [src, setSrc] = useState('')
-  const [shape, setShape] = useState<'square' | 'circle'>('circle')
+  const [shape, setShape] = useState<'square' | 'circle'>('square')
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [natural, setNatural] = useState({ w: 0, h: 0 })

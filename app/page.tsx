@@ -43,7 +43,7 @@ function HomeContent() {
     show_headshot: false,
     show_logo: false,
     show_custom_header: false,
-    headshot_shape: 'circle'
+    headshot_shape: 'square'
   })
   const [uploading, setUploading] = useState<boolean>(false)
 
@@ -206,7 +206,7 @@ function HomeContent() {
             show_headshot: data.show_headshot === true,
             show_logo: data.show_logo === true,
             show_custom_header: data.show_custom_header === true || data.pdf_look === 'custom',
-            headshot_shape: data.headshot_shape === 'square' ? 'square' : 'circle'
+            headshot_shape: data.headshot_shape === 'circle' ? 'circle' : 'square'
           })
           
           let dbListings = data.listings || []

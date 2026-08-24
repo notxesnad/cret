@@ -9,7 +9,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
   const showLogo = profile.show_logo === true && !!profile.logo_url
   const headshot = profile.headshot_url
   const logo = showLogo ? profile.logo_url : null
-  const shot = profile.headshot_shape === 'square' ? 'rounded-none' : 'rounded-full'
+  const shot = profile.headshot_shape === 'circle' ? 'rounded-full' : 'rounded-none'
 
   switch(look) {
     case 'look1': 
