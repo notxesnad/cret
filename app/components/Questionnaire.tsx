@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { type QuizTheme } from '@/app/lib/quizTheme'
 
+export type { QuizTheme }
 export type QuestionType = 'choice' | 'rating' | 'text'
 
 export interface Question {
@@ -20,7 +22,7 @@ interface QuestionnaireProps {
   questions: Question[]
   onSubmit: (answers: Record<string, string | number>) => Promise<void>
   accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky'
-  theme?: 'light' | 'dark'
+  theme?: QuizTheme
   captureLead?: {
     title: string
     body: string
@@ -29,7 +31,7 @@ interface QuestionnaireProps {
   }
 }
 
-export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'light', captureLead }: QuestionnaireProps) {
+export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'dark', captureLead }: QuestionnaireProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string | number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,7 +42,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
 
   const currentQ = questions[currentIndex]
-  const progress = ((currentIndex) / questions.length) * 100
+  const progress = (currentIndex / questions.length) * 100
 
   const colorMap = {
     fuchsia: 'bg-fuchsia-500',
@@ -54,25 +56,24 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     sky: 'bg-sky-500',
   }
   const bgClass = colorMap[accentColor]
-
   const isDark = theme === 'dark'
 
-  const containerClasses = isDark 
-    ? "bg-slate-900 border-slate-800" 
-    : "bg-white border-slate-100"
-  
-  const progressBgClasses = isDark ? "bg-slate-800" : "bg-slate-100"
-  
-  const titleClasses = isDark ? "text-white" : "text-slate-900"
-  const descClasses = isDark ? "text-slate-400" : "text-slate-500"
-
+  const shellClasses = isDark ? 'bg-slate-950' : 'bg-slate-50'
+  const progressBgClasses = isDark ? 'bg-slate-800' : 'bg-slate-200'
+  const titleClasses = isDark ? 'text-white' : 'text-slate-900'
+  const descClasses = isDark ? 'text-slate-400' : 'text-slate-500'
+  const footerClasses = isDark
+    ? 'bg-slate-900 border-t border-slate-800'
+    : 'bg-white border-t border-slate-200'
   const choiceBtnClasses = isDark
-    ? "bg-slate-800 border-slate-700 hover:border-slate-600 hover:bg-slate-700 text-slate-200"
-    : "border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-700"
-  
+    ? 'bg-slate-800 border-slate-700 hover:border-slate-600 hover:bg-slate-700 text-slate-200'
+    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700'
   const textAreaClasses = isDark
-    ? "bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 focus:border-slate-600"
-    : "bg-slate-50 border-slate-200 text-slate-700 focus:border-slate-400"
+    ? 'bg-slate-900 border border-slate-800 text-white placeholder:text-slate-600 focus:border-slate-600'
+    : 'bg-white border border-slate-200 text-slate-700 focus:border-slate-400'
+  const inputClasses = isDark
+    ? 'w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-600'
+    : 'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-slate-400'
 
   const handleAnswer = async (value: string | number) => {
     const newAnswers = { ...answers, [currentQ.id]: value }
@@ -89,48 +90,65 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     }
   }
 
-  if (isDone) {
-    const inputClasses = isDark
-      ? 'w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-600'
-      : 'w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-slate-400'
+  const handleLeadSubmit = async () => {
+    if (!captureLead || (!leadEmail.trim() && !leadPhone.trim())) return
+    setLeadStatus('saving')
+    await captureLead.onSubmit({ email: leadEmail.trim(), phone: leadPhone.trim() })
+    setLeadStatus('saved')
+  }
 
-    const handleLeadSubmit = async () => {
-      if (!captureLead || (!leadEmail.trim() && !leadPhone.trim())) return
-      setLeadStatus('saving')
-      await captureLead.onSubmit({ email: leadEmail.trim(), phone: leadPhone.trim() })
-      setLeadStatus('saved')
-    }
+  const footer = (content: ReactNode) => (
+    <div className={`flex-none p-6 ${footerClasses} z-10 pb-safe`}>
+      {content}
+    </div>
+  )
+
+  if (isDone) {
+    const showLeadForm = captureLead && leadStatus !== 'saved' && leadStatus !== 'skipped'
 
     return (
-      <div className={`flex flex-col text-center p-8 animate-fade-in-up min-h-[300px] rounded-3xl shadow-sm border ${containerClasses}`}>
-        <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-        </div>
-        <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>Thank you!</h2>
-        <p className={descClasses}>Your answers were submitted. I really appreciate your time.</p>
+      <div className={`flex flex-col h-full min-h-0 ${shellClasses}`}>
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
+          <div className="p-6 md:p-10 text-center animate-fade-in-up">
+            <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>Thank you!</h2>
+            <p className={descClasses}>Your answers were submitted. I really appreciate your time.</p>
 
-        {captureLead && leadStatus !== 'saved' && leadStatus !== 'skipped' && (
-          <div className="mt-8 text-left space-y-3">
-            <h3 className={`text-lg font-black ${titleClasses}`}>{captureLead.title}</h3>
-            <p className={`text-sm leading-relaxed ${descClasses}`}>{captureLead.body}</p>
-            <input
-              type="email"
-              value={leadEmail}
-              onChange={e => setLeadEmail(e.target.value)}
-              placeholder="Email"
-              className={inputClasses}
-            />
-            <input
-              type="tel"
-              value={leadPhone}
-              onChange={e => setLeadPhone(e.target.value)}
-              placeholder="Cell (optional if you left email)"
-              className={inputClasses}
-            />
+            {showLeadForm && (
+              <div className="mt-8 text-left space-y-3">
+                <h3 className={`text-lg font-black ${titleClasses}`}>{captureLead.title}</h3>
+                <p className={`text-sm leading-relaxed ${descClasses}`}>{captureLead.body}</p>
+                <input
+                  type="email"
+                  value={leadEmail}
+                  onChange={e => setLeadEmail(e.target.value)}
+                  placeholder="Email"
+                  className={inputClasses}
+                />
+                <input
+                  type="tel"
+                  value={leadPhone}
+                  onChange={e => setLeadPhone(e.target.value)}
+                  placeholder="Cell (optional if you left email)"
+                  className={inputClasses}
+                />
+              </div>
+            )}
+
+            {leadStatus === 'saved' && (
+              <p className={`mt-6 text-sm font-bold ${titleClasses}`}>You&apos;re on the list. I&apos;ll send the monthly snapshot — nothing salesy.</p>
+            )}
+          </div>
+        </div>
+
+        {showLeadForm && footer(
+          <div className="space-y-2">
             <button
               onClick={handleLeadSubmit}
               disabled={leadStatus === 'saving' || (!leadEmail.trim() && !leadPhone.trim())}
-              className={`w-full p-4 rounded-xl font-black text-white transition-all ${!leadEmail.trim() && !leadPhone.trim() ? (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-300') : bgClass}`}
+              className={`w-full py-4 rounded-xl font-black text-white transition-all ${!leadEmail.trim() && !leadPhone.trim() ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass}`}
             >
               {leadStatus === 'saving' ? 'Saving...' : captureLead.cta}
             </button>
@@ -142,23 +160,18 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </button>
           </div>
         )}
-
-        {leadStatus === 'saved' && (
-          <p className={`mt-6 text-sm font-bold ${titleClasses}`}>You&apos;re on the list. I&apos;ll send the monthly snapshot — nothing salesy.</p>
-        )}
       </div>
     )
   }
 
   return (
-    <div className={`flex flex-col h-[75vh] min-h-[500px] rounded-3xl shadow-sm border overflow-hidden w-full max-w-xl mx-auto ${containerClasses}`}>
-      {/* Progress Bar */}
-      <div className={`h-1.5 w-full relative ${progressBgClasses}`}>
+    <div className={`flex flex-col h-full min-h-0 ${shellClasses}`}>
+      <div className={`flex-none h-1.5 w-full relative ${progressBgClasses}`}>
         <div className={`absolute top-0 left-0 h-full ${bgClass} transition-all duration-500 ease-out`} style={{ width: `${progress}%` }}></div>
       </div>
 
-      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-y-auto hide-scrollbar">
-        <div className="mb-8">
+      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
+        <div className="p-6 md:p-10">
           {currentIndex === 0 && description && (
             <p className={`text-xs font-bold tracking-widest uppercase mb-4 ${descClasses}`}>{title}</p>
           )}
@@ -168,10 +181,22 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           {currentIndex === 0 && description && (
             <p className={`mt-4 leading-relaxed ${descClasses}`}>{description}</p>
           )}
-        </div>
 
-        <div className="mt-auto space-y-3 pb-4">
-          {currentQ.type === 'choice' && currentQ.options?.map((opt, i) => (
+          {currentQ.type === 'text' && (
+            <textarea
+              value={textInput}
+              onChange={e => setTextInput(e.target.value)}
+              placeholder={currentQ.placeholder || 'Type your answer here...'}
+              rows={5}
+              className={`w-full rounded-xl p-4 mt-8 focus:outline-none resize-none ${textAreaClasses}`}
+            ></textarea>
+          )}
+        </div>
+      </div>
+
+      {currentQ.type === 'choice' && footer(
+        <div className="space-y-3">
+          {currentQ.options?.map((opt, i) => (
             <button
               key={i}
               onClick={() => handleAnswer(opt)}
@@ -181,42 +206,33 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
               {opt}
             </button>
           ))}
-
-          {currentQ.type === 'rating' && (
-            <div className="flex justify-between gap-2">
-              {Array.from({ length: currentQ.maxRating || 5 }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleAnswer(i + 1)}
-                  disabled={isSubmitting}
-                  className={`flex-1 aspect-square rounded-xl border-2 transition-all font-black text-xl active:scale-95 flex items-center justify-center ${choiceBtnClasses} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {currentQ.type === 'text' && (
-            <div className="flex flex-col gap-3">
-              <textarea
-                value={textInput}
-                onChange={e => setTextInput(e.target.value)}
-                placeholder={currentQ.placeholder || 'Type your answer here...'}
-                rows={4}
-                className={`w-full rounded-xl p-4 focus:outline-none resize-none ${textAreaClasses}`}
-              ></textarea>
-              <button
-                onClick={() => handleAnswer(textInput)}
-                disabled={(!textInput.trim() && !currentQ.optional) || isSubmitting}
-                className={`w-full p-4 rounded-xl font-black text-white transition-all active:scale-95 ${!textInput.trim() && !currentQ.optional ? (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-300 text-white') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isSubmitting ? 'Submitting...' : 'Continue'}
-              </button>
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {currentQ.type === 'rating' && footer(
+        <div className="flex justify-between gap-2">
+          {Array.from({ length: currentQ.maxRating || 5 }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => handleAnswer(i + 1)}
+              disabled={isSubmitting}
+              className={`flex-1 aspect-square max-h-16 rounded-xl border-2 transition-all font-black text-xl active:scale-95 flex items-center justify-center ${choiceBtnClasses} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {currentQ.type === 'text' && footer(
+        <button
+          onClick={() => handleAnswer(textInput)}
+          disabled={(!textInput.trim() && !currentQ.optional) || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!textInput.trim() && !currentQ.optional ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Continue'}
+        </button>
+      )}
     </div>
   )
 }

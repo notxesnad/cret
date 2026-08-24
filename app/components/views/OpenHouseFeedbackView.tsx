@@ -5,7 +5,9 @@ import QRCode from 'qrcode'
 import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export interface FeedbackCampaign {
@@ -16,6 +18,7 @@ export interface FeedbackCampaign {
   questions: Question[]
   listingId?: string
   listingAddress?: string
+  theme?: QuizTheme
   responses?: Record<string, unknown>[]
   createdAt: string
 }
@@ -140,6 +143,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         questions: template.questions,
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
+        theme: 'dark',
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -172,6 +176,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         questions: customQuestions,
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
+        theme: 'dark',
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -397,6 +402,15 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-1">{activeCampaign.listingAddress || 'Questionnaire'}</span>
                 <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">{activeCampaign.title}</h2>
                 <p className="text-slate-400 mt-2">{activeCampaign.description}</p>
+              </div>
+
+              <div className="mb-6">
+                <ClientThemeToggle
+                  value={normalizeQuizTheme(activeCampaign.theme)}
+                  onChange={(theme) => {
+                    updateCampaigns(prev => prev.map(c => c.id === activeCampaign.id ? { ...c, theme } : c))
+                  }}
+                />
               </div>
 
               <div className="bg-slate-800 rounded-xl p-5 mb-6 flex flex-col items-center text-center">

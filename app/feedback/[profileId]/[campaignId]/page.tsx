@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { FeedbackClient } from './FeedbackClient'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { normalizeQuizTheme } from '@/app/lib/quizTheme'
 
 export default async function OpenHouseFeedbackPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
@@ -33,12 +34,15 @@ export default async function OpenHouseFeedbackPage({ params }: { params: Promis
     )
   }
 
+  const theme = normalizeQuizTheme(campaign.theme)
+  const isDark = theme === 'dark'
+
   return (
-    <div className="min-h-[100dvh] bg-slate-950 text-slate-50 font-sans pb-20">
-      <div className="max-w-xl mx-auto pt-6 px-4 md:px-8">
+    <div className={`h-[100dvh] flex flex-col font-sans ${isDark ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
+      <div className="flex-none max-w-xl mx-auto w-full pt-4 px-4 md:px-8 pt-safe [&>*]:mb-0">
         {renderAgentHeader(profile)}
       </div>
-      <div className="max-w-xl mx-auto px-4 md:px-8 mt-6">
+      <div className="flex-1 min-h-0 max-w-xl mx-auto w-full">
         <FeedbackClient
           profileId={profileId}
           campaignId={campaignId}
