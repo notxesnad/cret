@@ -18,7 +18,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           {logo ? (
             <img src={logo} alt="Logo" className="h-10 md:h-12 w-auto max-w-full object-contain mb-4" />
           ) : (
-            <h2 className="text-xl font-black text-slate-900 tracking-tight mb-4 uppercase">{brokerage}</h2>
+            <h2 className="text-sm font-black text-slate-900 tracking-tight mb-4 uppercase">{brokerage}</h2>
           )}
           <div className="flex items-center gap-4">
             {showHeadshot && <img src={headshot} alt="Agent" className={`w-12 h-12 ${shot} object-cover shadow-sm border border-slate-200`} />}
@@ -92,7 +92,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           {logo ? (
             <img src={logo} alt="Logo" className="h-14 md:h-16 w-auto max-w-full object-contain mb-5" />
           ) : (
-            <h2 className="text-2xl font-black text-slate-900 tracking-tighter mb-5">{brokerage}</h2>
+            <h2 className="text-base font-black text-slate-900 tracking-tighter mb-5">{brokerage}</h2>
           )}
           <div className="w-full border-t border-slate-200 pt-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
