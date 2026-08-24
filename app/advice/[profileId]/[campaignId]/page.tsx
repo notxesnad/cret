@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { AdviceClient } from './AdviceClient'
+import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 
 export default async function AdvicePage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
@@ -22,7 +24,10 @@ export default async function AdvicePage({ params }: { params: Promise<{ profile
   let campaign = null
 
   if (profile && profile.outreach_campaigns) {
-    campaign = profile.outreach_campaigns.find((c: any) => c.id === campaignId && c.kind !== 'openhouse_feedback')
+    campaign = profile.outreach_campaigns.find(
+      (c: { id?: string; kind?: string }) =>
+        c.id === campaignId && c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== PROSPECT_STORE_KIND
+    )
   }
 
   if (!profile || !campaign) {

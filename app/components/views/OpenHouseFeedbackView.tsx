@@ -4,7 +4,9 @@ import { useState } from 'react'
 import QRCode from 'qrcode'
 import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
+import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export interface FeedbackCampaign {
   id: string
@@ -12,13 +14,17 @@ export interface FeedbackCampaign {
   title: string
   description: string
   questions: Question[]
-  responses?: any[]
+  listingId?: string
+  listingAddress?: string
+  responses?: Record<string, unknown>[]
   createdAt: string
 }
 
 interface OpenHouseFeedbackViewProps {
   campaigns: FeedbackCampaign[]
   updateCampaigns: (updater: (prev: FeedbackCampaign[]) => FeedbackCampaign[]) => void
+  listings: Listing[]
+  updateListings: (updater: (prev: Listing[]) => Listing[]) => void
   switchView: (view: string) => void
   showCustomModal: (msg: string) => void
   userId: string | undefined
@@ -56,15 +62,19 @@ const templates: { title: string; description: string; questions: Question[] }[]
   }
 ]
 
-export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, showCustomModal, userId }: OpenHouseFeedbackViewProps) {
+export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, updateListings, switchView, showCustomModal, userId }: OpenHouseFeedbackViewProps) {
   const [step, setStep] = useState(1)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
+  const [isAddingListing, setIsAddingListing] = useState(false)
+  const [newListingAddress, setNewListingAddress] = useState('')
   const [customTitle, setCustomTitle] = useState('')
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [qrDataUrl, setQrDataUrl] = useState('')
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
+  const selectedListing = listings.find(l => l.id === selectedListingId)
   const quizUrl = userId && activeId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/${userId}/${activeId}` : ''
   const printUrl = quizUrl ? `${quizUrl}/print` : ''
 
@@ -91,11 +101,35 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
 
   const openCampaign = (id: string) => {
     setActiveId(id)
-    setStep(3)
+    setStep(5)
     void loadQr(id)
   }
 
+  const confirmAddListing = () => {
+    const address = newListingAddress.trim()
+    if (!address) return
+    const listing: Listing = {
+      id: crypto.randomUUID().replace(/-/g, '').slice(0, 10),
+      address,
+      activities: []
+    }
+    updateListings(prev => [listing, ...prev])
+    setSelectedListingId(listing.id)
+    setNewListingAddress('')
+    setIsAddingListing(false)
+    setStep(3)
+  }
+
+  const chooseListing = (id: string) => {
+    setSelectedListingId(id)
+    setStep(3)
+  }
+
   const handleCreate = (template: (typeof templates)[number]) => {
+    if (!selectedListing) {
+      showCustomModal('Pick a listing before creating a questionnaire.')
+      return
+    }
     const newId = newCampaignId()
     updateCampaigns(prev => [
       {
@@ -104,6 +138,8 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
         title: template.title,
         description: template.description,
         questions: template.questions,
+        listingId: selectedListing.id,
+        listingAddress: selectedListing.address,
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -113,6 +149,10 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
   }
 
   const handleCreateCustom = () => {
+    if (!selectedListing) {
+      showCustomModal('Pick a listing before creating a questionnaire.')
+      return
+    }
     if (!customTitle.trim()) {
       showCustomModal('Please enter a title for your questionnaire.')
       return
@@ -130,6 +170,8 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
         title: customTitle,
         description: customDesc,
         questions: customQuestions,
+        listingId: selectedListing.id,
+        listingAddress: selectedListing.address,
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -156,7 +198,11 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
     <div id="view-ohfeedback" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => setStep(step === 4 ? 2 : 1)} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => {
+            if (step === 3) setStep(2)
+            else if (step === 4) setStep(3)
+            else setStep(1)
+          }} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
             <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
           </button>
@@ -179,7 +225,12 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
               </div>
 
               <button
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  setSelectedListingId(null)
+                  setIsAddingListing(false)
+                  setNewListingAddress('')
+                  setStep(2)
+                }}
                 className="w-full bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
@@ -197,8 +248,8 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
                       className="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 cursor-pointer flex justify-between items-center transition"
                     >
                       <div>
-                        <h3 className="text-white font-bold">{c.title}</h3>
-                        <p className="text-xs text-slate-400">{new Date(c.createdAt).toLocaleDateString()}</p>
+                        <h3 className="text-white font-bold">{c.listingAddress || c.title}</h3>
+                        <p className="text-xs text-slate-400">{c.listingAddress ? c.title : new Date(c.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="text-xs font-bold px-2 py-1 rounded bg-slate-700 text-indigo-300">
                         {c.responses?.length || 0} Responses
@@ -212,12 +263,70 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
 
           {step === 2 && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-black text-white mb-6">Select a Template</h2>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-white">Which listing?</h2>
+                <p className="text-sm text-slate-400 mt-2">Every questionnaire is tied to a property so feedback stays organized.</p>
+              </div>
+
+              {isAddingListing ? (
+                <div className="bg-slate-800 p-4 rounded-xl border border-indigo-500/50 mb-6">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Enter property address..."
+                    value={newListingAddress}
+                    onChange={e => setNewListingAddress(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && confirmAddListing()}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 mb-3"
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={confirmAddListing} className="flex-1 bg-indigo-500 text-white font-bold py-2 rounded-lg">Save</button>
+                    <button onClick={() => { setIsAddingListing(false); setNewListingAddress('') }} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAddingListing(true)}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                  Add a Listing
+                </button>
+              )}
+
+              <div className="space-y-3">
+                {listings.length === 0 ? (
+                  <p className="text-slate-500 text-center italic py-4">No listings yet. Add one above — it also shows up in Seller Tracking.</p>
+                ) : (
+                  listings.map(listing => (
+                    <div
+                      key={listing.id}
+                      onClick={() => chooseListing(listing.id)}
+                      className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center cursor-pointer hover:border-indigo-500/50 transition"
+                    >
+                      <div>
+                        <h4 className="font-bold text-white text-lg">{listing.address}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">{listing.activities?.length || 0} seller activities logged</p>
+                      </div>
+                      <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="animate-fade-in-up">
+              <h2 className="text-2xl font-black text-white mb-2">Select a Template</h2>
+              {selectedListing && (
+                <p className="text-sm text-indigo-300 font-bold mb-6">{selectedListing.address}</p>
+              )}
               <div className="space-y-4">
                 <div
                   className="bg-indigo-500/10 border-2 border-dashed border-indigo-500/50 rounded-xl p-5 hover:bg-indigo-500/20 hover:border-indigo-500 transition cursor-pointer flex flex-col items-center justify-center text-center mb-6 min-h-[140px]"
                   onClick={() => {
-                    setCustomTitle('')
+                    setCustomTitle(selectedListing?.address || '')
                     setCustomDesc('')
                     setCustomQuestions([])
                     setStep(4)
@@ -282,10 +391,10 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
             </div>
           )}
 
-          {step === 3 && activeCampaign && (
-            <div className="animate-fade-in-up">
+          {step === 5 && activeCampaign && (
+            <div className="animate-fade-in-up pb-8">
               <div className="mb-8">
-                <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-1">Questionnaire</span>
+                <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-1">{activeCampaign.listingAddress || 'Questionnaire'}</span>
                 <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">{activeCampaign.title}</h2>
                 <p className="text-slate-400 mt-2">{activeCampaign.description}</p>
               </div>
@@ -296,37 +405,22 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
                 </div>
                 <h3 className="text-white font-bold mb-4">Anonymous Responses</h3>
                 {qrDataUrl && (
-                  <img src={qrDataUrl} alt="Feedback QR code" className="w-24 h-24 bg-white rounded-lg mb-4" />
+                  <img src={qrDataUrl} alt="Feedback QR code" className="w-24 h-24 bg-white rounded-lg mb-2" />
                 )}
-                <div className="w-full flex flex-col gap-2">
-                  <button
-                    onClick={handleShare}
-                    className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-3 rounded-lg transition text-sm flex items-center justify-center gap-2"
-                  >
-                    Copy Quiz Link
-                  </button>
-                  <a
-                    href={printUrl || undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`w-full bg-slate-700 hover:bg-slate-600 text-white font-black py-3 rounded-lg transition text-sm flex items-center justify-center gap-2 ${!printUrl ? 'pointer-events-none opacity-50' : ''}`}
-                  >
-                    Print QR Sign
-                  </a>
-                </div>
+                <p className="text-xs text-slate-500">Print the QR sign from the footer.</p>
               </div>
 
               {activeCampaign.responses && activeCampaign.responses.length > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-white font-bold mb-4 border-b border-slate-800 pb-2">Recent Responses</h3>
-                  {activeCampaign.responses.slice().reverse().map((resp: any, i: number) => (
+                  {activeCampaign.responses.slice().reverse().map((resp, i) => (
                     <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                      <p className="text-xs text-slate-400 mb-3">{new Date(resp.date).toLocaleDateString()} at {new Date(resp.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-xs text-slate-400 mb-3">{new Date((resp as { date?: string }).date || '').toLocaleDateString()} at {new Date((resp as { date?: string }).date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       <div className="space-y-3">
-                        {activeCampaign.questions.map((q: any) => (
+                        {activeCampaign.questions.map((q) => (
                           <div key={q.id}>
                             <p className="text-xs font-bold text-slate-300 mb-1">{q.text}</p>
-                            <p className="text-sm text-indigo-300 bg-slate-900 p-2 rounded">{resp.answers[q.id] || 'Skipped'}</p>
+                            <p className="text-sm text-indigo-300 bg-slate-900 p-2 rounded">{String((resp as { answers?: Record<string, string> }).answers?.[q.id] || 'No answer')}</p>
                           </div>
                         ))}
                       </div>
@@ -355,6 +449,27 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, switchView, 
           >
             Save Questionnaire
           </button>
+        </div>
+      )}
+
+      {step === 5 && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <SharePreviewButtons
+            url={quizUrl}
+            copyLabel="Copy Link"
+            accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
+            onCopy={handleShare}
+            extra={
+              <a
+                href={printUrl || undefined}
+                target="_blank"
+                rel="noreferrer"
+                className={`block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center ${!printUrl ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Print QR Sign
+              </a>
+            }
+          />
         </div>
       )}
     </div>

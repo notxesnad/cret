@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import {
   HomeView,
   SignInView,
@@ -596,15 +597,25 @@ function HomeContent() {
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
-          {currentView === 'ohsignin' && <OpenHouseSignInView listings={listings} switchView={switchView} />}
+          {currentView === 'ohsignin' && (
+            <OpenHouseSignInView
+              listings={listings}
+              updateListings={updateListings}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
+            />
+          )}
           {currentView === 'ohfeedback' && (
             <OpenHouseFeedbackView
-              campaigns={outreachCampaigns.filter((c: any) => c.kind === OPENHOUSE_FEEDBACK_KIND)}
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind === OPENHOUSE_FEEDBACK_KIND)}
               updateCampaigns={(updater) => updateOutreachCampaigns(prev => {
-                const others = (prev || []).filter((c: any) => c.kind !== OPENHOUSE_FEEDBACK_KIND)
-                const mine = (prev || []).filter((c: any) => c.kind === OPENHOUSE_FEEDBACK_KIND)
+                const others = (prev || []).filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND)
+                const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_FEEDBACK_KIND)
                 return [...updater(mine), ...others]
               })}
+              listings={listings}
+              updateListings={updateListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
@@ -615,8 +626,12 @@ function HomeContent() {
           {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
           {currentView === 'driving' && (
             <DrivingView
-              clients={clients}
-              updateClients={updateClients}
+              clients={clients.filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)}
+              updateClients={(updater) => updateClients(prev => {
+                const prospects = (prev || []).filter((c: { kind?: string }) => c.kind === PROSPECT_KIND)
+                const people = (prev || []).filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)
+                return [...updater(people), ...prospects]
+              })}
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
@@ -649,7 +664,7 @@ function HomeContent() {
           )}
           {currentView === 'outreach' && (
             <OutreachView 
-              campaigns={outreachCampaigns.filter((c: any) => c.kind !== OPENHOUSE_FEEDBACK_KIND)}
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== PROSPECT_STORE_KIND)}
               updateCampaigns={updateOutreachCampaigns}
               switchView={switchView}
               showCustomModal={showCustomModal}

@@ -18,17 +18,26 @@ interface QuestionnaireProps {
   title: string
   description?: string
   questions: Question[]
-  onSubmit: (answers: Record<string, any>) => Promise<void>
+  onSubmit: (answers: Record<string, string | number>) => Promise<void>
   accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky'
   theme?: 'light' | 'dark'
+  captureLead?: {
+    title: string
+    body: string
+    cta: string
+    onSubmit: (info: { email: string; phone: string }) => Promise<void>
+  }
 }
 
-export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'light' }: QuestionnaireProps) {
+export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'light', captureLead }: QuestionnaireProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [answers, setAnswers] = useState<Record<string, string | number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDone, setIsDone] = useState(false)
   const [textInput, setTextInput] = useState('')
+  const [leadEmail, setLeadEmail] = useState('')
+  const [leadPhone, setLeadPhone] = useState('')
+  const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
 
   const currentQ = questions[currentIndex]
   const progress = ((currentIndex) / questions.length) * 100
@@ -65,7 +74,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     ? "bg-slate-950 border-slate-800 text-white placeholder:text-slate-600 focus:border-slate-600"
     : "bg-slate-50 border-slate-200 text-slate-700 focus:border-slate-400"
 
-  const handleAnswer = async (value: any) => {
+  const handleAnswer = async (value: string | number) => {
     const newAnswers = { ...answers, [currentQ.id]: value }
     setAnswers(newAnswers)
 
@@ -81,13 +90,62 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   }
 
   if (isDone) {
+    const inputClasses = isDark
+      ? 'w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-600'
+      : 'w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-slate-400'
+
+    const handleLeadSubmit = async () => {
+      if (!captureLead || (!leadEmail.trim() && !leadPhone.trim())) return
+      setLeadStatus('saving')
+      await captureLead.onSubmit({ email: leadEmail.trim(), phone: leadPhone.trim() })
+      setLeadStatus('saved')
+    }
+
     return (
-      <div className={`flex flex-col items-center justify-center text-center p-8 animate-fade-in-up h-full min-h-[300px] rounded-3xl shadow-sm border ${containerClasses}`}>
-        <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg`}>
+      <div className={`flex flex-col text-center p-8 animate-fade-in-up min-h-[300px] rounded-3xl shadow-sm border ${containerClasses}`}>
+        <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
         </div>
         <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>Thank you!</h2>
-        <p className={descClasses}>Your feedback has been submitted successfully. I really appreciate your time!</p>
+        <p className={descClasses}>Your answers were submitted. I really appreciate your time.</p>
+
+        {captureLead && leadStatus !== 'saved' && leadStatus !== 'skipped' && (
+          <div className="mt-8 text-left space-y-3">
+            <h3 className={`text-lg font-black ${titleClasses}`}>{captureLead.title}</h3>
+            <p className={`text-sm leading-relaxed ${descClasses}`}>{captureLead.body}</p>
+            <input
+              type="email"
+              value={leadEmail}
+              onChange={e => setLeadEmail(e.target.value)}
+              placeholder="Email"
+              className={inputClasses}
+            />
+            <input
+              type="tel"
+              value={leadPhone}
+              onChange={e => setLeadPhone(e.target.value)}
+              placeholder="Cell (optional if you left email)"
+              className={inputClasses}
+            />
+            <button
+              onClick={handleLeadSubmit}
+              disabled={leadStatus === 'saving' || (!leadEmail.trim() && !leadPhone.trim())}
+              className={`w-full p-4 rounded-xl font-black text-white transition-all ${!leadEmail.trim() && !leadPhone.trim() ? (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-300') : bgClass}`}
+            >
+              {leadStatus === 'saving' ? 'Saving...' : captureLead.cta}
+            </button>
+            <button
+              onClick={() => setLeadStatus('skipped')}
+              className={`w-full text-sm font-bold ${descClasses} hover:underline py-2`}
+            >
+              No thanks
+            </button>
+          </div>
+        )}
+
+        {leadStatus === 'saved' && (
+          <p className={`mt-6 text-sm font-bold ${titleClasses}`}>You&apos;re on the list. I&apos;ll send the monthly snapshot — nothing salesy.</p>
+        )}
       </div>
     )
   }
@@ -155,15 +213,6 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
               >
                 {isSubmitting ? 'Submitting...' : 'Continue'}
               </button>
-              {currentQ.optional && (
-                <button
-                  onClick={() => handleAnswer('')}
-                  disabled={isSubmitting}
-                  className={`text-sm font-bold ${descClasses} hover:underline`}
-                >
-                  Skip
-                </button>
-              )}
             </div>
           )}
         </div>

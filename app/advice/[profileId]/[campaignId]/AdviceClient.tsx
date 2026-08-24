@@ -1,11 +1,15 @@
 'use client'
 
-import { Questionnaire } from '@/app/components/Questionnaire'
+import { Questionnaire, type Question } from '@/app/components/Questionnaire'
 import { submitOutreachResponse } from '@/app/actions/outreach'
+import { saveProspect } from '@/app/actions/prospects'
 
-export function AdviceClient({ profileId, campaignId, campaign }: any) {
-  
-  const handleSubmit = async (answers: Record<string, any>) => {
+export function AdviceClient({ profileId, campaignId, campaign }: {
+  profileId: string
+  campaignId: string
+  campaign: { title: string; description?: string; questions: Question[] }
+}) {
+  const handleSubmit = async (answers: Record<string, string | number>) => {
     await submitOutreachResponse(profileId, campaignId, answers)
   }
 
@@ -17,6 +21,20 @@ export function AdviceClient({ profileId, campaignId, campaign }: any) {
       onSubmit={handleSubmit}
       accentColor="sky"
       theme="dark"
+      captureLead={{
+        title: 'Want a free monthly market snapshot?',
+        body: 'I\'ll send a short recap of local prices, inventory, and what is actually selling. No sales pitch — just useful numbers from someone who lives this market.',
+        cta: 'Send me the monthly snapshot',
+        onSubmit: async ({ email, phone }) => {
+          await saveProspect({
+            profileId,
+            email,
+            phone,
+            sourceTool: 'advice',
+            sourceId: campaignId,
+          })
+        }
+      }}
     />
   )
 }

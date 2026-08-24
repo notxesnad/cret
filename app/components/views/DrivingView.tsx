@@ -3,6 +3,7 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { DateField, TimeField } from '@/app/components/DateField'
+import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { supabase } from '@/utils/supabase'
 import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
 import {
@@ -539,14 +540,6 @@ export function DrivingView({
     })
   }
 
-  const handlePrintPDF = () => {
-    if (!userId || !activeClientId || !activeTourId) {
-      showCustomModal('You must be fully logged in to create a PDF.')
-      return
-    }
-    window.open(shareUrl, '_blank')
-  }
-
   const mapsUrl = (address: string) => `https://maps.google.com/?q=${encodeURIComponent(address)}`
 
   return (
@@ -933,20 +926,12 @@ export function DrivingView({
 
       {step === 3 && (
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
-          <div className="flex gap-3">
-            <button
-              onClick={handlePrintPDF}
-              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow text-base"
-            >
-              PDF
-            </button>
-            <button
-              onClick={handleShareLink}
-              className="flex-[2] bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-xl transition shadow text-base"
-            >
-              Share Live Link
-            </button>
-          </div>
+          <SharePreviewButtons
+            url={shareUrl}
+            copyLabel="Copy Link"
+            accentClass="bg-rose-500 hover:bg-rose-400 text-white"
+            onCopy={handleShareLink}
+          />
         </div>
       )}
 

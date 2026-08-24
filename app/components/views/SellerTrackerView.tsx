@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { DateField } from '@/app/components/DateField'
+import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
 
 export interface Activity {
@@ -187,12 +188,6 @@ export function SellerTrackerView({
     }).catch(() => {
       showCustomModal(`Here is your link (copy it manually):\n\n${shareUrl}`)
     })
-  }
-
-  const handlePrintPDF = () => {
-    if (!userId || !activeListingId) return
-    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}`
-    window.open(shareUrl, '_blank')
   }
 
   return (
@@ -435,20 +430,12 @@ export function SellerTrackerView({
       {/* Static Action Footer for Step 2 */}
       {step === 2 && (
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
-          <div className="flex gap-3">
-            <button 
-              onClick={handlePrintPDF} 
-              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm"
-            >
-              PDF
-            </button>
-            <button 
-              onClick={handleShareLink} 
-              className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm"
-            >
-              Share Live Link
-            </button>
-          </div>
+          <SharePreviewButtons
+            url={userId && activeListingId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/report/${userId}/${activeListingId}` : ''}
+            copyLabel="Copy Link"
+            accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
+            onCopy={handleShareLink}
+          />
         </div>
       )}
 

@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
+import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 
 export interface OutreachCampaign {
   id: string
   title: string
   description: string
-  questions: any[]
-  responses?: any[]
+  questions: Question[]
+  responses?: { date: string; answers: Record<string, string | number> }[]
   createdAt: string
 }
 
@@ -32,7 +33,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
 
-  const templates = [
+  const templates: { title: string; description: string; questions: Question[] }[] = [
     {
       title: "Marketing & Brand Feedback",
       description: "Hi! I'm working on updating my brand and marketing this year and value your taste. Could you take 25 seconds to give me your honest opinion? It means a lot.",
@@ -62,7 +63,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
     }
   ]
 
-  const handleCreate = (template: any) => {
+  const handleCreate = (template: (typeof templates)[number]) => {
     const newId = Math.random().toString(36).substring(2, 9)
     updateCampaigns(prev => [
       {
@@ -286,27 +287,20 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
                 <div className="w-16 h-16 bg-sky-500 text-white rounded-full flex items-center justify-center mb-3 shadow-lg text-2xl font-black">
                   {activeCampaign.responses?.length || 0}
                 </div>
-                <h3 className="text-white font-bold mb-4">Total Responses</h3>
-                <button 
-                  onClick={handleShare}
-                  className="w-full bg-sky-500 hover:bg-sky-400 text-slate-900 font-black py-3 rounded-lg transition text-sm flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                  Copy Share Link
-                </button>
+                <h3 className="text-white font-bold">Total Responses</h3>
               </div>
 
               {activeCampaign.responses && activeCampaign.responses.length > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-white font-bold mb-4 border-b border-slate-800 pb-2">Recent Responses</h3>
-                  {activeCampaign.responses.slice().reverse().map((resp: any, i: number) => (
+                  {activeCampaign.responses.slice().reverse().map((resp, i) => (
                     <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                       <p className="text-xs text-slate-400 mb-3">{new Date(resp.date).toLocaleDateString()} at {new Date(resp.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                       <div className="space-y-3">
-                        {activeCampaign.questions.map((q: any) => (
+                        {activeCampaign.questions.map((q) => (
                           <div key={q.id}>
                             <p className="text-xs font-bold text-slate-300 mb-1">{q.text}</p>
-                            <p className="text-sm text-sky-300 bg-slate-900 p-2 rounded">{resp.answers[q.id] || 'Skipped'}</p>
+                            <p className="text-sm text-sky-300 bg-slate-900 p-2 rounded">{resp.answers[q.id] || 'No answer'}</p>
                           </div>
                         ))}
                       </div>
@@ -325,6 +319,16 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       </div>
 
       {/* FOOTER */}
+      {step === 3 && activeCampaign && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <SharePreviewButtons
+            url={userId && activeId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/advice/${userId}/${activeId}` : ''}
+            copyLabel="Copy Link"
+            accentClass="bg-sky-500 hover:bg-sky-400 text-slate-900"
+            onCopy={handleShare}
+          />
+        </div>
+      )}
       {step === 4 && (
         <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
           <button 
