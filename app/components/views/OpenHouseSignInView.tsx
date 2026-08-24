@@ -131,7 +131,7 @@ export function OpenHouseSignInView({
               </div>
             ) : (
               <div className="mt-3 mb-4">
-                <p className="text-sm text-indigo-200 mb-3">Add the listing this open house is for.</p>
+                <p className="text-base text-indigo-200 mb-3">Add the listing this open house is for.</p>
                 <button
                   type="button"
                   onClick={() => setIsAddingListing(true)}
@@ -142,7 +142,7 @@ export function OpenHouseSignInView({
               </div>
             )}
 
-            <p className="text-xs text-indigo-200 mt-1 mb-4">Sign in to instantly receive the brochure &amp; floor plan.</p>
+            <p className="text-base text-indigo-200 mt-1 mb-4">Sign in to instantly receive the brochure &amp; floor plan.</p>
             <form onSubmit={submitOpenHouse} className="space-y-4 text-left">
               <input
                 type="text"

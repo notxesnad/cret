@@ -410,8 +410,8 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       if (look === 'custom') {
         return (
           <div className="w-full px-5 py-8 mb-5 bg-slate-100 text-center text-slate-500 border-b-2 border-dashed border-slate-300">
-            <p className="text-xs font-bold uppercase tracking-wider mb-1">No Custom Header Uploaded</p>
-            <p className="text-[10px]">Upload a Canva image in the Upload step to use this layout.</p>
+            <p className="text-sm font-bold uppercase tracking-wider mb-1">No Custom Header Uploaded</p>
+            <p className="text-base">Upload a Canva image in the Upload step to use this layout.</p>
           </div>
         )
       }

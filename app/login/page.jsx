@@ -50,7 +50,7 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto mt-20 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-white shadow-2xl">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black tracking-tight">Sign In</h1>
-        <p className="text-xs text-slate-400 mt-1">Enter your email for password-less access.</p>
+        <p className="text-base text-slate-400 mt-1">Enter your email for password-less access.</p>
       </div>
 
       {step === 'request' ? (

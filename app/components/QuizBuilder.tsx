@@ -164,7 +164,7 @@ export function QuizBuilder({
         
         {questions.length === 0 && (
           <div className="text-center p-8 bg-slate-800/50 rounded-xl border border-slate-700/50 border-dashed">
-            <p className="text-slate-400 text-sm">No questions added yet. Start building your quiz below.</p>
+            <p className="text-slate-400 text-base">No questions added yet. Start building your quiz below.</p>
           </div>
         )}
       </div>

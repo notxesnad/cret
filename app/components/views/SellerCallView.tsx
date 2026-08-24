@@ -4,7 +4,7 @@ export function SellerCallView({ showCustomModal, listings }: { showCustomModal:
       <div>
         <span className="text-xs font-bold tracking-widest text-orange-500 uppercase font-sellercall">Instant Prep Sheet</span>
         <h1 className="text-2xl font-black mt-1">Seller Survival Guide</h1>
-        <p className="text-xs text-slate-400 mt-1">Get your talking points ready before you pick up.</p>
+        <p className="text-base text-slate-400 mt-1">Get your talking points ready before you pick up.</p>
       </div>
       
       <div className="relative">

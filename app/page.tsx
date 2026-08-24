@@ -42,6 +42,7 @@ function HomeContent() {
     pdf_look: 'look1',
     show_headshot: false,
     show_logo: false,
+    show_custom_header: false,
     headshot_shape: 'circle'
   })
   const [uploading, setUploading] = useState<boolean>(false)
@@ -204,6 +205,7 @@ function HomeContent() {
             pdf_look: data.pdf_look || 'look1',
             show_headshot: data.show_headshot === true,
             show_logo: data.show_logo === true,
+            show_custom_header: data.show_custom_header === true || data.pdf_look === 'custom',
             headshot_shape: data.headshot_shape === 'square' ? 'square' : 'circle'
           })
           
@@ -447,6 +449,7 @@ function HomeContent() {
       pdf_look: profile.pdf_look,
       show_headshot: profile.show_headshot,
       show_logo: profile.show_logo,
+      show_custom_header: profile.show_custom_header === true,
       headshot_shape: profile.headshot_shape,
       updated_at: new Date(),
     }
@@ -454,10 +457,14 @@ function HomeContent() {
     const { error } = await supabase.from('profiles').upsert(updates)
 
     if (error) {
-      showCustomModal('Error saving profile: ' + error.message)
-    } else {
-      setProfileStep(2)
+      const { show_custom_header: _custom, headshot_shape: _shape, ...withoutExtras } = updates
+      const retry = await supabase.from('profiles').upsert(withoutExtras)
+      if (retry.error) {
+        showCustomModal('Error saving profile: ' + retry.error.message)
+        return
       }
+    }
+    setProfileStep(2)
     } else if (profileStep === 2) {
       setProfileStep(3)
     } else if (profileStep === 3) {
@@ -476,6 +483,7 @@ function HomeContent() {
         pdf_look: profile.pdf_look,
         show_headshot: profile.show_headshot,
         show_logo: profile.show_logo,
+        show_custom_header: profile.show_custom_header === true,
         headshot_shape: profile.headshot_shape,
         headshot_url: profile.headshot_url,
         logo_url: profile.logo_url,
@@ -485,8 +493,8 @@ function HomeContent() {
 
       const { error } = await supabase.from('profiles').upsert(finalPayload)
       if (error) {
-        const { headshot_shape: _shape, ...withoutShape } = finalPayload
-        const retry = await supabase.from('profiles').upsert(withoutShape)
+        const { show_custom_header: _custom, headshot_shape: _shape, ...withoutExtras } = finalPayload
+        const retry = await supabase.from('profiles').upsert(withoutExtras)
         if (retry.error) {
           showCustomModal('Error saving profile: ' + retry.error.message)
           return
@@ -543,7 +551,9 @@ function HomeContent() {
       ? { headshot_shape: extra.headshot_shape, show_headshot: true }
       : fieldName === 'logo_url'
         ? { show_logo: true }
-        : {}
+        : fieldName === 'custom_header_url'
+          ? { show_custom_header: true, pdf_look: 'custom' }
+          : {}
 
     setProfile((prev: any) => ({ ...prev, [fieldName]: publicUrl, ...extras }))
 
@@ -559,9 +569,9 @@ function HomeContent() {
     }
 
     let { error: dbError } = await supabase.from('profiles').upsert(payload)
-    if (dbError && extra?.headshot_shape) {
-      const { headshot_shape: _shape, ...withoutShape } = payload
-      const retry = await supabase.from('profiles').upsert(withoutShape)
+    if (dbError) {
+      const { headshot_shape: _shape, show_custom_header: _custom, ...withoutExtras } = payload
+      const retry = await supabase.from('profiles').upsert(withoutExtras)
       dbError = retry.error
     }
 
@@ -573,7 +583,11 @@ function HomeContent() {
   }
 
   const savePdfLookSelection = (lookKey: string) => {
-    setProfile((prev: any) => ({ ...prev, pdf_look: lookKey }))
+    setProfile((prev: any) => ({
+      ...prev,
+      pdf_look: lookKey,
+      show_custom_header: lookKey === 'custom'
+    }))
   }
 
   return (
@@ -678,6 +692,7 @@ function HomeContent() {
               savePdfLookSelection={savePdfLookSelection}
               renderAgentHeader={(theme: string | null) => renderAgentHeader(profile, theme)}
               handleNextStep={handleNextStep}
+              handleFinalSave={handleFinalSave}
               switchView={switchView}
             />
           )}

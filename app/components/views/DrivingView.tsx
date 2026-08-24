@@ -788,7 +788,7 @@ export function DrivingView({
                     <p className="text-base text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
                   ) : (
                     <>
-                      <p className="text-sm text-slate-500">Drag a home to change the order. Tap to edit.</p>
+                      <p className="text-base text-slate-500">Drag a home to change the order. Tap to edit.</p>
                       {tourHomes.map(({ stop, home }, index) => {
                         const shift = stopShift(index)
                         return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import { HeadshotCropper } from '@/app/components/HeadshotCropper'
 
 interface ProfileBuilderViewProps {
@@ -13,6 +13,7 @@ interface ProfileBuilderViewProps {
   savePdfLookSelection: (lookKey: string) => void;
   renderAgentHeader: (themeOverride: string | null) => React.ReactNode;
   handleNextStep: () => void;
+  handleFinalSave: () => void;
   switchView: (view: string) => void;
 }
 
@@ -26,9 +27,22 @@ export function ProfileBuilderView({
   savePdfLookSelection,
   renderAgentHeader,
   handleNextStep,
+  handleFinalSave,
   switchView
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
+  const [showHeaderPreview, setShowHeaderPreview] = useState(false)
+  const [lastLook, setLastLook] = useState(
+    profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
+  )
+
+  useEffect(() => {
+    if (profile.pdf_look && profile.pdf_look !== 'custom') {
+      setLastLook(profile.pdf_look)
+    }
+  }, [profile.pdf_look])
+
+  const customOn = profile.show_custom_header === true || profile.pdf_look === 'custom'
 
   const toggleHeadshot = () => {
     const next = !profile.show_headshot
@@ -40,6 +54,24 @@ export function ProfileBuilderView({
     const next = !profile.show_logo
     setProfile({ ...profile, show_logo: next })
     if (next && !profile.logo_url) setProfileStep(3)
+  }
+
+  const toggleCustomHeader = () => {
+    if (customOn) {
+      setProfile({ ...profile, show_custom_header: false, pdf_look: lastLook })
+    } else {
+      setProfile({
+        ...profile,
+        show_custom_header: true,
+        pdf_look: profile.custom_header_url ? 'custom' : profile.pdf_look
+      })
+      if (!profile.custom_header_url) setProfileStep(3)
+    }
+  }
+
+  const pickLook = (lookId: string) => {
+    setLastLook(lookId)
+    savePdfLookSelection(lookId)
   }
 
   const onHeadshotFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,6 +92,24 @@ export function ProfileBuilderView({
             handleImageUpload(cropped, 'headshot_url', { headshot_shape: shape })
           }}
         />
+      )}
+
+      {showHeaderPreview && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/95 flex flex-col">
+          <div className="flex-none flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <h3 className="text-white font-black">Header Preview</h3>
+            <button
+              type="button"
+              onClick={() => setShowHeaderPreview(false)}
+              className="text-slate-400 hover:text-white font-bold text-sm"
+            >
+              Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {renderAgentHeader(customOn && profile.custom_header_url ? 'custom' : null)}
+          </div>
+        </div>
       )}
 
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
@@ -138,7 +188,9 @@ export function ProfileBuilderView({
                 <button type="button" onClick={toggleHeadshot} className="w-full flex items-center justify-between text-left">
                   <div>
                     <span className="block text-sm font-bold text-white">Show Profile Pic</span>
-                    <span className="block text-xs text-slate-400 mt-0.5">Off until you turn it on</span>
+                    {!profile.headshot_url && (
+                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload headshot</span>
+                    )}
                   </div>
                   <div className="relative flex-shrink-0 ml-4">
                     <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
@@ -151,11 +203,28 @@ export function ProfileBuilderView({
                 <button type="button" onClick={toggleLogo} className="w-full flex items-center justify-between text-left">
                   <div>
                     <span className="block text-sm font-bold text-white">Show Brokerage Logo</span>
-                    <span className="block text-xs text-slate-400 mt-0.5">Off until you turn it on</span>
+                    {!profile.logo_url && (
+                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload logo</span>
+                    )}
                   </div>
                   <div className="relative flex-shrink-0 ml-4">
                     <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
                     <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo ? 'translate-x-6' : ''}`}></div>
+                  </div>
+                </button>
+
+                <div className="h-px bg-slate-700 w-full"></div>
+
+                <button type="button" onClick={toggleCustomHeader} className="w-full flex items-center justify-between text-left">
+                  <div>
+                    <span className="block text-sm font-bold text-white">Upload Custom Canva Header</span>
+                    {!profile.custom_header_url && (
+                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload Canva header</span>
+                    )}
+                  </div>
+                  <div className="relative flex-shrink-0 ml-4">
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${customOn ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${customOn ? 'translate-x-6' : ''}`}></div>
                   </div>
                 </button>
               </div>
@@ -187,8 +256,8 @@ export function ProfileBuilderView({
                   ].map((look) => (
                     <div 
                       key={look.id}
-                      onClick={() => savePdfLookSelection(look.id)}
-                      className={`p-1 rounded-xl border cursor-pointer transition ${profile.pdf_look === look.id ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
+                      onClick={() => pickLook(look.id)}
+                      className={`p-1 rounded-xl border cursor-pointer transition ${!customOn && profile.pdf_look === look.id ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
                     >
                       <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
                         {look.title}
@@ -251,7 +320,7 @@ export function ProfileBuilderView({
 
                 <div className="border-t border-slate-700/50 pt-6">
                   <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider"><span className="text-fuchsia-400">OPTIONAL:</span> Custom Canva Header</label>
-                  <p className="text-xs text-slate-400 mb-3">Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
+                  <p className="text-base text-slate-400 mb-3">Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
                   <div className="flex flex-col gap-4">
                     {profile.custom_header_url && (
                       <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover bg-slate-900 border border-slate-700 rounded-md" />
@@ -277,17 +346,54 @@ export function ProfileBuilderView({
       </div>
 
       <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
-        <button 
-          onClick={handleNextStep} 
-          className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${profileStep === 1 && (!profile.full_name?.trim() || !profile.email?.trim()) ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : profileStep === 3 ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
-        >
-          {profileStep === 1 ? 'Continue to Header \u2192' : profileStep === 2 ? 'Continue to Uploads \u2192' : (
-            <>
+        {profileStep === 1 && (
+          <button 
+            onClick={handleNextStep} 
+            disabled={!profile.full_name?.trim() || !profile.email?.trim()}
+            className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${!profile.full_name?.trim() || !profile.email?.trim() ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
+          >
+            Continue to Header {'\u2192'}
+          </button>
+        )}
+
+        {profileStep === 2 && (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setProfileStep(3)}
+              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-white hover:bg-slate-100 text-slate-900"
+            >
+              Upload Pics
+            </button>
+            <button
+              type="button"
+              onClick={handleFinalSave}
+              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
+            >
+              Save
+            </button>
+          </div>
+        )}
+
+        {profileStep === 3 && (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowHeaderPreview(true)}
+              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-white hover:bg-slate-100 text-slate-900"
+            >
+              Preview Header
+            </button>
+            <button
+              type="button"
+              onClick={handleFinalSave}
+              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-              Save All Preferences
-            </>
-          )}
-        </button>
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

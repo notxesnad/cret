@@ -4,7 +4,7 @@ export function SellerMenuView({ switchView }: { switchView: (view: string) => v
       <div className="text-center mb-6">
         <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Seller Tools</span>
         <h1 className="text-2xl font-black mt-1">Make My Seller Happy</h1>
-        <p className="text-xs text-slate-400 mt-1">Net sheets, trackers, and instant reports.</p>
+        <p className="text-base text-slate-400 mt-1">Net sheets, trackers, and instant reports.</p>
       </div>
 
       <div 

@@ -256,7 +256,7 @@ export function SellerTrackerView({
               {listings.length === 0 ? (
                 <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
                   <div className="text-4xl mb-3 opacity-50">🏡</div>
-                  <p className="text-sm text-slate-400 font-medium">You don&apos;t have any listings yet.<br/>Click above to add your first one!</p>
+                  <p className="text-base text-slate-400 font-medium">You don&apos;t have any listings yet.<br/>Click above to add your first one!</p>
                 </div>
               ) : (
                 listings.map(listing => (

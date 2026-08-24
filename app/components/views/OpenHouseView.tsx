@@ -4,7 +4,7 @@ export function OpenHouseView({ switchView }: { switchView: (view: string) => vo
       <div className="text-center mb-6">
         <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase font-openhouse">Open House Tools</span>
         <h1 className="text-2xl font-black mt-1">Host like a pro</h1>
-        <p className="text-xs text-slate-400 mt-1">Sign-in sheets and anonymous visitor feedback.</p>
+        <p className="text-base text-slate-400 mt-1">Sign-in sheets and anonymous visitor feedback.</p>
       </div>
 
       <div

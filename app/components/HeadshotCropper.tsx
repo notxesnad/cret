@@ -103,7 +103,7 @@ export function HeadshotCropper({
       <div className="bg-slate-900 border border-slate-800 w-full max-w-sm shadow-2xl">
         <div className="px-5 py-4 border-b border-slate-800">
           <h3 className="text-white font-black">Crop your headshot</h3>
-          <p className="text-xs text-slate-400 mt-1">Drag to position. Pinch-free zoom with the slider.</p>
+          <p className="text-base text-slate-400 mt-1">Drag to position. Pinch-free zoom with the slider.</p>
         </div>
 
         <div className="p-5 space-y-4">

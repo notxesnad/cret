@@ -42,7 +42,7 @@ export function HomeView({ switchView, showCustomModal }: { switchView: (view: s
     <div id="view-home" className="app-view active space-y-4">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black tracking-tight">Tap a Tool. Get to Work.</h1>
-        <p className="text-xs text-slate-400 mt-1">$29 a month. All tools included. Cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a> anytime.</p>
+        <p className="text-base text-slate-400 mt-1">$29 a month. All tools included. Cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a> anytime.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 pb-20">

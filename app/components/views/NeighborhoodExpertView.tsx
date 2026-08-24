@@ -252,7 +252,7 @@ Rules:
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-fuchsia-400 uppercase block mb-2">Learn My Market</span>
                 <h1 className="text-3xl font-black text-white">Neighborhood Expert</h1>
-                <p className="text-sm text-slate-400 mt-2">Use AI to pull market data and take memory quizzes.</p>
+                <p className="text-base text-slate-400 mt-2">Use AI to pull market data and take memory quizzes.</p>
               </div>
 
               <button 
@@ -332,7 +332,7 @@ Rules:
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                   Step 1: Get AI Data
                 </h3>
-                <p className="text-sm text-slate-300 mb-4">Copy this prompt, run it in ChatGPT, Claude, or Gemini, and copy the CSV output.</p>
+                <p className="text-base text-slate-300 mb-4">Copy this prompt, run it in ChatGPT, Claude, or Gemini, and copy the CSV output.</p>
                 <div className="bg-slate-900 rounded p-3 text-xs font-mono text-slate-400 mb-3 h-24 overflow-y-auto">
                   {activeNeighborhood.prompt}
                 </div>

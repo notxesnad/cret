@@ -171,7 +171,7 @@ export function NetSheetView({
             <h2 className="text-xl font-black text-slate-900">Configure Fields</h2>
             <button onClick={() => setNetSheetView('calc')} className="text-sm font-bold text-indigo-600 hover:text-indigo-500">Done</button>
           </div>
-          <p className="text-xs text-slate-500 mb-6">Select which line items should appear in your Net Sheet layout.</p>
+          <p className="text-base text-slate-500 mb-6">Select which line items should appear in your Net Sheet layout.</p>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
             
             {/* Hardcoded field checkboxes based on existing state */}

@@ -226,7 +226,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-2">Open House Tools</span>
                 <h1 className="text-3xl font-black text-white">Anonymous Feedback</h1>
-                <p className="text-sm text-slate-400 mt-2">Print a QR sign. Visitors share honest thoughts without leaving a name.</p>
+                <p className="text-base text-slate-400 mt-2">Print a QR sign. Visitors share honest thoughts without leaving a name.</p>
               </div>
 
               <button
@@ -270,7 +270,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-white">Which listing?</h2>
-                <p className="text-sm text-slate-400 mt-2">Every questionnaire is tied to a property so feedback stays organized.</p>
+                <p className="text-base text-slate-400 mt-2">Every questionnaire is tied to a property so feedback stays organized.</p>
               </div>
 
               {isAddingListing ? (
@@ -421,7 +421,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
                 {qrDataUrl && (
                   <img src={qrDataUrl} alt="Feedback QR code" className="w-24 h-24 bg-white rounded-lg mb-2" />
                 )}
-                <p className="text-xs text-slate-500">Print the QR sign from the footer.</p>
+                <p className="text-base text-slate-500">Print the QR sign from the footer.</p>
               </div>
 
               {activeCampaign.responses && activeCampaign.responses.length > 0 ? (

@@ -32,7 +32,7 @@ export function SignInView() {
           <form onSubmit={handleSendMagicLink} className="space-y-4">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-black text-white mb-2">Sign In or Register</h2>
-              <p className="text-sm text-slate-400">Enter your email address to get a magic link. It will automatically log you in or create a new account!</p>
+              <p className="text-base text-slate-400">Enter your email address to get a magic link. It will automatically log you in or create a new account!</p>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Email Address</label>
