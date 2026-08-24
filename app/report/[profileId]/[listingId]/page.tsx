@@ -3,6 +3,8 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay } from '@/app/lib/tourFormat'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
   const { profileId, listingId } = await params
 

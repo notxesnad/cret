@@ -4,6 +4,8 @@ import { FeedbackClient } from './FeedbackClient'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
 
+export const dynamic = 'force-dynamic'
+
 export default async function OpenHouseFeedbackPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
 

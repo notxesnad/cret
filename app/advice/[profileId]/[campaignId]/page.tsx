@@ -5,6 +5,8 @@ import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdvicePage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
 

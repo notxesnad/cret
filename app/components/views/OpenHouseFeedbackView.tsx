@@ -31,6 +31,7 @@ interface OpenHouseFeedbackViewProps {
   switchView: (view: string) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId: string | undefined
+  persistWorkspace?: () => Promise<boolean>
 }
 
 const templates: { title: string; description: string; questions: Question[] }[] = [
@@ -65,7 +66,7 @@ const templates: { title: string; description: string; questions: Question[] }[]
   }
 ]
 
-export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, updateListings, switchView, showCustomModal, userId }: OpenHouseFeedbackViewProps) {
+export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, updateListings, switchView, showCustomModal, userId, persistWorkspace }: OpenHouseFeedbackViewProps) {
   const [step, setStep] = useState(1)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
@@ -474,13 +475,18 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
             onCopy={handleShare}
             onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+            beforeShare={persistWorkspace}
             extra={
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (!userId) {
                     showCustomModal('', true)
                     return
+                  }
+                  if (persistWorkspace) {
+                    const ok = await persistWorkspace()
+                    if (ok === false) return
                   }
                   if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
                 }}

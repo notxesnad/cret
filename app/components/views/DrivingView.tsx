@@ -53,6 +53,7 @@ interface DrivingViewProps {
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   switchView: (view: string) => void
   userId?: string
+  persistWorkspace?: () => Promise<boolean>
 }
 
 const newId = () => Math.random().toString(36).substr(2, 9)
@@ -85,7 +86,8 @@ export function DrivingView({
   updateClients,
   showCustomModal,
   switchView,
-  userId
+  userId,
+  persistWorkspace
 }: DrivingViewProps) {
   const [step, setStep] = useState(1)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
@@ -932,6 +934,7 @@ export function DrivingView({
             accentClass="bg-rose-500 hover:bg-rose-400 text-white"
             onCopy={handleShareLink}
             onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+            beforeShare={persistWorkspace}
           />
         </div>
       )}

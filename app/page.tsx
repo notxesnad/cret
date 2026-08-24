@@ -23,6 +23,22 @@ import {
   OutreachView
 } from './components/views'
 
+async function saveWorkspaceToProfile(userId: string, workspace: {
+  listings: any[]
+  neighborhoods: any[]
+  outreachCampaigns: any[]
+  clients: any[]
+}) {
+  const { error } = await supabase.from('profiles').upsert({
+    id: userId,
+    listings: workspace.listings,
+    neighborhoods: workspace.neighborhoods,
+    outreach_campaigns: workspace.outreachCampaigns,
+    clients: workspace.clients,
+    updated_at: new Date()
+  })
+  return error
+}
 
 function HomeContent() {
   const router = useRouter()
@@ -152,7 +168,7 @@ function HomeContent() {
     setClients(prev => {
       const newClients = updater(prev)
       if (user) {
-        supabase.from('profiles').update({ clients: newClients }).eq('id', user.id).then(({ error }) => {
+        supabase.from('profiles').upsert({ id: user.id, clients: newClients, updated_at: new Date() }).then(({ error }) => {
           if (error) console.error('Error saving clients:', error)
         })
       }
@@ -251,15 +267,13 @@ function HomeContent() {
             dbCampaigns = mergeArrays(dbCampaigns, pendingData.outreachCampaigns)
             dbClients = mergeArrays(dbClients, pendingData.clients)
 
-            // Save merged data back to the database automatically
-            supabase.from('profiles').update({
+            const saveError = await saveWorkspaceToProfile(currentUser.id, {
               listings: dbListings,
               neighborhoods: dbNeighborhoods,
-              outreach_campaigns: dbCampaigns,
+              outreachCampaigns: dbCampaigns,
               clients: dbClients
-            }).eq('id', currentUser.id).then(({ error }) => {
-               if (error) console.error("Error saving pending data to DB", error)
             })
+            if (saveError) console.error("Error saving pending data to DB", saveError)
             
             // Redirect to their previous view if it wasn't already in the URL
             if (pendingData.view) {
@@ -293,9 +307,7 @@ function HomeContent() {
           let newCampaigns = pendingData?.outreachCampaigns || []
           let newClients = pendingData?.clients || []
 
-          // If they just registered via the SignIn page, they won't have a profile row yet.
-          // We must create it here so that subsequent updates to listings/campaigns don't silently fail.
-          supabase.from('profiles').upsert({ 
+          const { error: createError } = await supabase.from('profiles').upsert({ 
             id: currentUser.id, 
             email: currentUser.email || '',
             full_name: pendingProfile.full_name || '',
@@ -309,10 +321,10 @@ function HomeContent() {
             listings: newListings,
             neighborhoods: newNeighborhoods,
             outreach_campaigns: newCampaigns,
-            clients: newClients
-          }).then(({ error }) => {
-            if (error) console.error('Error creating initial profile:', error)
+            clients: newClients,
+            updated_at: new Date()
           })
+          if (createError) console.error('Error creating initial profile:', createError)
 
           setListings(newListings)
           setNeighborhoods(newNeighborhoods)
@@ -366,6 +378,21 @@ function HomeContent() {
     setModalAuthSent(false)
     setModalEmail(profile.email || '')
     setModalAuthError('')
+  }
+
+  const persistWorkspace = async () => {
+    if (!user) return false
+    const error = await saveWorkspaceToProfile(user.id, {
+      listings,
+      neighborhoods,
+      outreachCampaigns,
+      clients
+    })
+    if (error) {
+      showCustomModal('Could not save your work yet. Tap Preview again.')
+      return false
+    }
+    return true
   }
 
   const showAuthModal = () => showCustomModal('', true)
@@ -719,11 +746,12 @@ function HomeContent() {
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
+              persistWorkspace={persistWorkspace}
             />
           )}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} signedIn={!!user} />}
-          {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
+          {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistWorkspace} />}
           {currentView === 'driving' && (
             <DrivingView
               clients={clients.filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)}
@@ -735,6 +763,7 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
+              persistWorkspace={persistWorkspace}
             />
           )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
@@ -770,6 +799,7 @@ function HomeContent() {
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
+              persistWorkspace={persistWorkspace}
             />
           )}
         </main>

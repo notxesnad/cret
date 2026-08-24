@@ -23,9 +23,10 @@ interface OutreachViewProps {
   switchView: (view: string) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId: string | undefined
+  persistWorkspace?: () => Promise<boolean>
 }
 
-export function OutreachView({ campaigns, updateCampaigns, switchView, showCustomModal, userId }: OutreachViewProps) {
+export function OutreachView({ campaigns, updateCampaigns, switchView, showCustomModal, userId, persistWorkspace }: OutreachViewProps) {
   const [step, setStep] = useState(1) // 1: list, 2: template select, 3: view campaign details, 4: custom builder
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -341,6 +342,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
             accentClass="bg-sky-500 hover:bg-sky-400 text-slate-900"
             onCopy={handleShare}
             onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+            beforeShare={persistWorkspace}
           />
         </div>
       )}

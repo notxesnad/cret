@@ -23,6 +23,7 @@ interface SellerTrackerViewProps {
   showCustomModal: (msg: string, requireAuth?: boolean) => void;
   switchView: (view: string) => void;
   userId?: string;
+  persistWorkspace?: () => Promise<boolean>;
 }
 
 const PRESET_ACTIVITIES = [
@@ -61,7 +62,8 @@ export function SellerTrackerView({
   updateListings,
   showCustomModal,
   switchView,
-  userId
+  userId,
+  persistWorkspace
 }: SellerTrackerViewProps) {
   const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
@@ -436,6 +438,7 @@ export function SellerTrackerView({
             accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
             onCopy={handleShareLink}
             onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+            beforeShare={persistWorkspace}
           />
         </div>
       )}

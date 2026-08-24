@@ -5,6 +5,8 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 
+export const dynamic = 'force-dynamic'
+
 async function getShareUrl(path: string) {
   const headerList = await headers()
   const host = headerList.get('x-forwarded-host') || headerList.get('host')

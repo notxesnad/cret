@@ -5,6 +5,8 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice } from '@/app/lib/tourFormat'
 
+export const dynamic = 'force-dynamic'
+
 async function getTourShareUrl(path: string) {
   const headerList = await headers()
   const host = headerList.get('x-forwarded-host') || headerList.get('host')

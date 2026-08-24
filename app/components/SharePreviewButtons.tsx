@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 export function SharePreviewButtons({
   url,
@@ -9,6 +9,7 @@ export function SharePreviewButtons({
   onCopy,
   extra,
   onNeedAuth,
+  beforeShare,
 }: {
   url: string
   copyLabel?: string
@@ -16,21 +17,22 @@ export function SharePreviewButtons({
   onCopy: () => void
   extra?: ReactNode
   onNeedAuth?: () => void
+  beforeShare?: () => Promise<boolean | void>
 }) {
-  const handlePreview = () => {
-    if (onNeedAuth) {
-      onNeedAuth()
-      return
-    }
-    if (url) window.open(url, '_blank', 'noopener,noreferrer')
-  }
+  const [busy, setBusy] = useState(false)
 
-  const handleCopy = () => {
+  const runShare = async (action: () => void) => {
     if (onNeedAuth) {
       onNeedAuth()
       return
     }
-    onCopy()
+    if (beforeShare) {
+      setBusy(true)
+      const ok = await beforeShare()
+      setBusy(false)
+      if (ok === false) return
+    }
+    action()
   }
 
   const enabled = Boolean(onNeedAuth || url)
@@ -40,19 +42,19 @@ export function SharePreviewButtons({
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={handlePreview}
-          disabled={!enabled}
+          onClick={() => void runShare(() => { if (url) window.open(url, '_blank', 'noopener,noreferrer') })}
+          disabled={!enabled || busy}
           className="flex-1 bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-900 font-black py-4 rounded-xl transition shadow text-sm"
         >
-          Preview
+          {busy ? 'Saving...' : 'Preview'}
         </button>
         <button
           type="button"
-          onClick={handleCopy}
-          disabled={!enabled}
+          onClick={() => void runShare(onCopy)}
+          disabled={!enabled || busy}
           className={`flex-[2] disabled:opacity-50 font-black py-4 rounded-xl transition shadow text-sm ${accentClass}`}
         >
-          {copyLabel}
+          {busy ? 'Saving...' : copyLabel}
         </button>
       </div>
       {extra}
