@@ -24,7 +24,7 @@ interface OpenHouseFeedbackViewProps {
   userId: string | undefined
 }
 
-const templates = [
+const templates: { title: string; description: string; questions: Question[] }[] = [
   {
     title: 'Anonymous Open House Feedback',
     description: 'Thank you for visiting our open house. This is 100% anonymous — no name or phone number required.',
