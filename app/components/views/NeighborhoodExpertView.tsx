@@ -13,7 +13,7 @@ interface NeighborhoodExpertViewProps {
   neighborhoods: Neighborhood[];
   updateNeighborhoods: (updater: (prev: any[]) => any[]) => void;
   switchView: (viewId: string) => void;
-  showCustomModal: (msg: string) => void;
+  showCustomModal: (msg: string, requireAuth?: boolean) => void;
   userEmail: string | undefined;
 }
 

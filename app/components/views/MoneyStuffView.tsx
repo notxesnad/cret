@@ -3,7 +3,8 @@ interface MoneyStuffViewProps {
   handleNetInputChange: (field: string, val: string) => void;
   calculatedNetProceeds: number;
   switchView: (view: string) => void;
-  showCustomModal: (msg: string) => void;
+  showCustomModal: (msg: string, requireAuth?: boolean) => void;
+  signedIn?: boolean;
 }
 
 export function MoneyStuffView({
@@ -11,7 +12,8 @@ export function MoneyStuffView({
   handleNetInputChange,
   calculatedNetProceeds,
   switchView,
-  showCustomModal
+  showCustomModal,
+  signedIn
 }: MoneyStuffViewProps) {
   return (
     <div id="view-money" className="app-view active bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
@@ -53,7 +55,7 @@ export function MoneyStuffView({
         ➕ Add More Detailed Fields
       </button>
 
-      <button onClick={() => showCustomModal('Pro Feature Unlocked: Branded PDF and SMS link sent!')} className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg text-xs">
+      <button onClick={() => signedIn ? showCustomModal('Pro Feature Unlocked: Branded PDF and SMS link sent!') : showCustomModal('', true)} className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg text-xs">
         📱 Generate Branded PDF / SMS
       </button>
     </div>

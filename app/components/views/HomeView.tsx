@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export function HomeView({ switchView, showCustomModal }: { switchView: (view: string) => void, showCustomModal: (msg: string) => void }) {
+export function HomeView({ switchView, showCustomModal }: { switchView: (view: string) => void, showCustomModal: (msg: string, requireAuth?: boolean) => void }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
 
   useEffect(() => {

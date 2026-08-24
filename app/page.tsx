@@ -30,6 +30,7 @@ function HomeContent() {
   const currentView = searchParams.get('view') || 'home'
 
   const [user, setUser] = useState<any>(null)
+  const [sessionChecked, setSessionChecked] = useState(false)
   const [profileStep, setProfileStep] = useState<number>(1) 
   const [profile, setProfile] = useState<any>({
     full_name: '',
@@ -161,9 +162,31 @@ function HomeContent() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession()
       const currentUser = session?.user || null
       setUser(currentUser)
+
+      const pendingDataStr = localStorage.getItem('crt_pending_data')
+      let pendingFromStorage: any = null
+      if (pendingDataStr) {
+        try {
+          pendingFromStorage = JSON.parse(pendingDataStr)
+        } catch (e) {}
+      }
+
+      if (!currentUser) {
+        if (pendingFromStorage) {
+          if (pendingFromStorage.profile) setProfile((prev: any) => ({ ...prev, ...pendingFromStorage.profile }))
+          if (Array.isArray(pendingFromStorage.listings)) setListings(pendingFromStorage.listings)
+          if (Array.isArray(pendingFromStorage.neighborhoods)) setNeighborhoods(pendingFromStorage.neighborhoods)
+          if (Array.isArray(pendingFromStorage.outreachCampaigns)) setOutreachCampaigns(pendingFromStorage.outreachCampaigns)
+          if (Array.isArray(pendingFromStorage.clients)) setClients(pendingFromStorage.clients)
+          if (pendingFromStorage.netData) setNetData(pendingFromStorage.netData)
+          if (pendingFromStorage.activeFields) setActiveFields((prev: any) => ({ ...prev, ...pendingFromStorage.activeFields }))
+        }
+        setSessionChecked(true)
+        return
+      }
 
       if (currentUser) {
         // Check if user was in the middle of step 2 registration
@@ -177,15 +200,11 @@ function HomeContent() {
           } catch (e) {}
         }
 
-        // Check for pending data from before they logged in
-        let pendingData: any = null
-        const pendingDataStr = localStorage.getItem('crt_pending_data')
-        if (pendingDataStr) {
-          try {
-            pendingData = JSON.parse(pendingDataStr)
-            localStorage.removeItem('crt_pending_data')
-          } catch (e) {}
-        }
+        const pendingData = pendingFromStorage
+        if (pendingFromStorage) localStorage.removeItem('crt_pending_data')
+
+        if (pendingData?.netData) setNetData(pendingData.netData)
+        if (pendingData?.activeFields) setActiveFields((prev: any) => ({ ...prev, ...pendingData.activeFields }))
 
         const { data } = await supabase
           .from('profiles')
@@ -194,19 +213,23 @@ function HomeContent() {
           .single()
         
         if (data) {
+          const pendingProfile = pendingData?.profile || {}
+          const dbHasName = Boolean(data.full_name)
           setProfile({
-            full_name: data.full_name || '',
-            email: data.email || currentUser.email || '',
-            phone: data.phone || '',
-            brokerage: data.brokerage || '',
-            headshot_url: data.headshot_url || '',
-            logo_url: data.logo_url || '',
-            custom_header_url: data.custom_header_url || '',
-            pdf_look: data.pdf_look || 'look1',
-            show_headshot: data.show_headshot === true,
-            show_logo: data.show_logo === true,
-            show_custom_header: data.show_custom_header === true || data.pdf_look === 'custom',
-            headshot_shape: data.headshot_shape === 'circle' ? 'circle' : 'square'
+            full_name: data.full_name || pendingProfile.full_name || '',
+            email: data.email || currentUser.email || pendingProfile.email || '',
+            phone: data.phone || pendingProfile.phone || '',
+            brokerage: data.brokerage || pendingProfile.brokerage || '',
+            headshot_url: data.headshot_url || pendingProfile.headshot_url || '',
+            logo_url: data.logo_url || pendingProfile.logo_url || '',
+            custom_header_url: data.custom_header_url || pendingProfile.custom_header_url || '',
+            pdf_look: dbHasName ? (data.pdf_look || 'look1') : (pendingProfile.pdf_look || data.pdf_look || 'look1'),
+            show_headshot: dbHasName ? data.show_headshot === true : pendingProfile.show_headshot === true,
+            show_logo: dbHasName ? data.show_logo === true : pendingProfile.show_logo === true,
+            show_custom_header: dbHasName
+              ? (data.show_custom_header === true || data.pdf_look === 'custom')
+              : (pendingProfile.show_custom_header === true || pendingProfile.pdf_look === 'custom'),
+            headshot_shape: (dbHasName ? data.headshot_shape : pendingProfile.headshot_shape) === 'circle' ? 'circle' : 'square'
           })
           
           let dbListings = data.listings || []
@@ -258,7 +281,12 @@ function HomeContent() {
             localStorage.removeItem('crt_profile_draft')
           }
         } else {
-          setProfile((prev: any) => ({ ...prev, email: currentUser.email || '' }))
+          const pendingProfile = pendingData?.profile || {}
+          setProfile((prev: any) => ({
+            ...prev,
+            ...pendingProfile,
+            email: currentUser.email || pendingProfile.email || ''
+          }))
           
           let newListings = pendingData?.listings || []
           let newNeighborhoods = pendingData?.neighborhoods || []
@@ -270,6 +298,14 @@ function HomeContent() {
           supabase.from('profiles').upsert({ 
             id: currentUser.id, 
             email: currentUser.email || '',
+            full_name: pendingProfile.full_name || '',
+            phone: pendingProfile.phone || '',
+            brokerage: pendingProfile.brokerage || '',
+            pdf_look: pendingProfile.pdf_look || 'look1',
+            show_headshot: pendingProfile.show_headshot === true,
+            show_logo: pendingProfile.show_logo === true,
+            show_custom_header: pendingProfile.show_custom_header === true,
+            headshot_shape: pendingProfile.headshot_shape === 'circle' ? 'circle' : 'square',
             listings: newListings,
             neighborhoods: newNeighborhoods,
             outreach_campaigns: newCampaigns,
@@ -295,6 +331,7 @@ function HomeContent() {
           }
         }
       }
+      setSessionChecked(true)
     }
     loadData()
   }, [switchView])
@@ -302,17 +339,36 @@ function HomeContent() {
   const handleLogout = async () => {
     localStorage.removeItem('crt_profile_step')
     localStorage.removeItem('crt_profile_draft')
+    localStorage.removeItem('crt_pending_data')
     await supabase.auth.signOut()
     window.location.reload()
   }
 
-  const showCustomModal = (msg: string) => {
-    const requiresAuth = msg.toLowerCase().includes('logged in')
+  const snapshotGuestWork = () => ({
+    view: currentView,
+    listings,
+    neighborhoods,
+    outreachCampaigns,
+    clients,
+    profile,
+    netData,
+    activeFields,
+  })
+
+  useEffect(() => {
+    if (!sessionChecked || user) return
+    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
+  }, [sessionChecked, user, currentView, listings, neighborhoods, outreachCampaigns, clients, profile, netData, activeFields])
+
+  const showCustomModal = (msg: string, requireAuth = false) => {
+    const requiresAuth = requireAuth || msg.toLowerCase().includes('logged in') || msg.toLowerCase().includes('signed in')
     setModalData({ isOpen: true, msg, requiresAuth })
     setModalAuthSent(false)
-    setModalEmail('')
+    setModalEmail(profile.email || '')
     setModalAuthError('')
   }
+
+  const showAuthModal = () => showCustomModal('', true)
 
   const closeCustomModal = () => {
     setModalData(prev => ({ ...prev, isOpen: false }))
@@ -323,15 +379,7 @@ function HomeContent() {
     setModalAuthError('')
     if(!modalEmail) return
 
-    // Save pending unauthenticated data so it's restored after login
-    const pendingData = {
-      view: currentView,
-      listings,
-      neighborhoods,
-      outreachCampaigns,
-      clients
-    }
-    localStorage.setItem('crt_pending_data', JSON.stringify(pendingData))
+    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
 
@@ -420,22 +468,26 @@ function HomeContent() {
     // Save draft state to localStorage so we recover it after magic link verification
     localStorage.setItem('crt_profile_step', '2')
     localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
+    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
     if (!user) {
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: profile.email,
         options: { 
           shouldCreateUser: true,
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : ''
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/?view=profile` : ''
         }
       })
 
       if (authError) {
-        showCustomModal('Error sending verification link: ' + authError.message)
+        showCustomModal('Error sending the email: ' + authError.message)
         return
       }
 
-      showCustomModal('Magic link sent! Check your email to verify your account. You will automatically return to Choose Your Header.')
+      setModalData({ isOpen: true, msg: '', requiresAuth: true })
+      setModalAuthSent(true)
+      setModalEmail(profile.email)
+      setModalAuthError('')
       return
     }
 
@@ -473,7 +525,10 @@ function HomeContent() {
   }
 
   const handleFinalSave = async () => {
-    if (user) {
+    if (!user) {
+      showAuthModal()
+      return
+    }
       const finalPayload = {
         id: user.id,
         full_name: profile.full_name,
@@ -500,7 +555,6 @@ function HomeContent() {
           return
         }
       }
-    }
 
     localStorage.removeItem('crt_profile_step')
     localStorage.removeItem('crt_profile_draft')
@@ -515,7 +569,11 @@ function HomeContent() {
   ) => {
     const file = source instanceof File ? source : source.target.files?.[0]
     if (source && !(source instanceof File) && source.target) source.target.value = ''
-    if (!file || !user) return
+    if (!file) return
+    if (!user) {
+      showAuthModal()
+      return
+    }
 
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
@@ -626,7 +684,7 @@ function HomeContent() {
                 Sign Out
               </button>
             ) : (
-              <button onClick={() => switchView('signin')} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
+              <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
                 Sign In
               </button>
             )}
@@ -637,7 +695,7 @@ function HomeContent() {
         <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
           {currentView === 'home' && <HomeView switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'signin' && <SignInView />}
-          {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
+          {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} signedIn={!!user} />}
           {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
           {currentView === 'ohsignin' && (
             <OpenHouseSignInView
@@ -664,7 +722,7 @@ function HomeContent() {
             />
           )}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
-          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} />}
+          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} signedIn={!!user} />}
           {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
           {currentView === 'driving' && (
             <DrivingView
@@ -679,8 +737,8 @@ function HomeContent() {
               userId={user?.id}
             />
           )}
-          {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} />}
-          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={listings} />}
+          {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
+          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={listings} signedIn={!!user} />}
           {currentView === 'profile' && (
             <ProfileBuilderView 
               profileStep={profileStep} 
@@ -731,15 +789,17 @@ function HomeContent() {
               
               {!modalData.requiresAuth ? (
                 <div className="space-y-4">
-                  <p className="text-sm font-bold text-white">{modalData.msg}</p>
+                  <p className="text-base font-bold text-white">{modalData.msg}</p>
             <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
           </div>
               ) : (
           <div>
                   {!modalAuthSent ? (
                     <div className="space-y-4 text-left">
-                      <p className="text-sm font-bold text-rose-400 text-center mb-1">{modalData.msg}</p>
-                      <p className="text-xs font-medium text-slate-300 text-center mb-4">Enter your email address so that we can get you logged in or create your account.</p>
+                      <div className="text-center mb-2">
+                        <h3 className="text-2xl font-black text-white">Sign In or Register</h3>
+                        <p className="text-base text-slate-300 mt-3">We&apos;ll save your work. Enter your email, then click the link we send you.</p>
+                      </div>
                       <form onSubmit={handleModalAuth} className="space-y-3">
             <input 
               type="email"
@@ -747,20 +807,20 @@ function HomeContent() {
                           value={modalEmail}
                           onChange={e => setModalEmail(e.target.value)}
               required
-                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-sm"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-base"
             />
                         <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">
-                          Send Magic Link
+                          Email Me the Link
           </button>
         </form>
-                      {modalAuthError && <p className="text-xs text-rose-400 text-center">{modalAuthError}</p>}
-                      <button onClick={closeCustomModal} className="w-full text-xs text-slate-500 hover:text-slate-300 py-2">Cancel</button>
+                      {modalAuthError && <p className="text-base text-rose-400 text-center">{modalAuthError}</p>}
+                      <button onClick={closeCustomModal} className="w-full text-base text-slate-500 hover:text-slate-300 py-2">Cancel</button>
                     </div>
                   ) : (
                     <div className="space-y-4 text-center">
-                      <h3 className="font-black text-xl text-emerald-400">Link Sent!</h3>
-                      <p className="text-sm text-slate-300">Check your email inbox and click the link to log straight in.</p>
-                      <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Close</button>
+                      <h3 className="font-black text-xl text-emerald-400">Check your email</h3>
+                      <p className="text-base text-slate-300">Click the link we just sent. That signs you in and keeps everything you already did.</p>
+                      <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Got it</button>
         </div>
       )}
                 </div>

@@ -6,9 +6,10 @@ interface NetSheetViewProps {
   calculatedNetProceeds: number;
   activeFields: any;
   toggleFieldCheckbox: (fieldKey: string) => void;
-  showCustomModal: (msg: string) => void;
+  showCustomModal: (msg: string, requireAuth?: boolean) => void;
   renderAgentHeader: () => React.ReactNode;
   switchView: (viewId: string) => void;
+  signedIn?: boolean;
 }
 
 export function NetSheetView({
@@ -19,7 +20,8 @@ export function NetSheetView({
   toggleFieldCheckbox,
   showCustomModal,
   renderAgentHeader,
-  switchView
+  switchView,
+  signedIn
 }: NetSheetViewProps) {
   const [netSheetView, setNetSheetView] = useState<string>('calc')
 
@@ -160,7 +162,7 @@ export function NetSheetView({
               <span>${calculatedNetProceeds.toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
             </div>
           </div>
-          <button onClick={() => showCustomModal('Pro Feature Unlocked: Branded PDF and SMS link sent!')} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition shadow-lg mt-2 flex items-center justify-center gap-2">
+          <button onClick={() => signedIn ? showCustomModal('Pro Feature Unlocked: Branded PDF and SMS link sent!') : showCustomModal('', true)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition shadow-lg mt-2 flex items-center justify-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
             Generate Seller PDF 
           </button>

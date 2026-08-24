@@ -20,7 +20,7 @@ export interface Listing {
 interface SellerTrackerViewProps {
   listings: Listing[];
   updateListings: (updater: (prev: Listing[]) => Listing[]) => void;
-  showCustomModal: (msg: string) => void;
+  showCustomModal: (msg: string, requireAuth?: boolean) => void;
   switchView: (view: string) => void;
   userId?: string;
 }
@@ -175,7 +175,7 @@ export function SellerTrackerView({
 
   const handleShareLink = () => {
     if (!userId) {
-      showCustomModal("You must be fully logged in to share.")
+      showCustomModal('', true)
       return
     }
     if (!activeListingId) {
@@ -435,6 +435,7 @@ export function SellerTrackerView({
             copyLabel="Copy Link"
             accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
             onCopy={handleShareLink}
+            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
           />
         </div>
       )}

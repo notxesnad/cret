@@ -50,7 +50,7 @@ export interface Client {
 interface DrivingViewProps {
   clients: Client[]
   updateClients: (updater: (prev: Client[]) => Client[]) => void
-  showCustomModal: (msg: string) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
   switchView: (view: string) => void
   userId?: string
 }
@@ -450,7 +450,7 @@ export function DrivingView({
 
   const uploadFile = async (file: File, kind: 'photo' | 'mls') => {
     if (!userId) {
-      showCustomModal('You must be fully logged in to upload files.')
+      showCustomModal('', true)
       return
     }
 
@@ -526,7 +526,7 @@ export function DrivingView({
 
   const handleShareLink = () => {
     if (!userId) {
-      showCustomModal('You must be fully logged in to share.')
+      showCustomModal('', true)
       return
     }
     if (!activeClientId || !activeTourId) {
@@ -931,6 +931,7 @@ export function DrivingView({
             copyLabel="Copy Link"
             accentClass="bg-rose-500 hover:bg-rose-400 text-white"
             onCopy={handleShareLink}
+            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
           />
         </div>
       )}

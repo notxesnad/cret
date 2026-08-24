@@ -29,7 +29,7 @@ interface OpenHouseFeedbackViewProps {
   listings: Listing[]
   updateListings: (updater: (prev: Listing[]) => Listing[]) => void
   switchView: (view: string) => void
-  showCustomModal: (msg: string) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId: string | undefined
 }
 
@@ -187,7 +187,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
 
   const handleShare = () => {
     if (!userId) {
-      showCustomModal('You must be fully logged in to share.')
+      showCustomModal('', true)
       return
     }
     if (!activeId || !quizUrl) {
@@ -473,15 +473,21 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             copyLabel="Copy Link"
             accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
             onCopy={handleShare}
+            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
             extra={
-              <a
-                href={printUrl || undefined}
-                target="_blank"
-                rel="noreferrer"
-                className={`block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center ${!printUrl ? 'pointer-events-none opacity-50' : ''}`}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!userId) {
+                    showCustomModal('', true)
+                    return
+                  }
+                  if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
+                }}
+                className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center"
               >
                 Print QR Sign
-              </a>
+              </button>
             }
           />
         </div>

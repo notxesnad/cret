@@ -32,7 +32,7 @@ export function SignInView() {
           <form onSubmit={handleSendMagicLink} className="space-y-4">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-black text-white mb-2">Sign In or Register</h2>
-              <p className="text-base text-slate-400">Enter your email address to get a magic link. It will automatically log you in or create a new account!</p>
+              <p className="text-base text-slate-400">We&apos;ll save your work. Enter your email, then click the link we send you.</p>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-400 uppercase block mb-1">Email Address</label>
@@ -46,14 +46,14 @@ export function SignInView() {
               />
             </div>
             <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl transition shadow-lg">
-              Send Magic Link →
+              Email Me the Link →
             </button>
           </form>
         ) : (
           <div className="text-center space-y-3 py-4">
             <div className="text-4xl mb-2">✨</div>
-            <h3 className="font-money text-3xl text-emerald-400 tracking-wide">Magic Link Sent!</h3>
-            <p className="text-sm font-medium text-slate-300">Check your email inbox and click the link to log straight in.</p>
+            <h3 className="font-money text-3xl text-emerald-400 tracking-wide">Check your email</h3>
+            <p className="text-base font-medium text-slate-300">Click the link we just sent. That signs you in and keeps everything you already did.</p>
             <button 
               type="button" 
               onClick={() => { setSent(false); setEmail(''); setMessage(''); }}

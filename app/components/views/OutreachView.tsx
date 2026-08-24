@@ -21,7 +21,7 @@ interface OutreachViewProps {
   campaigns: OutreachCampaign[]
   updateCampaigns: (updater: (prev: OutreachCampaign[]) => OutreachCampaign[]) => void
   switchView: (view: string) => void
-  showCustomModal: (msg: string) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId: string | undefined
 }
 
@@ -115,7 +115,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
 
   const handleShare = () => {
     if (!userId) {
-      showCustomModal("You must be fully logged in to share.")
+      showCustomModal('', true)
       return
     }
     if (!activeId) {
@@ -340,6 +340,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
             copyLabel="Copy Link"
             accentClass="bg-sky-500 hover:bg-sky-400 text-slate-900"
             onCopy={handleShare}
+            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
           />
         </div>
       )}

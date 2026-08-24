@@ -1,4 +1,4 @@
-export function BuyerView({ showCustomModal }: { showCustomModal: (msg: string) => void }) {
+export function BuyerView({ showCustomModal, signedIn }: { showCustomModal: (msg: string, requireAuth?: boolean) => void, signedIn?: boolean }) {
   return (
     <div id="view-buyer" className="app-view active bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
       <div>
@@ -19,7 +19,7 @@ export function BuyerView({ showCustomModal }: { showCustomModal: (msg: string) 
           <div>Kitchen: <span className="font-bold text-white">Modern</span></div>
         </div>
       </div>
-      <button onClick={() => showCustomModal('Comparison card texted to buyer!')} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-4 rounded-xl transition shadow-lg mt-2">
+      <button onClick={() => signedIn ? showCustomModal('Comparison card texted to buyer!') : showCustomModal('', true)} className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black py-4 rounded-xl transition shadow-lg mt-2">
         📲 Text Side-by-Side to Buyer
       </button>
     </div>

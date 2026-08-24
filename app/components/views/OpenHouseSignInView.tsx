@@ -14,7 +14,7 @@ export function OpenHouseSignInView({
   listings: Listing[]
   updateListings: (updater: (prev: Listing[]) => Listing[]) => void
   switchView: (view: string) => void
-  showCustomModal: (msg: string) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId?: string
 }) {
   const [name, setName] = useState('')
@@ -52,7 +52,7 @@ export function OpenHouseSignInView({
       return
     }
     if (!userId) {
-      showCustomModal('You must be signed in to save guest info.')
+      showCustomModal('', true)
       return
     }
 
