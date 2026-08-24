@@ -577,7 +577,7 @@ export function DrivingView({
             <div className="text-center mb-8">
               <span className="text-sm font-bold tracking-widest text-rose-400 uppercase font-driving">Tour Itinerary</span>
               <h3 className="text-2xl font-black text-white mt-1">My Clients</h3>
-              <p className="text-base text-slate-400 mt-2">Clients and their homes are saved for every tool.</p>
+              <p className="text-base text-slate-400 mt-2">Line up the houses, pick the drive order, and send a tour they can follow from the car.</p>
             </div>
 
             {isAddingClient ? (

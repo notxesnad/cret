@@ -135,7 +135,7 @@ export function ProfileBuilderView({
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
-            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design Your PDF HEADER</h3>
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design your custom header</h3>
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Full Name</label>
