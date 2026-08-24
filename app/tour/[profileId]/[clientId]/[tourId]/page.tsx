@@ -175,14 +175,14 @@ export default async function TourItineraryPage({
         }
       `}</style>
 
-      <div id="report-print-root" className="max-w-3xl mx-auto pt-6 px-4 md:px-8">
+      <div id="report-print-root" className="w-full">
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <td>
+              <td className="p-0">
                 <div id="report-print-header">
                   {renderAgentHeader(profile)}
-                  <div className="itinerary-qr-header">
+                  <div className="itinerary-qr-header px-4 md:px-8 max-w-3xl mx-auto">
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Tour Itinerary</p>
                       <h1 className="text-xl font-black text-slate-900 leading-tight mt-0.5">{tour.title}</h1>
@@ -201,7 +201,7 @@ export default async function TourItineraryPage({
           </thead>
           <tbody>
             <tr>
-              <td>
+              <td className="px-4 md:px-8">
                 <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid no-print">
                   <div>
                     <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Tour Itinerary</span>
@@ -221,7 +221,7 @@ export default async function TourItineraryPage({
 
             {stops.length === 0 ? (
               <tr>
-                <td>
+                <td className="px-4 md:px-8">
                   <div className="bg-white border border-slate-200 p-8 rounded-2xl text-slate-500 italic mt-6">
                     No homes have been added to this tour yet.
                   </div>
@@ -230,7 +230,7 @@ export default async function TourItineraryPage({
             ) : (
               stops.map((item: any) => (
                 <tr key={item.home.id} className="print-break-inside-avoid">
-                  <td>
+                  <td className="px-4 md:px-8">
                     <div className="itinerary-stop max-w-md mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden print-break-inside-avoid">
                       {item.home.photo_url && (
                         <div className="stop-photo w-full h-40 overflow-hidden">

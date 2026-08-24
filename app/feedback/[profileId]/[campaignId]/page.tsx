@@ -39,7 +39,7 @@ export default async function OpenHouseFeedbackPage({ params }: { params: Promis
 
   return (
     <div className={`h-[100dvh] flex flex-col font-sans ${isDark ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="flex-none max-w-xl mx-auto w-full pt-4 px-4 md:px-8 pt-safe [&>*]:mb-0">
+      <div className="flex-none w-full [&>*]:mb-0">
         {renderAgentHeader(profile)}
       </div>
       <div className="flex-1 min-h-0 max-w-xl mx-auto w-full">

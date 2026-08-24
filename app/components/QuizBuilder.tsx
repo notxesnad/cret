@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Question, QuestionType } from './Questionnaire'
 
-const QUESTION_BANK: Omit<Question, 'id'>[] = [
+const ADVICE_QUESTION_BANK: Omit<Question, 'id'>[] = [
   { type: 'rating', maxRating: 10, text: 'How likely are you to recommend me to a friend or family member? (1=Never, 10=Absolutely)' },
   { type: 'choice', text: 'What is your preferred method of communication?', options: ['Text Message', 'Email', 'Phone Call', 'In-Person'] },
   { type: 'text', text: 'If I could improve one single thing about my service, what should it be?' },
@@ -15,8 +15,32 @@ const QUESTION_BANK: Omit<Question, 'id'>[] = [
   { type: 'rating', maxRating: 5, text: 'On a scale of 1-5, how would you rate my current social media presence?' },
 ]
 
-export function QuizBuilder({ questions, onChange }: { questions: Question[], onChange: (q: Question[]) => void }) {
+const OPENHOUSE_QUESTION_BANK: Omit<Question, 'id'>[] = [
+  { type: 'rating', maxRating: 5, text: 'Overall, how would you rate this home?' },
+  { type: 'choice', text: 'How does the asking price feel?', options: ['Priced too high', 'About right', 'A good value'] },
+  { type: 'choice', text: 'Would you consider making an offer on this home?', options: ['Yes, I could see writing an offer', 'Maybe, if something changed', 'No, this is not the right home'] },
+  { type: 'choice', text: 'How does this home compare to others you have toured?', options: ["One of the best I've seen", 'About the same as others', "It doesn't quite compare"] },
+  { type: 'choice', text: 'Which part of the home felt strongest?', options: ['Kitchen', 'Primary suite', 'Living spaces', 'Outdoor / backyard', 'Location / neighborhood'] },
+  { type: 'choice', text: 'What felt like the biggest drawback?', options: ['Price', 'Layout / flow', 'Condition or updates needed', 'Size of the rooms', 'Location'] },
+  { type: 'rating', maxRating: 5, text: 'How would you rate the first impression from the curb?' },
+  { type: 'rating', maxRating: 5, text: 'How would you rate the staging and presentation inside?' },
+  { type: 'text', optional: true, text: 'What did you like most about the home?', placeholder: 'e.g., The light, the backyard, the kitchen...' },
+  { type: 'text', optional: true, text: 'What would need to change for you to write an offer?', placeholder: 'e.g., Price, repairs, a credit for the roof...' },
+  { type: 'text', optional: true, text: 'Anything that felt dated, cramped, or off?', placeholder: 'e.g., Paint, flooring, the hallway bath...' },
+  { type: 'choice', text: 'Are you currently working with a real estate agent?', options: ['Yes, I am', "No, I'm searching on my own"] },
+]
+
+export function QuizBuilder({
+  questions,
+  onChange,
+  bank = 'advice',
+}: {
+  questions: Question[]
+  onChange: (q: Question[]) => void
+  bank?: 'advice' | 'openhouse'
+}) {
   const [bankOpen, setBankOpen] = useState(false)
+  const questionBank = bank === 'openhouse' ? OPENHOUSE_QUESTION_BANK : ADVICE_QUESTION_BANK
 
   const addBankQuestion = (q: Omit<Question, 'id'>) => {
     onChange([...questions, { ...q, id: Math.random().toString(36).substr(2, 9) }])
@@ -153,7 +177,7 @@ export function QuizBuilder({ questions, onChange }: { questions: Question[], on
             <button onClick={() => setBankOpen(false)} className="text-slate-400 hover:text-white">Cancel</button>
           </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-            {QUESTION_BANK.map((bankQ, i) => (
+            {questionBank.map((bankQ, i) => (
               <button 
                 key={i}
                 onClick={() => addBankQuestion(bankQ)}

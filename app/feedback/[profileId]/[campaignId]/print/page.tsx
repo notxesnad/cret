@@ -57,25 +57,28 @@ export default async function OpenHouseFeedbackPrintPage({ params }: { params: P
         }
       `}</style>
 
-      <div id="report-print-root" className="max-w-3xl mx-auto pt-6 px-4 md:px-8">
-        <div className="flex justify-end mb-4 no-print">
-          <PrintButtons listingAddress={`${campaign.listingAddress || campaign.title}-feedback-sign`} />
+      <div id="report-print-root" className="w-full">
+        <div className="w-full [&>*]:mb-0">
+          {renderAgentHeader(profile)}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-12 text-center print-break-inside-avoid">
-          <div className="mb-8">
-            {renderAgentHeader(profile)}
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-6">
+          <div className="flex justify-end mb-4 no-print">
+            <PrintButtons listingAddress={`${campaign.listingAddress || campaign.title}-feedback-sign`} />
           </div>
-          <p className="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-3">Open House</p>
-          {campaign.listingAddress && (
-            <p className="text-sm font-black text-indigo-600 mb-2">{campaign.listingAddress}</p>
-          )}
-          <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">We&apos;d love your anonymous feedback</h1>
-          <p className="text-lg text-slate-600 mt-4 max-w-md mx-auto">
-            Scan this code to share your thoughts. No name required — it takes about 30 seconds.
-          </p>
-          <img src={qrDataUrl} alt="Scan for anonymous feedback" className="w-44 h-44 mx-auto mt-8 bg-white" />
-          <p className="text-sm font-bold text-slate-500 mt-4">{campaign.title}</p>
+
+          <div className="bg-white border border-slate-200 p-8 md:p-12 text-center print-break-inside-avoid">
+            <p className="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-3">Open House</p>
+            {campaign.listingAddress && (
+              <p className="text-sm font-black text-indigo-600 mb-2">{campaign.listingAddress}</p>
+            )}
+            <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">We&apos;d love your anonymous feedback</h1>
+            <p className="text-lg text-slate-600 mt-4 max-w-md mx-auto">
+              Scan this code to share your thoughts. No name required — it takes about 30 seconds.
+            </p>
+            <img src={qrDataUrl} alt="Scan for anonymous feedback" className="w-44 h-44 mx-auto mt-8 bg-white" />
+            <p className="text-sm font-bold text-slate-500 mt-4">{campaign.title}</p>
+          </div>
         </div>
       </div>
     </div>

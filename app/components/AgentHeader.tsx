@@ -12,7 +12,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
   switch(look) {
     case 'look1': 
       return (
-        <div className="bg-white border-b border-slate-100 pb-5 mb-5 flex flex-col items-center text-center px-4 pt-2">
+        <div className="w-full bg-white border-b border-slate-100 pb-5 mb-5 flex flex-col items-center text-center px-5 pt-4">
           {logo ? (
             <img src={logo} alt="Logo" className="h-10 md:h-12 w-auto max-w-full object-contain mb-4" />
           ) : (
@@ -30,7 +30,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look2': 
       return (
-        <div className="bg-slate-950 text-amber-50 p-5 rounded-xl flex justify-between items-center mb-5 shadow-lg border border-slate-800">
+        <div className="w-full bg-slate-950 text-amber-50 px-5 py-5 flex justify-between items-center mb-5 border-b border-slate-800">
           <div className="flex-1 flex flex-col justify-center">
             {logo ? (
               <img src={logo} alt="Logo" className="h-8 md:h-10 w-auto max-w-[160px] object-contain object-left mb-2 brightness-0 invert" />
@@ -50,7 +50,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look3': 
       return (
-        <div className="bg-teal-50/50 border border-teal-100 p-5 rounded-2xl flex justify-between items-center mb-5">
+        <div className="w-full bg-teal-50/50 border-b border-teal-100 px-5 py-5 flex justify-between items-center mb-5">
           <div className="flex items-center gap-4">
             {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 rounded-xl object-cover shadow-sm" />}
             <div>
@@ -70,7 +70,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look4': 
       return (
-        <div className="border-t-4 border-b border-slate-900 py-5 mb-5 flex justify-between items-start text-slate-900 bg-white">
+        <div className="w-full border-t-4 border-b border-slate-900 px-5 py-5 mb-5 flex justify-between items-start text-slate-900 bg-white">
           <div className="flex-1">
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[150px] object-contain object-left mb-3 grayscale" />}
             <h3 className="font-serif text-2xl tracking-tight leading-none mb-1">{name}</h3>
@@ -82,7 +82,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look5': 
       return (
-        <div className="bg-slate-50 border border-slate-200 p-6 rounded-xl flex flex-col items-center mb-5">
+        <div className="w-full bg-slate-50 border-b border-slate-200 px-5 py-6 flex flex-col items-center mb-5">
           {logo ? (
             <img src={logo} alt="Logo" className="h-14 md:h-16 w-auto max-w-full object-contain mb-5" />
           ) : (
@@ -100,8 +100,8 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look6': 
       return (
-        <div className="bg-blue-950 p-1 mb-5 shadow-sm rounded-lg">
-          <div className="bg-white p-4 rounded-md border-2 border-blue-900/10 flex justify-between items-center">
+        <div className="w-full bg-blue-950 p-1 mb-5">
+          <div className="bg-white px-5 py-4 border-2 border-blue-900/10 flex justify-between items-center">
             <div className="flex-1">
               <h3 className="font-bold text-blue-950 text-xl tracking-tight">{name}</h3>
               <div className="flex items-center gap-2 mt-1">
@@ -120,7 +120,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look7': 
       return (
-        <div className="relative p-5 rounded-2xl mb-5 overflow-hidden bg-white shadow-md border border-slate-100">
+        <div className="relative w-full px-5 py-5 mb-5 overflow-hidden bg-white border-b border-slate-100">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-fuchsia-500 to-rose-500"></div>
           <div className="flex justify-between items-center pl-2">
             <div>
@@ -135,7 +135,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look8': 
       return (
-        <div className="border-4 border-black p-4 mb-5 bg-white flex justify-between items-center">
+        <div className="w-full border-b-4 border-black px-5 py-4 mb-5 bg-white flex justify-between items-center">
           <div className="flex flex-col">
             <h3 className="font-black text-black text-xl uppercase tracking-tighter">{name}</h3>
             <p className="text-[10px] font-bold text-black uppercase tracking-widest mt-1">{brokerage}</p>
@@ -150,7 +150,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look9': 
       return (
-        <div className="bg-gradient-to-r from-orange-50 to-rose-50 border border-orange-100 p-5 rounded-xl flex justify-between items-center mb-5">
+        <div className="w-full bg-gradient-to-r from-orange-50 to-rose-50 border-b border-orange-100 px-5 py-5 flex justify-between items-center mb-5">
           <div className="flex items-center gap-4">
             {showHeadshot && <img src={headshot} alt="Agent" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm" />}
             <div>
@@ -167,7 +167,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look10': 
       return (
-        <div className="bg-slate-100/50 backdrop-blur-md border border-white/60 p-4 rounded-2xl flex justify-between items-center mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+        <div className="w-full bg-slate-100/50 backdrop-blur-md border-b border-slate-200 px-5 py-4 flex justify-between items-center mb-5">
           <div className="flex flex-col justify-center">
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[140px] object-contain object-left mb-1.5" />}
             <h3 className="font-semibold text-slate-800 text-sm">{name}</h3>
@@ -179,7 +179,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look11':
       return (
-        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-none border-l-4 border-indigo-400 mb-5 shadow-md flex justify-between items-center">
+        <div className="w-full bg-gradient-to-br from-indigo-900 to-slate-900 text-white px-5 py-6 border-l-4 border-indigo-400 mb-5 flex justify-between items-center">
           <div className="flex-1">
             <h3 className="font-black text-2xl tracking-tighter mb-1">{name}</h3>
             <div className="flex items-center gap-2 mb-2">
@@ -197,7 +197,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look12':
       return (
-        <div className="bg-white border-y-2 border-slate-200 py-6 mb-5 flex items-center justify-between px-4">
+        <div className="w-full bg-white border-y-2 border-slate-200 py-6 mb-5 flex items-center justify-between px-5">
           <div className="flex items-center gap-4">
             {showHeadshot && (
               <div className="relative">
@@ -219,7 +219,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look13':
       return (
-        <div className="bg-emerald-950 p-5 rounded-3xl mb-5 text-emerald-50 flex items-center gap-5 shadow-xl">
+        <div className="w-full bg-emerald-950 px-5 py-5 mb-5 text-emerald-50 flex items-center gap-5">
           {showHeadshot && (
             <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-emerald-800">
               <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
@@ -236,8 +236,8 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look14':
       return (
-        <div className="bg-stone-100 border border-stone-200 p-1 mb-5">
-          <div className="border border-stone-300 p-4 flex justify-between items-center bg-white">
+        <div className="w-full bg-stone-100 border-b border-stone-200 p-1 mb-5">
+          <div className="border border-stone-300 px-5 py-4 flex justify-between items-center bg-white">
             <div className="flex items-center gap-4">
               {showHeadshot && <img src={headshot} alt="Agent" className="w-14 h-14 object-cover rounded-tl-xl rounded-br-xl shadow-sm" />}
               <div>
@@ -258,7 +258,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look15':
       return (
-        <div className="relative mb-5 bg-slate-900 rounded-lg p-6 overflow-hidden flex items-center justify-between text-white shadow-md">
+        <div className="relative w-full mb-5 bg-slate-900 px-5 py-6 overflow-hidden flex items-center justify-between text-white">
           <div className="absolute right-0 top-0 w-32 h-32 bg-sky-500 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/4"></div>
           <div className="relative z-10 flex-1">
             <h3 className="text-2xl font-black tracking-tight mb-0.5">{name}</h3>
@@ -276,7 +276,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look16':
       return (
-        <div className="bg-white border-b-4 border-amber-400 pb-4 mb-5 flex justify-between items-end px-2 pt-2">
+        <div className="w-full bg-white border-b-4 border-amber-400 pb-4 mb-5 flex justify-between items-end px-5 pt-4">
           <div className="flex flex-col">
             {logo && <img src={logo} alt="Logo" className="h-8 w-auto max-w-[140px] object-contain object-left mb-3" />}
             <h3 className="font-bold text-slate-900 text-xl leading-none">{name}</h3>
@@ -292,7 +292,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look17':
       return (
-        <div className="flex items-stretch bg-white border border-slate-200 rounded-xl overflow-hidden mb-5 shadow-sm">
+        <div className="flex items-stretch w-full bg-white border-b border-slate-200 overflow-hidden mb-5">
           {showHeadshot && (
             <div className="w-24 flex-shrink-0">
               <img src={headshot} alt="Agent" className="w-full h-full object-cover" />
@@ -313,7 +313,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look18':
       return (
-        <div className="bg-slate-50 p-6 rounded-3xl mb-5 flex justify-between items-center border border-slate-100">
+        <div className="w-full bg-slate-50 px-5 py-6 mb-5 flex justify-between items-center border-b border-slate-100">
           <div className="flex items-center gap-4">
             {showHeadshot && (
               <div className="w-14 h-14 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-fuchsia-500 to-orange-400">
@@ -337,7 +337,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look19':
       return (
-        <div className="border-2 border-slate-900 p-4 mb-5 bg-white relative">
+        <div className="w-full border-b-2 border-slate-900 px-5 py-4 mb-5 bg-white relative">
           <div className="absolute -top-3 left-4 bg-white px-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{brokerage}</span>
           </div>
@@ -356,7 +356,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look20':
       return (
-        <div className="bg-slate-900 p-5 rounded-2xl mb-5 flex items-center justify-between text-white shadow-xl relative overflow-hidden">
+        <div className="w-full bg-slate-900 px-5 py-5 mb-5 flex items-center justify-between text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
           <div className="relative z-10">
             <h3 className="font-bold text-xl mb-1">{name}</h3>
@@ -379,13 +379,13 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       if (look === 'custom' && profile.custom_header_url) {
         return (
           <div className="mb-5 w-full">
-            <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-contain" />
+            <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover" />
           </div>
         )
       }
       if (look === 'custom') {
         return (
-          <div className="p-8 mb-5 bg-slate-100 text-center text-slate-500 border-2 border-dashed border-slate-300 rounded-xl">
+          <div className="w-full px-5 py-8 mb-5 bg-slate-100 text-center text-slate-500 border-b-2 border-dashed border-slate-300">
             <p className="text-xs font-bold uppercase tracking-wider mb-1">No Custom Header Uploaded</p>
             <p className="text-[10px]">Upload a Canva image in Step 2 to use this layout.</p>
           </div>
@@ -393,7 +393,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
       }
       // Fallback to look10
       return (
-        <div className="bg-slate-100/50 backdrop-blur-md border border-white/60 p-4 rounded-2xl flex justify-between items-center mb-5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+        <div className="w-full bg-slate-100/50 backdrop-blur-md border-b border-slate-200 px-5 py-4 flex justify-between items-center mb-5">
           <div className="flex flex-col justify-center">
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[140px] object-contain object-left mb-1.5" />}
             <h3 className="font-semibold text-slate-800 text-sm">{name}</h3>

@@ -391,7 +391,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
               </div>
               <div className="mb-8 border-t border-slate-800 pt-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-4">Quiz Questions</label>
-                <QuizBuilder questions={customQuestions} onChange={setCustomQuestions} />
+                <QuizBuilder questions={customQuestions} onChange={setCustomQuestions} bank="openhouse" />
               </div>
             </div>
           )}

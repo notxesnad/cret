@@ -68,11 +68,11 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
         }
       `}</style>
 
-      <div id="report-print-root" className="max-w-3xl mx-auto pt-6 px-4 md:px-8 space-y-6">
+      <div id="report-print-root" className="w-full">
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <td>
+              <td className="p-0">
                 <div id="report-print-header">
                   {renderAgentHeader(profile)}
                 </div>
@@ -81,8 +81,8 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
           </thead>
           <tbody>
             <tr>
-              <td>
-                <div className="space-y-6">
+              <td className="p-0">
+                <div className="max-w-3xl mx-auto px-4 md:px-8 py-6 space-y-6">
         {/* Report Title */}
         <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
           <div>

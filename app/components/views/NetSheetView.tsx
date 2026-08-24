@@ -36,7 +36,9 @@ export function NetSheetView({
 
       {netSheetView === 'calc' ? (
         <>
-          {renderAgentHeader()}
+          <div className="-mx-6 -mt-6 [&>*]:mb-0">
+            {renderAgentHeader()}
+          </div>
 
           <div className="flex justify-between items-center">
             <div>
