@@ -1,7 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
+import { headers } from 'next/headers'
+import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice } from '@/app/lib/tourFormat'
+
+async function getTourShareUrl(path: string) {
+  const headerList = await headers()
+  const host = headerList.get('x-forwarded-host') || headerList.get('host')
+  const proto = headerList.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+  if (host) return `${proto}://${host}${path}`
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}${path}`
+  return path
+}
 
 export default async function TourItineraryPage({
   params
@@ -42,6 +53,14 @@ export default async function TourItineraryPage({
     )
   }
 
+  const shareUrl = await getTourShareUrl(`/tour/${profileId}/${clientId}/${tourId}`)
+  const qrDataUrl = await QRCode.toDataURL(shareUrl, {
+    width: 240,
+    margin: 1,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#0f172a', light: '#ffffff' },
+  })
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       <style>{`
@@ -71,6 +90,21 @@ export default async function TourItineraryPage({
           flex: 1 !important;
           min-width: 0 !important;
           padding: 0.85rem 1rem !important;
+        }
+        .itinerary-qr-header { display: none; }
+        .pdf-capture .itinerary-qr-header {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 1rem !important;
+          padding: 0.25rem 0 1rem !important;
+          margin-bottom: 0.5rem !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+        }
+        .pdf-capture .itinerary-qr-header img {
+          width: 88px !important;
+          height: 88px !important;
+          flex-shrink: 0 !important;
         }
         @media print {
           .no-print { display: none !important; }
@@ -115,6 +149,20 @@ export default async function TourItineraryPage({
             min-width: 0;
             padding: 0.85rem 1rem !important;
           }
+          .itinerary-qr-header {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            padding: 0.25rem 0 1rem !important;
+            margin-bottom: 0.5rem !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+          }
+          .itinerary-qr-header img {
+            width: 88px !important;
+            height: 88px !important;
+            flex-shrink: 0 !important;
+          }
           #report-print-root, #report-print-root * {
             box-shadow: none !important;
             text-shadow: none !important;
@@ -132,6 +180,17 @@ export default async function TourItineraryPage({
               <td>
                 <div id="report-print-header">
                   {renderAgentHeader(profile)}
+                  <div className="itinerary-qr-header">
+                    <img src={qrDataUrl} alt="QR code for this itinerary" width={88} height={88} />
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Tour Itinerary</p>
+                      <h1 className="text-xl font-black text-slate-900 leading-tight mt-0.5">{tour.title}</h1>
+                      {tour.date && (
+                        <p className="text-lg font-bold text-slate-800">{formatDateDisplay(tour.date)}</p>
+                      )}
+                      <p className="text-sm font-semibold text-slate-600 mt-1">Scan this code to get maps and directions.</p>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -139,7 +198,7 @@ export default async function TourItineraryPage({
           <tbody>
             <tr>
               <td>
-                <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
+                <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid no-print">
                   <div>
                     <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Tour Itinerary</span>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{tour.title}</h1>
