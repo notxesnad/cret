@@ -10,6 +10,8 @@ export interface Question {
   text: string
   options?: string[]
   maxRating?: number
+  optional?: boolean
+  placeholder?: string
 }
 
 interface QuestionnaireProps {
@@ -142,17 +144,26 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
               <textarea
                 value={textInput}
                 onChange={e => setTextInput(e.target.value)}
-                placeholder="Type your answer here..."
+                placeholder={currentQ.placeholder || 'Type your answer here...'}
                 rows={4}
                 className={`w-full rounded-xl p-4 focus:outline-none resize-none ${textAreaClasses}`}
               ></textarea>
               <button
                 onClick={() => handleAnswer(textInput)}
-                disabled={!textInput.trim() || isSubmitting}
-                className={`w-full p-4 rounded-xl font-black text-white transition-all active:scale-95 ${!textInput.trim() ? (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-300 text-white') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={(!textInput.trim() && !currentQ.optional) || isSubmitting}
+                className={`w-full p-4 rounded-xl font-black text-white transition-all active:scale-95 ${!textInput.trim() && !currentQ.optional ? (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-300 text-white') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isSubmitting ? 'Submitting...' : 'Continue'}
               </button>
+              {currentQ.optional && (
+                <button
+                  onClick={() => handleAnswer('')}
+                  disabled={isSubmitting}
+                  className={`text-sm font-bold ${descClasses} hover:underline`}
+                >
+                  Skip
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -3,11 +3,14 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
+import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import {
   HomeView,
   SignInView,
   MoneyStuffView,
   OpenHouseView,
+  OpenHouseSignInView,
+  OpenHouseFeedbackView,
   SellerMenuView,
   NetSheetView,
   SellerTrackerView,
@@ -340,7 +343,7 @@ function HomeContent() {
   }
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach']
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
@@ -557,7 +560,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; animation: fadeIn 0.3s ease-out; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active { display: flex !important; flex-direction: column !important; }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -592,7 +595,21 @@ function HomeContent() {
           {currentView === 'home' && <HomeView switchView={switchView} showCustomModal={showCustomModal} />}
           {currentView === 'signin' && <SignInView />}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} />}
-          {currentView === 'openhouse' && <OpenHouseView listings={listings} />}
+          {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
+          {currentView === 'ohsignin' && <OpenHouseSignInView listings={listings} switchView={switchView} />}
+          {currentView === 'ohfeedback' && (
+            <OpenHouseFeedbackView
+              campaigns={outreachCampaigns.filter((c: any) => c.kind === OPENHOUSE_FEEDBACK_KIND)}
+              updateCampaigns={(updater) => updateOutreachCampaigns(prev => {
+                const others = (prev || []).filter((c: any) => c.kind !== OPENHOUSE_FEEDBACK_KIND)
+                const mine = (prev || []).filter((c: any) => c.kind === OPENHOUSE_FEEDBACK_KIND)
+                return [...updater(mine), ...others]
+              })}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
+            />
+          )}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} />}
           {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} />}
@@ -632,7 +649,7 @@ function HomeContent() {
           )}
           {currentView === 'outreach' && (
             <OutreachView 
-              campaigns={outreachCampaigns}
+              campaigns={outreachCampaigns.filter((c: any) => c.kind !== OPENHOUSE_FEEDBACK_KIND)}
               updateCampaigns={updateOutreachCampaigns}
               switchView={switchView}
               showCustomModal={showCustomModal}

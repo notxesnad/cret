@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
-import { AdviceClient } from './AdviceClient'
+import { FeedbackClient } from './FeedbackClient'
+import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 
-export default async function AdvicePage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
+export default async function OpenHouseFeedbackPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -16,37 +17,32 @@ export default async function AdvicePage({ params }: { params: Promise<{ profile
     .single()
 
   if (error) {
-    console.error("Supabase Error fetching profile for advice:", error)
+    console.error('Supabase Error fetching profile for open house feedback:', error)
   }
 
-  let campaign = null
-
-  if (profile && profile.outreach_campaigns) {
-    campaign = profile.outreach_campaigns.find((c: any) => c.id === campaignId && c.kind !== 'openhouse_feedback')
-  }
+  const campaign = (profile?.outreach_campaigns || []).find(
+    (c: any) => c.id === campaignId && c.kind === OPENHOUSE_FEEDBACK_KIND
+  )
 
   if (!profile || !campaign) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-2xl font-black text-slate-100 mb-2">Campaign Not Found</h1>
-        <p className="text-slate-400 max-w-md mx-auto mb-4">This questionnaire may have been removed or the link is incorrect.</p>
+        <h1 className="text-2xl font-black text-slate-100 mb-2">Questionnaire Not Found</h1>
+        <p className="text-slate-400 max-w-md mx-auto mb-4">This feedback form may have been removed or the link is incorrect.</p>
       </div>
     )
   }
 
   return (
     <div className="min-h-[100dvh] bg-slate-950 text-slate-50 font-sans pb-20">
-      
-      {/* Brand Header */}
       <div className="max-w-xl mx-auto pt-6 px-4 md:px-8">
         {renderAgentHeader(profile)}
       </div>
-
       <div className="max-w-xl mx-auto px-4 md:px-8 mt-6">
-        <AdviceClient 
-          profileId={profileId} 
-          campaignId={campaignId} 
-          campaign={campaign} 
+        <FeedbackClient
+          profileId={profileId}
+          campaignId={campaignId}
+          campaign={campaign}
         />
       </div>
     </div>
