@@ -73,12 +73,13 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
             el.style.setProperty('display', 'flex', 'important')
             el.style.setProperty('flex-direction', 'row', 'important')
             el.style.setProperty('align-items', 'center', 'important')
-            el.style.setProperty('gap', '1rem', 'important')
+            el.style.setProperty('justify-content', 'space-between', 'important')
+            el.style.setProperty('gap', '0.75rem', 'important')
           })
           clone.querySelectorAll('.itinerary-qr-header img').forEach((node) => {
             const img = node as HTMLElement
-            img.style.setProperty('width', '88px', 'important')
-            img.style.setProperty('height', '88px', 'important')
+            img.style.setProperty('width', '64px', 'important')
+            img.style.setProperty('height', '64px', 'important')
             img.style.setProperty('flex-shrink', '0', 'important')
           })
           clone.querySelectorAll('.itinerary-stop').forEach((node) => {

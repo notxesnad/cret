@@ -55,9 +55,9 @@ export default async function TourItineraryPage({
 
   const shareUrl = await getTourShareUrl(`/tour/${profileId}/${clientId}/${tourId}`)
   const qrDataUrl = await QRCode.toDataURL(shareUrl, {
-    width: 240,
+    width: 256,
     margin: 1,
-    errorCorrectionLevel: 'M',
+    errorCorrectionLevel: 'L',
     color: { dark: '#0f172a', light: '#ffffff' },
   })
 
@@ -96,14 +96,15 @@ export default async function TourItineraryPage({
           display: flex !important;
           flex-direction: row !important;
           align-items: center !important;
-          gap: 1rem !important;
-          padding: 0.25rem 0 1rem !important;
+          justify-content: space-between !important;
+          gap: 0.75rem !important;
+          padding: 0.25rem 0 0.75rem !important;
           margin-bottom: 0.5rem !important;
           border-bottom: 1px solid #e2e8f0 !important;
         }
         .pdf-capture .itinerary-qr-header img {
-          width: 88px !important;
-          height: 88px !important;
+          width: 64px !important;
+          height: 64px !important;
           flex-shrink: 0 !important;
         }
         @media print {
@@ -153,14 +154,15 @@ export default async function TourItineraryPage({
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
-            gap: 1rem !important;
-            padding: 0.25rem 0 1rem !important;
+            justify-content: space-between !important;
+            gap: 0.75rem !important;
+            padding: 0.25rem 0 0.75rem !important;
             margin-bottom: 0.5rem !important;
             border-bottom: 1px solid #e2e8f0 !important;
           }
           .itinerary-qr-header img {
-            width: 88px !important;
-            height: 88px !important;
+            width: 64px !important;
+            height: 64px !important;
             flex-shrink: 0 !important;
           }
           #report-print-root, #report-print-root * {
@@ -181,14 +183,16 @@ export default async function TourItineraryPage({
                 <div id="report-print-header">
                   {renderAgentHeader(profile)}
                   <div className="itinerary-qr-header">
-                    <img src={qrDataUrl} alt="QR code for this itinerary" width={88} height={88} />
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Tour Itinerary</p>
                       <h1 className="text-xl font-black text-slate-900 leading-tight mt-0.5">{tour.title}</h1>
                       {tour.date && (
                         <p className="text-lg font-bold text-slate-800">{formatDateDisplay(tour.date)}</p>
                       )}
-                      <p className="text-sm font-semibold text-slate-600 mt-1">Scan this code to get maps and directions.</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-[10px] font-semibold text-slate-600 leading-tight text-right max-w-[5.5rem]">Scan this code to get maps and directions.</p>
+                      <img src={qrDataUrl} alt="QR code for this itinerary" width={64} height={64} />
                     </div>
                   </div>
                 </div>
