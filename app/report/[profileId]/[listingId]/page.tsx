@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
+import { formatDateDisplay } from '@/app/lib/tourFormat'
 
 export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
   const { profileId, listingId } = await params
@@ -55,6 +56,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
           .print-break-inside-avoid {
             break-inside: avoid-page !important;
             page-break-inside: avoid !important;
+            overflow: visible !important;
           }
           #report-print-root, #report-print-root * {
             box-shadow: none !important;
@@ -109,7 +111,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
                     
                     <div className="flex flex-wrap gap-2 mb-1">
                       <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isCompleted ? 'text-slate-500 bg-slate-100' : isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
-                        {act.date}
+                        {formatDateDisplay(act.date)}
                       </span>
                       {!isCompleted && (
                         <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>

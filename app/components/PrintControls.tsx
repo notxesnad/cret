@@ -96,9 +96,13 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
 
       const snapEnd = (startY: number, maxEndY: number) => {
         let end = maxEndY
+        const fullPagePx = destHeight / pdfScale
         for (const b of blocks) {
-          if (b.top > startY && b.top < maxEndY && b.bottom > maxEndY) {
+          if (b.bottom <= startY + 1 || b.top >= maxEndY) continue
+          if (b.top > startY + 24 && b.bottom > maxEndY) {
             end = Math.min(end, b.top)
+          } else if (Math.abs(b.top - startY) <= 24 && b.bottom > maxEndY && b.bottom - b.top <= fullPagePx) {
+            end = Math.max(end, Math.min(b.bottom + 8, canvas.height))
           }
         }
         if (end <= startY + 24) return maxEndY

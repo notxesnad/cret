@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react'
+import { DateField } from '@/app/components/DateField'
+import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
 
 export interface Activity {
   id: string;
@@ -43,6 +45,8 @@ const PRESET_ACTIVITIES = [
   "🚪 Door Knocking Campaign in Neighborhood",
   "🥂 Hosted Broker's Open",
   "🏡 Hosted Public Open House",
+  "🔑 Showing",
+  "🔑 Second Showing",
   "📞 Followed Up With Showing Agents",
   "💬 Weekly Showing Feedback Shared",
   "🤝 Received an Offer",
@@ -102,7 +106,7 @@ export function SellerTrackerView({
           {
             id: Math.random().toString(36).substr(2, 9),
             label,
-            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            date: toDateInput(new Date().toDateString()),
             status: 'completed' as const
           },
           ...listing.activities
@@ -343,7 +347,7 @@ export function SellerTrackerView({
                         >
                           <div>
                             <div className="flex gap-2 mb-1">
-                              <span className="text-xs font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{act.date}</span>
+                              <span className="text-xs font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{formatDateDisplay(act.date)}</span>
                               {act.status === 'upcoming' && <span className="text-xs font-black text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded inline-block uppercase">Upcoming</span>}
                               {act.status === 'pending' && <span className="text-xs font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded inline-block uppercase">Pending</span>}
                             </div>
@@ -387,11 +391,12 @@ export function SellerTrackerView({
                   
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Date</label>
-                    <input 
-                      type="text" 
-                      value={editActivityForm.date || ''}
-                      onChange={(e) => setEditActivityForm({...editActivityForm, date: e.target.value})}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-amber-500 transition-colors" 
+                    <DateField
+                      value={toDateInput(editActivityForm.date || '')}
+                      onChange={date => setEditActivityForm({ ...editActivityForm, date })}
+                      placeholder="Select a date"
+                      className="bg-slate-800 border-slate-700"
+                      accent="amber"
                     />
                   </div>
 

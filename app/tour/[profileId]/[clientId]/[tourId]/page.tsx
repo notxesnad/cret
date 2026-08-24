@@ -54,6 +54,24 @@ export default async function TourItineraryPage({
           .print-break-inside-avoid {
             break-inside: avoid-page !important;
             page-break-inside: avoid !important;
+            overflow: visible !important;
+          }
+          tr.print-break-inside-avoid {
+            break-inside: avoid-page !important;
+            page-break-inside: avoid !important;
+          }
+          .itinerary-stop {
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          .itinerary-stop img {
+            max-height: 140px !important;
+            height: 140px !important;
+            object-fit: cover;
+          }
+          .itinerary-stop .stop-body {
+            padding: 1rem 1.25rem !important;
           }
           #report-print-root, #report-print-root * {
             box-shadow: none !important;
@@ -79,77 +97,83 @@ export default async function TourItineraryPage({
           <tbody>
             <tr>
               <td>
-                <div className="space-y-6">
-                  <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
-                    <div>
-                      <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Tour Itinerary</span>
-                      <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{tour.title}</h1>
-                      {tour.date && (
-                        <p className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">{formatDateDisplay(tour.date)}</p>
-                      )}
-                      <p className="text-base text-slate-500 mt-2">
-                        Prepared for {client.name}
-                        {` • ${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`}
-                      </p>
-                    </div>
-                    <PrintButtons listingAddress={tour.title} />
+                <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
+                  <div>
+                    <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-2">Tour Itinerary</span>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{tour.title}</h1>
+                    {tour.date && (
+                      <p className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">{formatDateDisplay(tour.date)}</p>
+                    )}
+                    <p className="text-base text-slate-500 mt-2">
+                      Prepared for {client.name}
+                      {` • ${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`}
+                    </p>
                   </div>
-
-                  {stops.length === 0 ? (
-                    <div className="bg-white border border-slate-200 p-8 rounded-2xl text-slate-500 italic">
-                      No homes have been added to this tour yet.
-                    </div>
-                  ) : (
-                    stops.map((item: any) => (
-                      <div key={item.home.id} className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden print-break-inside-avoid">
-                        {item.home.photo_url && (
-                          <img src={item.home.photo_url} alt={item.home.address} className="w-full h-52 object-cover" />
-                        )}
-                        <div className="p-6 md:p-8">
-                          <div className="flex justify-between items-start gap-4 mb-3">
-                            <div>
-                              <span className="text-base font-black bg-rose-100 text-rose-600 px-2.5 py-1 rounded">Stop {item.index + 1}</span>
-                              {item.time && (
-                                <span className="text-base font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(item.time)}</span>
-                              )}
-                              <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
-                            </div>
-                            {item.home.price && (
-                              <div className="text-lg font-black text-emerald-600 whitespace-nowrap">{formatPrice(item.home.price) || item.home.price}</div>
-                            )}
-                          </div>
-
-                          {item.home.notes && (
-                            <p className="text-base text-slate-600 mb-4 whitespace-pre-wrap">{item.home.notes}</p>
-                          )}
-
-                          <div className="flex flex-wrap gap-2 no-print">
-                            <a
-                              href={`https://maps.google.com/?q=${encodeURIComponent(item.home.address)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm"
-                            >
-                              Open in Google Maps
-                            </a>
-                            {item.home.mls_pdf_url && (
-                              <a
-                                href={item.home.mls_pdf_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-xl font-bold text-sm"
-                              >
-                                MLS Details PDF
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  <PrintButtons listingAddress={tour.title} />
                 </div>
               </td>
             </tr>
+
+            {stops.length === 0 ? (
+              <tr>
+                <td>
+                  <div className="bg-white border border-slate-200 p-8 rounded-2xl text-slate-500 italic mt-6">
+                    No homes have been added to this tour yet.
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              stops.map((item: any) => (
+                <tr key={item.home.id} className="print-break-inside-avoid">
+                  <td>
+                    <div className="itinerary-stop max-w-md mx-auto mt-6 bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden print-break-inside-avoid">
+                      {item.home.photo_url && (
+                        <img src={item.home.photo_url} alt={item.home.address} className="w-full h-40 object-cover" />
+                      )}
+                      <div className="stop-body p-5">
+                        <div className="flex justify-between items-start gap-4 mb-3">
+                          <div>
+                            <span className="text-base font-black bg-rose-100 text-rose-600 px-2.5 py-1 rounded">Stop {item.index + 1}</span>
+                            {item.time && (
+                              <span className="text-base font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(item.time)}</span>
+                            )}
+                            <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
+                          </div>
+                          {item.home.price && (
+                            <div className="text-lg font-black text-emerald-600 whitespace-nowrap">{formatPrice(item.home.price) || item.home.price}</div>
+                          )}
+                        </div>
+
+                        {item.home.notes && (
+                          <p className="text-base text-slate-600 mb-4 whitespace-pre-wrap">{item.home.notes}</p>
+                        )}
+
+                        <div className="flex flex-wrap gap-2 no-print">
+                          <a
+                            href={`https://maps.google.com/?q=${encodeURIComponent(item.home.address)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm"
+                          >
+                            Open in Google Maps
+                          </a>
+                          {item.home.mls_pdf_url && (
+                            <a
+                              href={item.home.mls_pdf_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-xl font-bold text-sm"
+                            >
+                              MLS Details PDF
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
