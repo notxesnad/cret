@@ -66,7 +66,7 @@ function HomeContent() {
   const [uploading, setUploading] = useState<boolean>(false)
 
 
-  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
+  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean; welcomeNew?: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
   const [modalEmail, setModalEmail] = useState('')
   const [modalAuthSent, setModalAuthSent] = useState(false)
   const [modalAuthError, setModalAuthError] = useState('')
@@ -396,7 +396,7 @@ function HomeContent() {
   const showCustomModal = (msg: string, requireAuth = false) => {
     if (getAwaitingMagicLink()) return
     const requiresAuth = requireAuth || msg.toLowerCase().includes('logged in') || msg.toLowerCase().includes('signed in')
-    setModalData({ isOpen: true, msg, requiresAuth })
+    setModalData({ isOpen: true, msg, requiresAuth, welcomeNew: false })
     setModalAuthSent(false)
     setModalEmail(profile.email || '')
     setModalAuthError('')
@@ -504,8 +504,9 @@ function HomeContent() {
     if (getAwaitingMagicLink()) return
     setModalData({
       isOpen: true,
-      msg: 'Welcome to CoolRealEstateTools — we created your account.',
-      requiresAuth: false
+      msg: '',
+      requiresAuth: false,
+      welcomeNew: true
     })
     setModalAuthSent(false)
     setModalAuthError('')
@@ -949,7 +950,20 @@ function HomeContent() {
               
               {!modalData.requiresAuth ? (
                 <div className="space-y-4">
-                  <p className="text-base font-bold text-white">{modalData.msg}</p>
+                  {modalData.welcomeNew ? (
+                    <div className="space-y-3">
+                      <p className="text-base font-bold text-white">Welcome to</p>
+                      <p className="text-lg font-bold tracking-widest text-white uppercase">
+                        Cool<span className="text-emerald-400">RealEstate</span>Tools
+                      </p>
+                      <p className="text-base font-bold text-white">We created your account.</p>
+                      <p className="text-sm text-slate-400">
+                        (Play around for now, but we will need you to eventually click the verification email sent to {modalEmail || profile.email || 'your email'})
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-base font-bold text-white">{modalData.msg}</p>
+                  )}
             <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
           </div>
               ) : (

@@ -70,8 +70,14 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
         {welcome ? (
           <div className="text-center space-y-3 py-4">
             <div className="text-4xl mb-2">✨</div>
-            <h3 className="text-2xl font-black text-white">Welcome to CoolRealEstateTools</h3>
-            <p className="text-base font-medium text-slate-300">We created your account.</p>
+            <p className="text-base font-bold text-white">Welcome to</p>
+            <p className="text-lg font-bold tracking-widest text-white uppercase">
+              Cool<span className="text-emerald-400">RealEstate</span>Tools
+            </p>
+            <p className="text-base font-bold text-white">We created your account.</p>
+            <p className="text-sm text-slate-400">
+              (Play around for now, but we will need you to eventually click the verification email sent to {email || 'your email'})
+            </p>
           </div>
         ) : !sent ? (
           <form onSubmit={handleSendMagicLink} className="space-y-4">
