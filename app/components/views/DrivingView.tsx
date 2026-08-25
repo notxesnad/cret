@@ -8,6 +8,7 @@ import { supabase } from '@/utils/supabase'
 import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
 import {
   formatPrice,
+  formatCityState,
   toTimeInput,
   formatTimeDisplay,
   toDateInput,
@@ -20,6 +21,8 @@ import {
 export interface ClientHome {
   id: string
   address: string
+  city?: string
+  state?: string
   price?: string
   notes?: string
   photo_url?: string
@@ -58,6 +61,21 @@ interface DrivingViewProps {
 
 const newId = () => Math.random().toString(36).substr(2, 9)
 
+function PencilButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex-shrink-0 text-slate-500 hover:text-rose-400 transition p-1 -mr-1"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z" />
+      </svg>
+    </button>
+  )
+}
+
 function StopPreview({
   stop,
   home,
@@ -76,6 +94,9 @@ function StopPreview({
         <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded ml-1">Add a time</span>
       )}
       <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
+      {formatCityState(home.city, home.state) && (
+        <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">{formatCityState(home.city, home.state)}</p>
+      )}
       {home.price && <p className="text-base font-black text-emerald-400">{home.price}</p>}
     </>
   )
@@ -105,7 +126,13 @@ export function DrivingView({
 
   const [isAddingHome, setIsAddingHome] = useState(false)
   const [newHomeAddress, setNewHomeAddress] = useState('')
-  const [newHomePrice, setNewHomePrice] = useState('')
+  const [newHomeCity, setNewHomeCity] = useState('')
+  const [newHomeState, setNewHomeState] = useState('')
+
+  const [editingClientName, setEditingClientName] = useState(false)
+  const [clientNameDraft, setClientNameDraft] = useState('')
+  const [editingTourTitle, setEditingTourTitle] = useState(false)
+  const [tourTitleDraft, setTourTitleDraft] = useState('')
 
   const [editHomeForm, setEditHomeForm] = useState<Partial<ClientHome> & { time?: string }>({})
   const [uploading, setUploading] = useState<'photo' | 'mls' | null>(null)
@@ -207,7 +234,8 @@ export function DrivingView({
     const home: ClientHome = {
       id: newId(),
       address: newHomeAddress.trim(),
-      price: formatPrice(newHomePrice) || undefined
+      city: newHomeCity.trim() || undefined,
+      state: newHomeState.trim() || undefined
     }
     updateActiveClient(c => ({
       ...c,
@@ -217,7 +245,8 @@ export function DrivingView({
         : t)
     }))
     setNewHomeAddress('')
-    setNewHomePrice('')
+    setNewHomeCity('')
+    setNewHomeState('')
     setIsAddingHome(false)
     setActiveHomeId(home.id)
     setEditHomeForm({ ...home, time: '' })
@@ -251,6 +280,8 @@ export function DrivingView({
         ? {
             ...h,
             address: editHomeForm.address!.trim(),
+            city: editHomeForm.city?.trim() || undefined,
+            state: editHomeForm.state?.trim() || undefined,
             price: formatPrice(editHomeForm.price || '') || undefined,
             notes: editHomeForm.notes?.trim() || undefined,
             photo_url: editHomeForm.photo_url || h.photo_url,
@@ -542,7 +573,29 @@ export function DrivingView({
     })
   }
 
-  const mapsUrl = (address: string) => `https://maps.google.com/?q=${encodeURIComponent(address)}`
+  const mapsUrl = (home: { address?: string; city?: string; state?: string } | string) => {
+    const q = typeof home === 'string'
+      ? home
+      : [home.address, home.city, home.state].filter(Boolean).join(', ')
+    return `https://maps.google.com/?q=${encodeURIComponent(q)}`
+  }
+
+  const saveClientName = () => {
+    const name = clientNameDraft.trim()
+    if (name) updateActiveClient(c => ({ ...c, name }))
+    setEditingClientName(false)
+  }
+
+  const saveTourTitle = () => {
+    const title = tourTitleDraft.trim()
+    if (title && activeTourId) {
+      updateActiveClient(c => ({
+        ...c,
+        tours: c.tours.map(t => t.id === activeTourId ? { ...t, title } : t)
+      }))
+    }
+    setEditingTourTitle(false)
+  }
 
   return (
     <div id="view-driving" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
@@ -653,7 +706,25 @@ export function DrivingView({
               <>
                 <div className="mb-6">
                   <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Tours for</span>
-                  <h3 className="text-2xl font-black text-white mt-1">{activeClient.name}</h3>
+                  {editingClientName ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={clientNameDraft}
+                      onChange={e => setClientNameDraft(e.target.value)}
+                      onBlur={saveClientName}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveClientName() } }}
+                      className="mt-1 w-full bg-slate-800 border border-rose-500 rounded-xl px-3 py-2 text-2xl font-black text-white focus:outline-none"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-2xl font-black text-white">{activeClient.name}</h3>
+                      <PencilButton
+                        label="Edit client name"
+                        onClick={() => { setClientNameDraft(activeClient.name); setEditingClientName(true) }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {isAddingTour ? (
@@ -721,7 +792,25 @@ export function DrivingView({
               <>
                 <div className="mb-6">
                   <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Itinerary</span>
-                  <h3 className="text-2xl font-black text-white mt-1">{activeTour.title}</h3>
+                  {editingTourTitle ? (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={tourTitleDraft}
+                      onChange={e => setTourTitleDraft(e.target.value)}
+                      onBlur={saveTourTitle}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveTourTitle() } }}
+                      className="mt-1 w-full bg-slate-800 border border-rose-500 rounded-xl px-3 py-2 text-2xl font-black text-white focus:outline-none"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-2xl font-black text-white">{activeTour.title}</h3>
+                      <PencilButton
+                        label="Edit tour name"
+                        onClick={() => { setTourTitleDraft(activeTour.title); setEditingTourTitle(true) }}
+                      />
+                    </div>
+                  )}
                   <div className="mt-2 max-w-xs">
                     <DateField
                       value={toDateInput(activeTour.date || '')}
@@ -745,17 +834,26 @@ export function DrivingView({
                       onChange={e => setNewHomeAddress(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
                     />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Price (optional)"
-                      value={newHomePrice}
-                      onChange={e => setNewHomePrice(formatPrice(e.target.value))}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={newHomeCity}
+                        onChange={e => setNewHomeCity(e.target.value)}
+                        className="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="State"
+                        value={newHomeState}
+                        onChange={e => setNewHomeState(e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase())}
+                        className="w-20 bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base text-white text-center uppercase focus:outline-none focus:border-rose-500"
+                        maxLength={2}
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button onClick={confirmAddHome} className="flex-1 bg-rose-500 text-white font-bold py-3 rounded-lg text-base">Add Home</button>
-                      <button onClick={() => { setIsAddingHome(false); setNewHomeAddress(''); setNewHomePrice(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
+                      <button onClick={() => { setIsAddingHome(false); setNewHomeAddress(''); setNewHomeCity(''); setNewHomeState(''); }} className="flex-1 bg-slate-700 text-white font-bold py-3 rounded-lg text-base">Cancel</button>
                     </div>
                   </div>
                 ) : (
@@ -849,6 +947,27 @@ export function DrivingView({
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500"
                     />
                   </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1 min-w-0">
+                      <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">City</label>
+                      <input
+                        type="text"
+                        value={editHomeForm.city || ''}
+                        onChange={e => setEditHomeForm({ ...editHomeForm, city: e.target.value })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base font-bold text-white focus:outline-none focus:border-rose-500"
+                      />
+                    </div>
+                    <div className="w-24 flex-shrink-0">
+                      <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">State</label>
+                      <input
+                        type="text"
+                        maxLength={2}
+                        value={editHomeForm.state || ''}
+                        onChange={e => setEditHomeForm({ ...editHomeForm, state: e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() })}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-white text-center uppercase focus:outline-none focus:border-rose-500"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Price</label>
                     <input
@@ -911,7 +1030,7 @@ export function DrivingView({
                   </div>
                   {editHomeForm.address && (
                     <a
-                      href={mapsUrl(editHomeForm.address)}
+                      href={mapsUrl(editHomeForm)}
                       target="_blank"
                       rel="noreferrer"
                       className="block bg-slate-800 text-center py-3 rounded-xl text-base font-bold hover:bg-slate-700 transition"

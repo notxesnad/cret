@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
-import { formatDateDisplay, formatTimeDisplay, formatPrice } from '@/app/lib/tourFormat'
+import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } from '@/app/lib/tourFormat'
 
 export const dynamic = 'force-dynamic'
 
@@ -247,6 +247,9 @@ export default async function TourItineraryPage({
                               <span className="text-base font-black text-slate-500 bg-slate-100 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(item.time)}</span>
                             )}
                             <h2 className="text-xl font-black text-slate-900 mt-2">{item.home.address}</h2>
+                            {formatCityState(item.home.city, item.home.state) && (
+                              <p className="text-[11px] text-slate-500 font-medium mt-0.5">{formatCityState(item.home.city, item.home.state)}</p>
+                            )}
                           </div>
                           {item.home.price && (
                             <div className="text-lg font-black text-emerald-600 whitespace-nowrap">{formatPrice(item.home.price) || item.home.price}</div>
@@ -259,7 +262,7 @@ export default async function TourItineraryPage({
 
                         <div className="flex flex-wrap gap-2 no-print">
                           <a
-                            href={`https://maps.google.com/?q=${encodeURIComponent(item.home.address)}`}
+                            href={`https://maps.google.com/?q=${encodeURIComponent([item.home.address, item.home.city, item.home.state].filter(Boolean).join(', '))}`}
                             target="_blank"
                             rel="noreferrer"
                             className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm"

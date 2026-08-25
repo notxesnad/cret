@@ -1,3 +1,7 @@
+export function formatCityState(city?: string, state?: string): string {
+  return [city?.trim(), state?.trim()].filter(Boolean).join(', ')
+}
+
 export function formatPrice(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   if (!digits) return ''
