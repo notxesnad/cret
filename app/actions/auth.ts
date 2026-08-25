@@ -8,6 +8,20 @@ function admin() {
   return createClient(url, key)
 }
 
+function firstNameFrom(fullName?: string | null) {
+  return (fullName || '').trim().split(/\s+/)[0] || ''
+}
+
+async function firstNameForEmail(email: string) {
+  const { data } = await admin()
+    .from('profiles')
+    .select('full_name')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle()
+  return firstNameFrom(data?.full_name)
+}
+
 export async function registerWithoutVerify(email: string) {
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return { error: 'Enter your email.' }
@@ -27,7 +41,8 @@ export async function registerWithoutVerify(email: string) {
       || msg.includes('registered')
       || msg.includes('exists')
     ) {
-      return { exists: true as const }
+      const firstName = await firstNameForEmail(trimmed)
+      return { exists: true as const, firstName }
     }
     return { error: error.message }
   }

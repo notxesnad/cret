@@ -70,6 +70,7 @@ function HomeContent() {
   const [modalEmail, setModalEmail] = useState('')
   const [modalAuthSent, setModalAuthSent] = useState(false)
   const [modalAuthError, setModalAuthError] = useState('')
+  const [modalWelcomeName, setModalWelcomeName] = useState('')
 
   const switchView = useCallback((viewId: string) => {
     router.push(`?view=${viewId}`, { scroll: false })
@@ -379,6 +380,7 @@ function HomeContent() {
     setModalAuthSent(false)
     setModalEmail(profile.email || '')
     setModalAuthError('')
+    setModalWelcomeName('')
   }
 
   const persistWorkspace = async () => {
@@ -451,7 +453,7 @@ function HomeContent() {
         options: { shouldCreateUser: false, emailRedirectTo: redirectUrl }
       })
       if (error) return { status: 'error' as const, message: error.message }
-      return { status: 'existing' as const }
+      return { status: 'existing' as const, firstName: result.firstName || '' }
     }
 
     if (!result.password) return { status: 'error' as const, message: 'Could not create your account.' }
@@ -482,6 +484,7 @@ function HomeContent() {
     })
     setModalAuthSent(false)
     setModalAuthError('')
+    setModalWelcomeName('')
   }
 
   const showAuthModal = () => showCustomModal('', true)
@@ -501,6 +504,7 @@ function HomeContent() {
       return
     }
     if (result.status === 'existing') {
+      setModalWelcomeName(result.firstName || '')
       setModalAuthSent(true)
       return
     }
@@ -587,7 +591,9 @@ function HomeContent() {
         return
       }
       if (result.status === 'existing') {
+        const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
         setModalData({ isOpen: true, msg: '', requiresAuth: true })
+        setModalWelcomeName(result.firstName || typedFirst)
         setModalAuthSent(true)
         setModalEmail(profile.email)
         setModalAuthError('')
@@ -928,8 +934,10 @@ function HomeContent() {
                     </div>
                   ) : (
                     <div className="space-y-4 text-center">
-                      <h3 className="font-black text-xl text-emerald-400">Check your email</h3>
-                      <p className="text-base text-slate-300">Click the link we just sent. That signs you in and keeps everything you already did.</p>
+                      <h3 className="font-black text-xl text-emerald-400">
+                        Welcome back{modalWelcomeName ? ` ${modalWelcomeName}` : ''}
+                      </h3>
+                      <p className="text-base text-slate-300">Simply click the link we just emailed you to get signed in.</p>
                       <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Got it</button>
         </div>
       )}

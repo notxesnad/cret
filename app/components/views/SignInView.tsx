@@ -6,6 +6,7 @@ export function SignInView() {
   const [email, setEmail] = useState<string>('')
   const [sent, setSent] = useState<boolean>(false)
   const [welcome, setWelcome] = useState<boolean>(false)
+  const [welcomeName, setWelcomeName] = useState<string>('')
   const [message, setMessage] = useState<string>('')
 
   const handleSendMagicLink = async (e: React.FormEvent) => {
@@ -30,6 +31,7 @@ export function SignInView() {
         setMessage(error.message)
         return
       }
+      setWelcomeName(result.firstName || '')
       setSent(true)
       return
     }
@@ -83,11 +85,13 @@ export function SignInView() {
         ) : (
           <div className="text-center space-y-3 py-4">
             <div className="text-4xl mb-2">✨</div>
-            <h3 className="font-money text-3xl text-emerald-400 tracking-wide">Check your email</h3>
-            <p className="text-base font-medium text-slate-300">Click the link we just sent. That signs you in and keeps everything you already did.</p>
+            <h3 className="font-money text-3xl text-emerald-400 tracking-wide">
+              Welcome back{welcomeName ? ` ${welcomeName}` : ''}
+            </h3>
+            <p className="text-base font-medium text-slate-300">Simply click the link we just emailed you to get signed in.</p>
             <button 
               type="button" 
-              onClick={() => { setSent(false); setEmail(''); setMessage(''); }}
+              onClick={() => { setSent(false); setEmail(''); setMessage(''); setWelcomeName(''); }}
               className="text-xs text-slate-400 hover:text-white underline pt-4 block mx-auto"
             >
               Use a different email

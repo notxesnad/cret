@@ -117,7 +117,11 @@ export function ProfileBuilderView({
       <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-full [&>*]:mb-0">
+              {renderAgentHeader(!profile.pdf_look || profile.pdf_look === 'custom' ? 'look1' : null)}
+            </div>
+            <div className="px-6 py-6">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design your custom header</h3>
             <div className="space-y-4">
               <div>
@@ -160,6 +164,7 @@ export function ProfileBuilderView({
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-fuchsia-500 transition-colors" 
                 />
               </div>
+            </div>
             </div>
           </div>
 
