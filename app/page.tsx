@@ -71,6 +71,7 @@ function HomeContent() {
   const [modalAuthSent, setModalAuthSent] = useState(false)
   const [modalAuthError, setModalAuthError] = useState('')
   const [modalWelcomeName, setModalWelcomeName] = useState('')
+  const [modalAuthLoading, setModalAuthLoading] = useState(false)
 
   const switchView = useCallback((viewId: string) => {
     router.push(`?view=${viewId}`, { scroll: false })
@@ -400,6 +401,7 @@ function HomeContent() {
     setModalEmail(profile.email || '')
     setModalAuthError('')
     setModalWelcomeName('')
+    setModalAuthLoading(false)
   }
 
   const persistWorkspace = async () => {
@@ -508,6 +510,7 @@ function HomeContent() {
     setModalAuthSent(false)
     setModalAuthError('')
     setModalWelcomeName('')
+    setModalAuthLoading(false)
   }
 
   const showAuthModal = () => showCustomModal('', true)
@@ -519,20 +522,26 @@ function HomeContent() {
 
   const handleModalAuth = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (modalAuthLoading) return
     setModalAuthError('')
     if (!modalEmail) return
 
-    const result = await completeEmailAuth(modalEmail)
-    if (result.status === 'error') {
-      setModalAuthError(result.message)
-      return
+    setModalAuthLoading(true)
+    try {
+      const result = await completeEmailAuth(modalEmail)
+      if (result.status === 'error') {
+        setModalAuthError(result.message)
+        return
+      }
+      if (result.status === 'existing') {
+        setModalWelcomeName(result.firstName || '')
+        setModalAuthSent(true)
+        return
+      }
+      showWelcomeModal()
+    } finally {
+      setModalAuthLoading(false)
     }
-    if (result.status === 'existing') {
-      setModalWelcomeName(result.firstName || '')
-      setModalAuthSent(true)
-      return
-    }
-    showWelcomeModal()
   }
 
   useEffect(() => {
@@ -958,14 +967,28 @@ function HomeContent() {
                           value={modalEmail}
                           onChange={e => setModalEmail(e.target.value)}
               required
-                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-base"
+                          disabled={modalAuthLoading}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-base disabled:opacity-60"
             />
-                        <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">
-                          Continue
+                        <button
+                          type="submit"
+                          disabled={modalAuthLoading}
+                          aria-busy={modalAuthLoading}
+                          className={`w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all duration-150 ${modalAuthLoading ? 'cursor-wait scale-[0.98] brightness-95' : 'hover:bg-emerald-400 active:scale-[0.97] active:brightness-95'}`}
+                        >
+                          {modalAuthLoading ? (
+                            <>
+                              <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                              </svg>
+                              One sec...
+                            </>
+                          ) : 'Continue'}
           </button>
         </form>
                       {modalAuthError && <p className="text-base text-rose-400 text-center">{modalAuthError}</p>}
-                      <button onClick={closeCustomModal} className="w-full text-base text-slate-500 hover:text-slate-300 py-2">Cancel</button>
+                      <button onClick={closeCustomModal} disabled={modalAuthLoading} className="w-full text-base text-slate-500 hover:text-slate-300 py-2 disabled:opacity-40">Cancel</button>
                     </div>
                   ) : (
                     <div className="space-y-4 text-center">

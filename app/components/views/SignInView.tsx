@@ -8,11 +8,15 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
   const [welcome, setWelcome] = useState<boolean>(false)
   const [welcomeName, setWelcomeName] = useState<string>('')
   const [message, setMessage] = useState<string>('')
+  const [loading, setLoading] = useState(false)
 
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
     setMessage('')
+    setLoading(true)
 
+    try {
     const result = await registerWithoutVerify(email)
     if (result.error) {
       setMessage(result.error)
@@ -55,6 +59,9 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
       return
     }
     setWelcome(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -80,11 +87,25 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500"
+                disabled={loading}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 disabled:opacity-60"
               />
             </div>
-            <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl transition shadow-lg">
-              Continue
+            <button
+              type="submit"
+              disabled={loading}
+              aria-busy={loading}
+              className={`w-full bg-emerald-500 text-slate-950 font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all duration-150 ${loading ? 'cursor-wait scale-[0.98] brightness-95' : 'hover:bg-emerald-400 active:scale-[0.97] active:brightness-95'}`}
+            >
+              {loading ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  One sec...
+                </>
+              ) : 'Continue'}
             </button>
           </form>
         ) : (
