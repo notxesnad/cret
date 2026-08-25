@@ -17,7 +17,7 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
     setLoading(true)
 
     try {
-    const result = await registerWithoutVerify(email)
+    const result = await registerWithoutVerify(email, typeof window !== 'undefined' ? window.location.origin : undefined)
     if (result.error) {
       setMessage(result.error)
       return

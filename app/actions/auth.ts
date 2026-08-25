@@ -1,6 +1,8 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
+import { welcomeEmailHtml } from '@/app/lib/welcomeEmail'
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -22,7 +24,41 @@ async function firstNameForEmail(email: string) {
   return firstNameFrom(data?.full_name)
 }
 
-export async function registerWithoutVerify(email: string) {
+async function sendWelcomeEmail(email: string, redirectTo?: string) {
+  const db = admin()
+  const { data, error } = await db.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: redirectTo ? { redirectTo } : undefined,
+  })
+  const actionLink = data?.properties?.action_link
+  if (error || !actionLink) {
+    console.error('Could not generate welcome link', error)
+    return
+  }
+
+  const resendKey = process.env.RESEND_API_KEY
+  if (resendKey) {
+    const resend = new Resend(resendKey)
+    const from = process.env.RESEND_FROM || 'Cool Real Estate Tools <hello@coolrealestatetools.com>'
+    const { error: sendError } = await resend.emails.send({
+      from,
+      to: email,
+      subject: 'Verify your email address - Cool Real Estate Tools',
+      html: welcomeEmailHtml(actionLink),
+    })
+    if (!sendError) return
+    console.error('Resend welcome email failed', sendError)
+  }
+
+  const { error: otpError } = await db.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo },
+  })
+  if (otpError) console.error('Supabase welcome email fallback failed', otpError)
+}
+
+export async function registerWithoutVerify(email: string, redirectTo?: string) {
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return { error: 'Enter your email.' }
 
@@ -48,5 +84,10 @@ export async function registerWithoutVerify(email: string) {
   }
 
   if (!data.user?.id) return { error: 'Could not create your account.' }
+  try {
+    await sendWelcomeEmail(trimmed, redirectTo)
+  } catch (err) {
+    console.error('Welcome email failed', err)
+  }
   return { exists: false as const, password, userId: data.user.id }
 }

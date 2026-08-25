@@ -221,7 +221,7 @@ function HomeContent() {
         const lastSign = Date.parse(currentUser.last_sign_in_at || currentUser.created_at || '')
         const verifiedReturn = Number.isFinite(created) && Number.isFinite(lastSign) && (lastSign - created > 60_000)
         const fromMagicLink = window.location.hash.includes('access_token') || window.location.search.includes('code=')
-        if (!sessionOnly && (verifiedReturn || fromMagicLink || localStorage.getItem('crt-auth-persist-pending') === '1')) {
+        if (fromMagicLink || localStorage.getItem('crt-auth-persist-pending') === '1' || (!sessionOnly && verifiedReturn)) {
           markAuthPersisted()
         }
         // Check if user was in the middle of step 2 registration
@@ -464,7 +464,7 @@ function HomeContent() {
       profile: { ...profile, email: trimmed }
     }))
 
-    const result = await registerWithoutVerify(trimmed)
+    const result = await registerWithoutVerify(trimmed, typeof window !== 'undefined' ? window.location.origin : undefined)
     if (result.error) return { status: 'error' as const, message: result.error }
 
     if (result.exists) {
