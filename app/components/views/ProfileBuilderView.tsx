@@ -31,7 +31,6 @@ export function ProfileBuilderView({
   switchView
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
-  const [showHeaderPreview, setShowHeaderPreview] = useState(false)
   const [lastLook, setLastLook] = useState(
     profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
   )
@@ -75,24 +74,6 @@ export function ProfileBuilderView({
             handleImageUpload(cropped, 'headshot_url', { headshot_shape: shape })
           }}
         />
-      )}
-
-      {showHeaderPreview && (
-        <div className="fixed inset-0 z-[110] bg-slate-950/95 flex flex-col">
-          <div className="flex-none flex items-center justify-between px-4 py-4 border-b border-slate-800">
-            <h3 className="text-white font-black">Header Preview</h3>
-            <button
-              type="button"
-              onClick={() => setShowHeaderPreview(false)}
-              className="text-slate-400 hover:text-white font-bold text-sm"
-            >
-              Close
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {renderAgentHeader(customOn && profile.custom_header_url ? 'custom' : null)}
-          </div>
-        </div>
       )}
 
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
@@ -345,15 +326,8 @@ export function ProfileBuilderView({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setShowHeaderPreview(true)}
-              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-white hover:bg-slate-100 text-slate-900"
-            >
-              Preview Header
-            </button>
-            <button
-              type="button"
               onClick={handleFinalSave}
-              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
+              className="w-full font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
               Save

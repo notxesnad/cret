@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { supabase } from '@/utils/supabase'
+import { supabase, markAuthSessionOnly, markAuthPersistPending, setAwaitingMagicLink } from '@/utils/supabase'
 import { registerWithoutVerify } from '@/app/actions/auth'
 
-export function SignInView() {
+export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email: string, firstName: string) => void }) {
   const [email, setEmail] = useState<string>('')
   const [sent, setSent] = useState<boolean>(false)
   const [welcome, setWelcome] = useState<boolean>(false)
@@ -20,6 +20,7 @@ export function SignInView() {
     }
 
     if (result.exists) {
+      markAuthPersistPending()
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -31,8 +32,11 @@ export function SignInView() {
         setMessage(error.message)
         return
       }
-      setWelcomeName(result.firstName || '')
+      const firstName = result.firstName || ''
+      setAwaitingMagicLink({ email, firstName })
+      setWelcomeName(firstName)
       setSent(true)
+      onExistingUserSent?.(email, firstName)
       return
     }
 
@@ -41,6 +45,7 @@ export function SignInView() {
       return
     }
 
+    markAuthSessionOnly()
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password: result.password
@@ -89,13 +94,6 @@ export function SignInView() {
               Welcome back{welcomeName ? ` ${welcomeName}` : ''}
             </h3>
             <p className="text-base font-medium text-slate-300">Simply click the link we just emailed you to get signed in.</p>
-            <button 
-              type="button" 
-              onClick={() => { setSent(false); setEmail(''); setMessage(''); setWelcomeName(''); }}
-              className="text-xs text-slate-400 hover:text-white underline pt-4 block mx-auto"
-            >
-              Use a different email
-            </button>
           </div>
         )}
 

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense, useCallback, type ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/utils/supabase'
+import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
@@ -202,11 +202,27 @@ function HomeContent() {
           if (pendingFromStorage.netData) setNetData(pendingFromStorage.netData)
           if (pendingFromStorage.activeFields) setActiveFields((prev: any) => ({ ...prev, ...pendingFromStorage.activeFields }))
         }
+        const awaiting = getAwaitingMagicLink()
+        if (awaiting) {
+          setModalData({ isOpen: true, msg: '', requiresAuth: true })
+          setModalAuthSent(true)
+          setModalEmail(awaiting.email || '')
+          setModalWelcomeName(awaiting.firstName || '')
+        }
         setSessionChecked(true)
         return
       }
 
       if (currentUser) {
+        clearAwaitingMagicLink()
+        const sessionOnly = sessionStorage.getItem('crt-session-only') === '1'
+        const created = Date.parse(currentUser.created_at || '')
+        const lastSign = Date.parse(currentUser.last_sign_in_at || currentUser.created_at || '')
+        const verifiedReturn = Number.isFinite(created) && Number.isFinite(lastSign) && (lastSign - created > 60_000)
+        const fromMagicLink = window.location.hash.includes('access_token') || window.location.search.includes('code=')
+        if (!sessionOnly && (verifiedReturn || fromMagicLink || localStorage.getItem('crt-auth-persist-pending') === '1')) {
+          markAuthPersisted()
+        }
         // Check if user was in the middle of step 2 registration
         const savedStep = localStorage.getItem('crt_profile_step')
         const savedDraft = localStorage.getItem('crt_profile_draft')
@@ -354,6 +370,8 @@ function HomeContent() {
     localStorage.removeItem('crt_profile_step')
     localStorage.removeItem('crt_profile_draft')
     localStorage.removeItem('crt_pending_data')
+    clearAuthPersistFlags()
+    clearAwaitingMagicLink()
     await supabase.auth.signOut()
     window.location.reload()
   }
@@ -375,6 +393,7 @@ function HomeContent() {
   }, [sessionChecked, user, currentView, listings, neighborhoods, outreachCampaigns, clients, profile, netData, activeFields])
 
   const showCustomModal = (msg: string, requireAuth = false) => {
+    if (getAwaitingMagicLink()) return
     const requiresAuth = requireAuth || msg.toLowerCase().includes('logged in') || msg.toLowerCase().includes('signed in')
     setModalData({ isOpen: true, msg, requiresAuth })
     setModalAuthSent(false)
@@ -447,17 +466,20 @@ function HomeContent() {
     if (result.error) return { status: 'error' as const, message: result.error }
 
     if (result.exists) {
+      markAuthPersistPending()
       const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: { shouldCreateUser: false, emailRedirectTo: redirectUrl }
       })
       if (error) return { status: 'error' as const, message: error.message }
+      setAwaitingMagicLink({ email: trimmed, firstName: result.firstName || '' })
       return { status: 'existing' as const, firstName: result.firstName || '' }
     }
 
     if (!result.password) return { status: 'error' as const, message: 'Could not create your account.' }
 
+    markAuthSessionOnly()
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: trimmed,
       password: result.password
@@ -477,6 +499,7 @@ function HomeContent() {
   }
 
   const showWelcomeModal = () => {
+    if (getAwaitingMagicLink()) return
     setModalData({
       isOpen: true,
       msg: 'Welcome to CoolRealEstateTools — we created your account.',
@@ -490,6 +513,7 @@ function HomeContent() {
   const showAuthModal = () => showCustomModal('', true)
 
   const closeCustomModal = () => {
+    if (getAwaitingMagicLink()) return
     setModalData(prev => ({ ...prev, isOpen: false }))
   }
 
@@ -591,14 +615,15 @@ function HomeContent() {
         return
       }
       if (result.status === 'existing') {
-        const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
-        setModalData({ isOpen: true, msg: '', requiresAuth: true })
-        setModalWelcomeName(result.firstName || typedFirst)
-        setModalAuthSent(true)
-        setModalEmail(profile.email)
-        setModalAuthError('')
-        return
-      }
+      const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
+      setAwaitingMagicLink({ email: profile.email, firstName: result.firstName || typedFirst })
+      setModalData({ isOpen: true, msg: '', requiresAuth: true })
+      setModalWelcomeName(result.firstName || typedFirst)
+      setModalAuthSent(true)
+      setModalEmail(profile.email)
+      setModalAuthError('')
+      return
+    }
       setProfileStep(2)
       showWelcomeModal()
       return
@@ -807,7 +832,17 @@ function HomeContent() {
         {/* Main Container */}
         <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
           {currentView === 'home' && <HomeView switchView={switchView} showCustomModal={showCustomModal} />}
-          {currentView === 'signin' && <SignInView />}
+          {currentView === 'signin' && (
+            <SignInView
+              onExistingUserSent={(email, firstName) => {
+                setModalData({ isOpen: true, msg: '', requiresAuth: true })
+                setModalAuthSent(true)
+                setModalEmail(email)
+                setModalWelcomeName(firstName)
+                setModalAuthError('')
+              }}
+            />
+          )}
           {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} signedIn={!!user} />}
           {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
           {currentView === 'ohsignin' && (
@@ -938,7 +973,6 @@ function HomeContent() {
                         Welcome back{modalWelcomeName ? ` ${modalWelcomeName}` : ''}
                       </h3>
                       <p className="text-base text-slate-300">Simply click the link we just emailed you to get signed in.</p>
-                      <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition mt-2">Got it</button>
         </div>
       )}
                 </div>

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/utils/supabase'
+import { supabase, markAuthPersistPending } from '@/utils/supabase'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const handleRequestOtp = async (e) => {
     e.preventDefault()
     setMessage('')
+    markAuthPersistPending()
 
     const { error } = await supabase.auth.signInWithOtp({ 
       email,
