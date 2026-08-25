@@ -318,7 +318,7 @@ export function ProfileBuilderView({
             disabled={!profile.full_name?.trim() || !profile.email?.trim()}
             className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${!profile.full_name?.trim() || !profile.email?.trim() ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
           >
-            Continue to Header {'\u2192'}
+            Choose Header Designs
           </button>
         )}
 
