@@ -93,7 +93,11 @@ export function SignInView({ onExistingUserSent }: { onExistingUserSent?: (email
             <h3 className="font-money text-3xl text-emerald-400 tracking-wide">
               Welcome back{welcomeName ? ` ${welcomeName}` : ''}
             </h3>
-            <p className="text-base font-medium text-slate-300">Simply click the link we just emailed you to get signed in.</p>
+            <div className="space-y-2">
+              <p className="text-base font-medium text-slate-300">Click the link we sent to {email || 'your email'}.</p>
+              <p className="text-base font-medium text-slate-300">You&apos;ll stay logged in on this device.</p>
+              <p className="font-seller text-lg text-slate-400">(We know it&apos;s a pain in the butt, but it&apos;s easier than remembering a password)</p>
+            </div>
           </div>
         )}
 

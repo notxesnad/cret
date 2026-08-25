@@ -972,8 +972,12 @@ function HomeContent() {
                       <h3 className="font-black text-xl text-emerald-400">
                         Welcome back{modalWelcomeName ? ` ${modalWelcomeName}` : ''}
                       </h3>
-                      <p className="text-base text-slate-300">Simply click the link we just emailed you to get signed in.</p>
-        </div>
+                      <div className="space-y-2">
+                        <p className="text-base text-slate-300">Click the link we sent to {modalEmail || 'your email'}.</p>
+                        <p className="text-base text-slate-300">You&apos;ll stay logged in on this device.</p>
+                        <p className="font-seller text-lg text-slate-400">(We know it&apos;s a pain in the butt, but it&apos;s easier than remembering a password)</p>
+                      </div>
+                    </div>
       )}
                 </div>
       )}
