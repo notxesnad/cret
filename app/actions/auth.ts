@@ -40,7 +40,7 @@ async function sendWelcomeEmail(email: string, redirectTo?: string) {
   const resendKey = process.env.RESEND_API_KEY
   if (resendKey) {
     const resend = new Resend(resendKey)
-    const from = process.env.RESEND_FROM || 'Cool Real Estate Tools <hello@coolrealestatetools.com>'
+    const from = process.env.RESEND_FROM || 'Sam <sam@coolrealestatetools.com>'
     const { error: sendError } = await resend.emails.send({
       from,
       to: email,
