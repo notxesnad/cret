@@ -45,28 +45,11 @@ export function ProfileBuilderView({
   const customOn = profile.show_custom_header === true || profile.pdf_look === 'custom'
 
   const toggleHeadshot = () => {
-    const next = !profile.show_headshot
-    setProfile({ ...profile, show_headshot: next })
-    if (next && !profile.headshot_url && profileStep !== 3) setProfileStep(3)
+    setProfile({ ...profile, show_headshot: !profile.show_headshot })
   }
 
   const toggleLogo = () => {
-    const next = !profile.show_logo
-    setProfile({ ...profile, show_logo: next })
-    if (next && !profile.logo_url && profileStep !== 3) setProfileStep(3)
-  }
-
-  const toggleCustomHeader = () => {
-    if (customOn) {
-      setProfile({ ...profile, show_custom_header: false, pdf_look: lastLook })
-    } else {
-      setProfile({
-        ...profile,
-        show_custom_header: true,
-        pdf_look: profile.custom_header_url ? 'custom' : profile.pdf_look
-      })
-      if (!profile.custom_header_url && profileStep !== 3) setProfileStep(3)
-    }
+    setProfile({ ...profile, show_logo: !profile.show_logo })
   }
 
   const pickLook = (lookId: string) => {
@@ -228,58 +211,26 @@ export function ProfileBuilderView({
             </div>
           </div>
 
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-full [&>*]:mb-0">
+              {renderAgentHeader(null)}
+            </div>
+            <div className="px-6 py-6">
             <h3 className="text-xl font-black text-white mb-6">Upload Your Pic and Logo</h3>
 
             <div className="space-y-6">
-              <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-4">
-                <button type="button" onClick={toggleHeadshot} className="w-full flex items-center justify-between text-left">
-                  <div>
-                    <span className="block text-sm font-bold text-white">Show Profile Pic</span>
-                    {!profile.headshot_url && (
-                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload headshot</span>
-                    )}
-                  </div>
-                  <div className="relative flex-shrink-0 ml-4">
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
-                  </div>
-                </button>
-                
-                <div className="h-px bg-slate-700 w-full"></div>
-                
-                <button type="button" onClick={toggleLogo} className="w-full flex items-center justify-between text-left">
-                  <div>
-                    <span className="block text-sm font-bold text-white">Show Brokerage Logo</span>
-                    {!profile.logo_url && (
-                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload logo</span>
-                    )}
-                  </div>
-                  <div className="relative flex-shrink-0 ml-4">
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo ? 'translate-x-6' : ''}`}></div>
-                  </div>
-                </button>
-
-                <div className="h-px bg-slate-700 w-full"></div>
-
-                <button type="button" onClick={toggleCustomHeader} className="w-full flex items-center justify-between text-left">
-                  <div>
-                    <span className="block text-sm font-bold text-white">Upload Custom Canva Header</span>
-                    {!profile.custom_header_url && (
-                      <span className="block text-base text-slate-400 mt-0.5">Turn on to upload Canva header</span>
-                    )}
-                  </div>
-                  <div className="relative flex-shrink-0 ml-4">
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${customOn ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${customOn ? 'translate-x-6' : ''}`}></div>
-                  </div>
-                </button>
-              </div>
-
               <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 space-y-6">
                 <div>
-                  <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Agent Headshot</label>
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Agent Headshot</label>
+                    <button type="button" onClick={toggleHeadshot} className="flex items-center gap-3 text-left">
+                      <span className="text-sm font-bold text-white">Show Pic</span>
+                      <div className="relative flex-shrink-0">
+                        <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_headshot ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_headshot ? 'translate-x-6' : ''}`}></div>
+                      </div>
+                    </button>
+                  </div>
                   <div className="flex flex-col gap-4">
                     {profile.headshot_url && (
                       <img
@@ -301,7 +252,16 @@ export function ProfileBuilderView({
                 </div>
 
                 <div className="border-t border-slate-700/50 pt-6">
-                  <label className="text-sm font-bold text-slate-400 uppercase block mb-3 tracking-wider">Brokerage Logo</label>
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Brokerage Logo</label>
+                    <button type="button" onClick={toggleLogo} className="flex items-center gap-3 text-left">
+                      <span className="text-sm font-bold text-white">Show Logo</span>
+                      <div className="relative flex-shrink-0">
+                        <div className={`block w-14 h-8 rounded-full transition-colors ${profile.show_logo ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${profile.show_logo ? 'translate-x-6' : ''}`}></div>
+                      </div>
+                    </button>
+                  </div>
                   <div className="flex flex-col gap-4">
                     {profile.logo_url && (
                       <img src={profile.logo_url} alt="Logo" className="h-16 w-auto object-contain bg-white p-2 rounded max-w-full" />
@@ -339,6 +299,7 @@ export function ProfileBuilderView({
 
                 {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
               </div>
+            </div>
             </div>
           </div>
 
