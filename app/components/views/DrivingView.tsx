@@ -137,6 +137,7 @@ export function DrivingView({
   const [editHomeForm, setEditHomeForm] = useState<Partial<ClientHome> & { time?: string }>({})
   const [uploading, setUploading] = useState<'photo' | 'mls' | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [showMapsInfo, setShowMapsInfo] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
   const [dragGhost, setDragGhost] = useState<{ x: number; y: number; width: number; height: number } | null>(null)
@@ -1029,14 +1030,29 @@ export function DrivingView({
                     />
                   </div>
                   {editHomeForm.address && (
-                    <a
-                      href={mapsUrl(editHomeForm)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block bg-slate-800 text-center py-3 rounded-xl text-base font-bold hover:bg-slate-700 transition"
-                    >
-                      📍 Preview in Google Maps
-                    </a>
+                    <div>
+                      <a
+                        href={mapsUrl(editHomeForm)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block bg-slate-800 text-center py-3 rounded-xl text-base font-bold hover:bg-slate-700 transition"
+                      >
+                        📍 Preview in Google Maps
+                      </a>
+                      {(!editHomeForm.city?.trim() || !editHomeForm.state?.trim()) && (
+                        <div className="flex items-center justify-center gap-1.5 mt-2">
+                          <p className="text-xs text-amber-400/90 font-medium">Add city and state so it maps accurately.</p>
+                          <button
+                            type="button"
+                            onClick={() => setShowMapsInfo(true)}
+                            aria-label="Why city and state matter"
+                            className="flex-shrink-0 w-4 h-4 rounded-full border border-slate-500 text-[10px] font-black text-slate-400 hover:text-white hover:border-white leading-none flex items-center justify-center"
+                          >
+                            i
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </>
@@ -1072,6 +1088,26 @@ export function DrivingView({
               className="flex-[2] bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-xl transition shadow"
             >
               Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showMapsInfo && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowMapsInfo(false)}>
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-base font-medium text-slate-200">
+              By adding the city and state you ensure your user will see the correct map no matter where they are located.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowMapsInfo(false)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition"
+            >
+              Got it
             </button>
           </div>
         </div>
