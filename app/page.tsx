@@ -5,6 +5,7 @@ import { supabase } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
+import { registerWithoutVerify } from '@/app/actions/auth'
 import {
   HomeView,
   SignInView,
@@ -395,6 +396,94 @@ function HomeContent() {
     return true
   }
 
+  const saveAccountWork = async (userId: string, email: string) => {
+    const payload = {
+      id: userId,
+      full_name: profile.full_name || '',
+      email: email || profile.email || '',
+      phone: profile.phone || '',
+      brokerage: profile.brokerage || '',
+      pdf_look: profile.pdf_look,
+      show_headshot: profile.show_headshot === true,
+      show_logo: profile.show_logo === true,
+      show_custom_header: profile.show_custom_header === true,
+      headshot_shape: profile.headshot_shape,
+      headshot_url: profile.headshot_url || '',
+      logo_url: profile.logo_url || '',
+      custom_header_url: profile.custom_header_url || '',
+      listings,
+      neighborhoods,
+      outreach_campaigns: outreachCampaigns,
+      clients,
+      updated_at: new Date()
+    }
+    const { error } = await supabase.from('profiles').upsert(payload)
+    if (error) {
+      const { show_custom_header: _c, headshot_shape: _s, ...rest } = payload
+      const retry = await supabase.from('profiles').upsert(rest)
+      if (retry.error) {
+        const workspaceError = await saveWorkspaceToProfile(userId, {
+          listings,
+          neighborhoods,
+          outreachCampaigns,
+          clients
+        })
+        if (workspaceError) return workspaceError
+      }
+    }
+    return null
+  }
+
+  const completeEmailAuth = async (email: string) => {
+    const trimmed = email.trim()
+    localStorage.setItem('crt_pending_data', JSON.stringify({
+      ...snapshotGuestWork(),
+      profile: { ...profile, email: trimmed }
+    }))
+
+    const result = await registerWithoutVerify(trimmed)
+    if (result.error) return { status: 'error' as const, message: result.error }
+
+    if (result.exists) {
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { shouldCreateUser: false, emailRedirectTo: redirectUrl }
+      })
+      if (error) return { status: 'error' as const, message: error.message }
+      return { status: 'existing' as const }
+    }
+
+    if (!result.password) return { status: 'error' as const, message: 'Could not create your account.' }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: trimmed,
+      password: result.password
+    })
+    if (signInError) return { status: 'error' as const, message: signInError.message }
+
+    const { data: { user: newUser } } = await supabase.auth.getUser()
+    if (!newUser) return { status: 'error' as const, message: 'Account created, but sign-in failed. Try again.' }
+
+    setUser(newUser)
+    setProfile((prev: any) => ({ ...prev, email: trimmed }))
+    const saveError = await saveAccountWork(newUser.id, trimmed)
+    if (saveError) return { status: 'error' as const, message: 'Account created, but we could not save your work. Try Save again.' }
+
+    localStorage.removeItem('crt_pending_data')
+    return { status: 'new' as const }
+  }
+
+  const showWelcomeModal = () => {
+    setModalData({
+      isOpen: true,
+      msg: 'Welcome to CoolRealEstateTools — we created your account.',
+      requiresAuth: false
+    })
+    setModalAuthSent(false)
+    setModalAuthError('')
+  }
+
   const showAuthModal = () => showCustomModal('', true)
 
   const closeCustomModal = () => {
@@ -404,24 +493,18 @@ function HomeContent() {
   const handleModalAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setModalAuthError('')
-    if(!modalEmail) return
+    if (!modalEmail) return
 
-    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
-
-    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
-
-    const { error } = await supabase.auth.signInWithOtp({ 
-      email: modalEmail,
-      options: { 
-        shouldCreateUser: true,
-        emailRedirectTo: redirectUrl
-      }
-    })
-    if (error) {
-      setModalAuthError(error.message)
-    } else {
-      setModalAuthSent(true)
+    const result = await completeEmailAuth(modalEmail)
+    if (result.status === 'error') {
+      setModalAuthError(result.message)
+      return
     }
+    if (result.status === 'existing') {
+      setModalAuthSent(true)
+      return
+    }
+    showWelcomeModal()
   }
 
   useEffect(() => {
@@ -498,23 +581,20 @@ function HomeContent() {
     localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
     if (!user) {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: profile.email,
-        options: { 
-          shouldCreateUser: true,
-          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/?view=profile` : ''
-        }
-      })
-
-      if (authError) {
-        showCustomModal('Error sending the email: ' + authError.message)
+      const result = await completeEmailAuth(profile.email)
+      if (result.status === 'error') {
+        showCustomModal('Error creating your account: ' + result.message)
         return
       }
-
-      setModalData({ isOpen: true, msg: '', requiresAuth: true })
-      setModalAuthSent(true)
-      setModalEmail(profile.email)
-      setModalAuthError('')
+      if (result.status === 'existing') {
+        setModalData({ isOpen: true, msg: '', requiresAuth: true })
+        setModalAuthSent(true)
+        setModalEmail(profile.email)
+        setModalAuthError('')
+        return
+      }
+      setProfileStep(2)
+      showWelcomeModal()
       return
     }
 
@@ -828,7 +908,7 @@ function HomeContent() {
                     <div className="space-y-4 text-left">
                       <div className="text-center mb-2">
                         <h3 className="text-2xl font-black text-white">Sign In or Register</h3>
-                        <p className="text-base text-slate-300 mt-3">We&apos;ll save your work. Enter your email, then click the link we send you.</p>
+                        <p className="text-base text-slate-300 mt-3">Enter your email. We&apos;ll save your work. If you&apos;re new, we create your account right away.</p>
                       </div>
                       <form onSubmit={handleModalAuth} className="space-y-3">
             <input 
@@ -840,7 +920,7 @@ function HomeContent() {
                           className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 text-base"
             />
                         <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition">
-                          Email Me the Link
+                          Continue
           </button>
         </form>
                       {modalAuthError && <p className="text-base text-rose-400 text-center">{modalAuthError}</p>}
