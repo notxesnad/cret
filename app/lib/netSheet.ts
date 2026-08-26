@@ -48,9 +48,16 @@ export const EXTRA_FIELDS: ExtraField[] = [
   { key: 'stagingPhotography', label: 'Staging & photography', hint: 'Only include costs the seller is paying from proceeds.', group: 'other' },
 ]
 
+export interface CustomCost {
+  id: string
+  label: string
+  amount: number
+}
+
 export interface NetSheet {
   id: string
   kind: typeof NET_SHEET_KIND
+  listingId?: string
   address: string
   city: string
   state: string
@@ -61,6 +68,7 @@ export interface NetSheet {
   transferTaxPct: number
   titleEscrowFee: number
   extras: Partial<Record<ExtraFieldKey, number>>
+  customCosts: CustomCost[]
   updatedAt: string
 }
 
@@ -82,6 +90,7 @@ export function blankNetSheet(): NetSheet {
     transferTaxPct: 0,
     titleEscrowFee: 0,
     extras: {},
+    customCosts: [],
     updatedAt: new Date().toISOString(),
   }
 }
@@ -114,7 +123,9 @@ export function transferTaxAmount(sheet: NetSheet) {
 }
 
 export function extraTotal(sheet: NetSheet) {
-  return Object.values(sheet.extras || {}).reduce((sum, n) => sum + (Number(n) || 0), 0)
+  const extras = Object.values(sheet.extras || {}).reduce((sum, n) => sum + (Number(n) || 0), 0)
+  const custom = (sheet.customCosts || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  return extras + custom
 }
 
 export function totalDeductions(sheet: NetSheet) {
@@ -133,6 +144,14 @@ export function netProceeds(sheet: NetSheet) {
 
 export function extraField(key: string) {
   return EXTRA_FIELDS.find(f => f.key === key)
+}
+
+export function listingLabel(listing: { address?: string; city?: string; state?: string }) {
+  return listing.address?.trim() || [listing.city, listing.state].filter(Boolean).join(', ') || 'Untitled listing'
+}
+
+export function newRecordId() {
+  return Math.random().toString(36).slice(2, 11)
 }
 
 export function netSheetAiPrompt(sheet: Pick<NetSheet, 'city' | 'state' | 'county' | 'salePrice'>) {
@@ -177,6 +196,16 @@ export function asNetSheet(record: unknown): NetSheet | null {
     id: r.id,
     kind: NET_SHEET_KIND,
     extras,
+    customCosts: Array.isArray(r.customCosts)
+      ? r.customCosts
+        .filter((item): item is CustomCost => !!item && typeof item === 'object' && typeof (item as CustomCost).id === 'string')
+        .map(item => ({
+          id: item.id,
+          label: String(item.label || ''),
+          amount: Number(item.amount) || 0,
+        }))
+      : [],
+    listingId: typeof r.listingId === 'string' && r.listingId ? r.listingId : undefined,
     address: String(r.address || ''),
     city: String(r.city || ''),
     state: String(r.state || ''),

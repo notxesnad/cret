@@ -129,7 +129,13 @@ export function NetSheetDocument({
             {closingExtras.map(([key, amount]) => (
               <Row key={key} label={extraField(key)?.label || key} amount={amount} />
             ))}
-            {otherExtras.map(([key, amount]) => (
+            {sheet.extras.sellerConcessions ? (
+              <Row label="Seller concessions" amount={sheet.extras.sellerConcessions} />
+            ) : null}
+            {(sheet.customCosts || []).filter(item => item.amount > 0).map(item => (
+              <Row key={item.id} label={item.label.trim() || 'Custom cost'} amount={item.amount} />
+            ))}
+            {otherExtras.filter(([key]) => key !== 'sellerConcessions').map(([key, amount]) => (
               <Row key={key} label={extraField(key)?.label || key} amount={amount} />
             ))}
             <tr>

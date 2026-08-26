@@ -11,20 +11,33 @@ import {
   describeAiApply,
   extraField,
   formatMoneyInput,
+  listingLabel,
   money,
   netProceeds,
   netSheetAiPrompt,
+  newRecordId,
   parseMoneyInput,
   parseNetSheetAi,
   sheetTitle,
   transferTaxAmount,
+  type ExtraField,
   type ExtraFieldKey,
   type NetSheet,
 } from '@/app/lib/netSheet'
 
+type HomeListing = {
+  id: string
+  address: string
+  city?: string
+  state?: string
+  county?: string
+  activities?: unknown[]
+}
+
 interface NetSheetViewProps {
+  listings: HomeListing[]
   sheets: NetSheet[]
-  updateSheets: (updater: (prev: NetSheet[]) => NetSheet[]) => void
+  updateHomesAndSheets: (fn: (ctx: { homes: HomeListing[], sheets: NetSheet[] }) => { homes: HomeListing[], sheets: NetSheet[] }) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   switchView: (view: string) => void
   userId?: string
@@ -41,6 +54,9 @@ const CLOSING = 6
 const REVIEW = 7
 const EXTRAS = 8
 const LAST = 8
+
+const SELLER_CONCESSION = EXTRA_FIELDS.find(field => field.key === 'sellerConcessions') as ExtraField
+const GROUPED_FIELDS = EXTRA_FIELDS.filter(field => field.key !== 'sellerConcessions')
 
 const inputClass = 'w-full bg-slate-800 border border-slate-700 rounded-xl py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
 
@@ -90,9 +106,26 @@ function DollarField({
   )
 }
 
+function upsertHome(homes: HomeListing[], sheet: NetSheet) {
+  if (!sheet.listingId) return homes
+  const existing = homes.find(home => home.id === sheet.listingId)
+  if (!existing && !sheet.address.trim() && !sheet.city.trim()) return homes
+  const nextHome: HomeListing = {
+    id: sheet.listingId,
+    address: sheet.address.trim() || existing?.address || listingLabel(sheet),
+    city: sheet.city || existing?.city || '',
+    state: sheet.state || existing?.state || '',
+    county: sheet.county || existing?.county || '',
+    activities: existing?.activities || [],
+  }
+  if (existing) return homes.map(home => home.id === sheet.listingId ? { ...existing, ...nextHome, activities: existing.activities || [] } : home)
+  return [nextHome, ...homes]
+}
+
 export function NetSheetView({
+  listings,
   sheets,
-  updateSheets,
+  updateHomesAndSheets,
   showCustomModal,
   switchView,
   userId,
@@ -106,36 +139,75 @@ export function NetSheetView({
   const [aiError, setAiError] = useState('')
   const [aiNote, setAiNote] = useState('')
   const [copied, setCopied] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   const sheet = asNetSheet(sheets.find(s => s.id === activeId) || null)
 
   const save = (next: NetSheet) => {
-    const stamped = { ...next, updatedAt: new Date().toISOString() }
-    updateSheets(prev => prev.some(s => s.id === stamped.id)
-      ? prev.map(s => s.id === stamped.id ? stamped : s)
-      : [stamped, ...prev])
+    let stamped = { ...next, updatedAt: new Date().toISOString() }
+    if (!stamped.listingId && (stamped.address.trim() || stamped.city.trim())) {
+      stamped = { ...stamped, listingId: newRecordId() }
+    }
+    updateHomesAndSheets(({ homes, sheets: prevSheets }) => ({
+      homes: upsertHome(homes, stamped),
+      sheets: prevSheets.some(item => item.id === stamped.id)
+        ? prevSheets.map(item => item.id === stamped.id ? stamped : item)
+        : [stamped, ...prevSheets],
+    }))
   }
 
   const startNew = () => {
     const created = blankNetSheet()
-    updateSheets(prev => [created, ...prev])
+    updateHomesAndSheets(({ homes, sheets: prevSheets }) => ({ homes, sheets: [created, ...prevSheets] }))
     setActiveId(created.id)
     setAiPaste('')
     setAiError('')
     setAiNote('')
+    setEditing(false)
     setStep(PLACE)
   }
 
   const openSheet = (id: string) => {
+    const existing = asNetSheet(sheets.find(s => s.id === id) || null)
+    if (existing && !existing.listingId && (existing.address.trim() || existing.city.trim())) {
+      save(existing)
+    }
     setActiveId(id)
     setAiPaste('')
     setAiError('')
     setAiNote('')
+    setEditing(false)
     setStep(REVIEW)
   }
 
+  const openListing = (listing: HomeListing) => {
+    const existing = sheets.find(item => item.listingId === listing.id)
+    if (existing) {
+      openSheet(existing.id)
+      return
+    }
+    const created = {
+      ...blankNetSheet(),
+      listingId: listing.id,
+      address: listing.address || '',
+      city: listing.city || '',
+      state: listing.state || '',
+      county: listing.county || '',
+    }
+    save(created)
+    setActiveId(created.id)
+    setAiPaste('')
+    setAiError('')
+    setAiNote('')
+    setEditing(false)
+    setStep(listing.address || listing.city ? PRICE : PLACE)
+  }
+
   const removeSheet = (id: string) => {
-    updateSheets(prev => prev.filter(s => s.id !== id))
+    updateHomesAndSheets(({ homes, sheets: prevSheets }) => ({
+      homes,
+      sheets: prevSheets.filter(item => item.id !== id),
+    }))
     if (activeId === id) {
       setActiveId(null)
       setStep(1)
@@ -147,12 +219,44 @@ export function NetSheetView({
     save({ ...sheet, ...partial })
   }
 
+  const attachListing = (listing: HomeListing) => {
+    if (!sheet) return
+    const existing = sheets.find(item => item.listingId === listing.id && item.id !== sheet.id)
+    if (existing) {
+      openSheet(existing.id)
+      return
+    }
+    patch({
+      listingId: listing.id,
+      address: listing.address || sheet.address,
+      city: listing.city || sheet.city,
+      state: listing.state || sheet.state,
+      county: listing.county || sheet.county,
+    })
+  }
+
   const setExtra = (key: ExtraFieldKey, amount: number | null) => {
     if (!sheet) return
     const extras = { ...sheet.extras }
     if (amount === null) delete extras[key]
     else extras[key] = amount
     patch({ extras })
+  }
+
+  const setCustomCost = (id: string, partial: { label?: string, amount?: number } | null) => {
+    if (!sheet) return
+    if (partial === null) {
+      patch({ customCosts: (sheet.customCosts || []).filter(item => item.id !== id) })
+      return
+    }
+    patch({
+      customCosts: (sheet.customCosts || []).map(item => item.id === id ? { ...item, ...partial } : item),
+    })
+  }
+
+  const addCustomCost = () => {
+    if (!sheet) return
+    patch({ customCosts: [...(sheet.customCosts || []), { id: newRecordId(), label: '', amount: 0 }] })
   }
 
   const applyFromPaste = (raw: string, { requireValid = false } = {}) => {
@@ -207,7 +311,10 @@ export function NetSheetView({
 
   const back = () => {
     if (step === 1) switchView(exitView)
-    else if (step === REVIEW) setStep(1)
+    else if (step === REVIEW) {
+      setEditing(false)
+      setStep(1)
+    }
     else if (step === EXTRAS) setStep(REVIEW)
     else if (step === PLACE) setStep(1)
     else setStep(step - 1)
@@ -215,7 +322,44 @@ export function NetSheetView({
 
   const progress = step === 1 ? 0 : (step / LAST) * 100
   const questionStep = step >= PLACE && step <= CLOSING
-  const sortedSheets = [...sheets].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+  const orphanSheets = sheets.filter(item => !item.listingId || !listings.some(listing => listing.id === item.listingId))
+  const listingRows = [...listings].sort((a, b) => listingLabel(a).localeCompare(listingLabel(b)))
+
+  const extraToggle = (field: ExtraField) => {
+    if (!sheet) return null
+    const on = sheet.extras[field.key] !== undefined
+    return (
+      <div key={field.key} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-bold text-white">{field.label}</p>
+            <p className="text-sm text-slate-400 mt-1">{field.hint}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExtra(field.key, on ? null : 0)}
+            className={`flex-shrink-0 w-12 h-7 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}
+            aria-label={on ? `Remove ${field.label}` : `Add ${field.label}`}
+          >
+            <span className={`block w-5 h-5 bg-white rounded-full mt-1 transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`}></span>
+          </button>
+        </div>
+        {on && (
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={formatMoneyInput(sheet.extras[field.key] || 0)}
+              onChange={e => setExtra(field.key, parseMoneyInput(e.target.value))}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500 [appearance:textfield]"
+            />
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div id="view-netsheet" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
@@ -238,7 +382,7 @@ export function NetSheetView({
             <div className="text-center mb-8">
               <span className="text-sm font-bold tracking-widest text-emerald-400 uppercase font-money">Money Stuff</span>
               <h3 className="text-2xl font-black text-white mt-1">Seller Net Sheet</h3>
-              <p className="text-base text-slate-400 mt-2">We will ask a few easy questions and do the math. You can add extra costs at the end.</p>
+              <p className="text-base text-slate-400 mt-2">Pick a listing you already have, or add a new one. It will show up in your other tools too.</p>
             </div>
             <button
               onClick={startNew}
@@ -247,29 +391,60 @@ export function NetSheetView({
               Start a new net sheet
             </button>
             <div className="space-y-3">
-              {sortedSheets.length === 0 ? (
-                <p className="text-base text-slate-500 text-center py-8">No sheets yet. Start one for a listing.</p>
+              {listingRows.length === 0 && orphanSheets.length === 0 ? (
+                <p className="text-base text-slate-500 text-center py-8">No listings yet. Start a net sheet and we will save it as a listing.</p>
               ) : (
-                sortedSheets.map(item => (
-                  <div key={item.id} className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openSheet(item.id)}
-                      className="flex-1 text-left bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4"
-                    >
-                      <h4 className="font-bold text-white text-lg">{sheetTitle(item)}</h4>
-                      <p className="text-sm text-emerald-400 font-black mt-1">{money(netProceeds(item))} estimated net</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeSheet(item.id)}
-                      aria-label={`Remove ${sheetTitle(item)}`}
-                      className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
+                <>
+                  {listingRows.map(listing => {
+                    const item = sheets.find(s => s.listingId === listing.id)
+                    return (
+                      <div key={listing.id} className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openListing(listing)}
+                          className="flex-1 text-left bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4"
+                        >
+                          <h4 className="font-bold text-white text-lg">{listingLabel(listing)}</h4>
+                          {item ? (
+                            <p className="text-sm text-emerald-400 font-black mt-1">{money(netProceeds(item))} estimated net</p>
+                          ) : (
+                            <p className="text-sm text-slate-400 mt-1">Tap to make a net sheet</p>
+                          )}
+                        </button>
+                        {item && (
+                          <button
+                            type="button"
+                            onClick={() => removeSheet(item.id)}
+                            aria-label={`Remove net sheet for ${listingLabel(listing)}`}
+                            className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {orphanSheets.map(item => (
+                    <div key={item.id} className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openSheet(item.id)}
+                        className="flex-1 text-left bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4"
+                      >
+                        <h4 className="font-bold text-white text-lg">{sheetTitle(item)}</h4>
+                        <p className="text-sm text-emerald-400 font-black mt-1">{money(netProceeds(item))} estimated net</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSheet(item.id)}
+                        aria-label={`Remove ${sheetTitle(item)}`}
+                        className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>
@@ -278,7 +453,24 @@ export function NetSheetView({
         {sheet && step === PLACE && (
           <div className="space-y-5">
             <h3 className="text-2xl font-black text-white">Where is the house?</h3>
-            <p className="text-base text-slate-400">City, state, and county help us estimate local fees. Street address is for the seller copy.</p>
+            <p className="text-base text-slate-400">Pick a listing you already entered, or type a new one. New listings also show up in Seller Tracking and Open House.</p>
+            {listings.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-bold tracking-widest uppercase text-slate-500">Your listings</p>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {listings.map(listing => (
+                    <button
+                      key={listing.id}
+                      type="button"
+                      onClick={() => attachListing(listing)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border font-bold ${sheet.listingId === listing.id ? 'bg-emerald-500/15 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:border-emerald-500/50'}`}
+                    >
+                      {listingLabel(listing)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="text-base font-bold text-slate-300 block mb-1">Street address</label>
               <input value={sheet.address} onChange={e => patch({ address: e.target.value })} placeholder="123 Main Street" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
@@ -419,19 +611,90 @@ export function NetSheetView({
               <p className="text-sm font-bold text-emerald-400 uppercase tracking-widest">Estimated cash at closing</p>
               <p className="text-5xl font-black text-emerald-400 mt-1">{money(netProceeds(sheet))}</p>
             </div>
-            <div className="bg-slate-800 rounded-2xl p-4 text-base font-bold space-y-2">
-              <div className="flex justify-between text-white"><span>Sale price</span><span>{money(sheet.salePrice)}</span></div>
-              <div className="flex justify-between text-rose-400"><span>Mortgage payoff</span><span>-{money(sheet.mortgagePayoff)}</span></div>
-              <div className="flex justify-between text-rose-400"><span>{sheet.agentCommissionPct}% commission</span><span>-{money(commissionAmount(sheet))}</span></div>
-              <div className="flex justify-between text-rose-400"><span>Transfer tax</span><span>-{money(transferTaxAmount(sheet))}</span></div>
-              <div className="flex justify-between text-rose-400"><span>Title & escrow</span><span>-{money(sheet.titleEscrowFee)}</span></div>
-              {Object.entries(sheet.extras).filter(([, amount]) => Number(amount) > 0).map(([key, amount]) => (
-                <div key={key} className="flex justify-between text-rose-400">
-                  <span>{extraField(key)?.label || key}</span>
-                  <span>-{money(Number(amount) || 0)}</span>
+
+            {editing ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-bold text-slate-400 block mb-1">Street address</label>
+                  <input value={sheet.address} onChange={e => patch({ address: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-bold text-slate-400 block mb-1">City</label>
+                    <input value={sheet.city} onChange={e => patch({ city: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-slate-400 block mb-1">State</label>
+                    <input value={sheet.state} onChange={e => patch({ state: e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() })} maxLength={2} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-white font-bold uppercase text-center focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+                <DollarField label="Sale price" value={sheet.salePrice} onChange={salePrice => patch({ salePrice })} />
+                <DollarField label="Mortgage payoff" value={sheet.mortgagePayoff} onChange={mortgagePayoff => patch({ mortgagePayoff })} />
+                <div>
+                  <label className="text-base font-bold text-slate-300 block mb-1">Total commission %</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={sheet.agentCommissionPct || ''}
+                    onChange={e => patch({ agentCommissionPct: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })}
+                    className={`${inputClass} px-4`}
+                  />
+                </div>
+                <div>
+                  <label className="text-base font-bold text-slate-300 block mb-1">Transfer tax %</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={sheet.transferTaxPct || ''}
+                    onChange={e => patch({ transferTaxPct: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })}
+                    className={`${inputClass} px-4`}
+                  />
+                </div>
+                <DollarField label="Title & escrow" value={sheet.titleEscrowFee} onChange={titleEscrowFee => patch({ titleEscrowFee })} />
+                {sheet.extras.sellerConcessions !== undefined && (
+                  <DollarField label="Seller concessions" value={sheet.extras.sellerConcessions || 0} onChange={amount => setExtra('sellerConcessions', amount)} />
+                )}
+                {(sheet.customCosts || []).filter(item => item.amount > 0 || item.label).map(item => (
+                  <DollarField
+                    key={item.id}
+                    label={item.label.trim() || 'Custom cost'}
+                    value={item.amount}
+                    onChange={amount => setCustomCost(item.id, { amount })}
+                  />
+                ))}
+                {Object.entries(sheet.extras).filter(([key, amount]) => key !== 'sellerConcessions' && Number(amount) > 0).map(([key, amount]) => (
+                  <DollarField
+                    key={key}
+                    label={extraField(key)?.label || key}
+                    value={Number(amount) || 0}
+                    onChange={n => setExtra(key as ExtraFieldKey, n)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-slate-800 rounded-2xl p-4 text-base font-bold space-y-2">
+                <div className="flex justify-between text-white"><span>Sale price</span><span>{money(sheet.salePrice)}</span></div>
+                <div className="flex justify-between text-rose-400"><span>Mortgage payoff</span><span>-{money(sheet.mortgagePayoff)}</span></div>
+                <div className="flex justify-between text-rose-400"><span>{sheet.agentCommissionPct}% commission</span><span>-{money(commissionAmount(sheet))}</span></div>
+                <div className="flex justify-between text-rose-400"><span>Transfer tax</span><span>-{money(transferTaxAmount(sheet))}</span></div>
+                <div className="flex justify-between text-rose-400"><span>Title & escrow</span><span>-{money(sheet.titleEscrowFee)}</span></div>
+                {sheet.extras.sellerConcessions ? (
+                  <div className="flex justify-between text-rose-400"><span>Seller concessions</span><span>-{money(sheet.extras.sellerConcessions)}</span></div>
+                ) : null}
+                {(sheet.customCosts || []).filter(item => item.amount > 0).map(item => (
+                  <div key={item.id} className="flex justify-between text-rose-400">
+                    <span>{item.label.trim() || 'Custom cost'}</span>
+                    <span>-{money(item.amount)}</span>
+                  </div>
+                ))}
+                {Object.entries(sheet.extras).filter(([key, amount]) => key !== 'sellerConcessions' && Number(amount) > 0).map(([key, amount]) => (
+                  <div key={key} className="flex justify-between text-rose-400">
+                    <span>{extraField(key)?.label || key}</span>
+                    <span>-{money(Number(amount) || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setStep(EXTRAS)}
@@ -441,10 +704,10 @@ export function NetSheetView({
             </button>
             <button
               type="button"
-              onClick={() => setStep(PLACE)}
+              onClick={() => setEditing(on => !on)}
               className="w-full text-slate-400 hover:text-white font-bold py-2"
             >
-              Change these numbers
+              {editing ? 'Done editing' : 'Change these numbers'}
             </button>
           </div>
         )}
@@ -453,45 +716,61 @@ export function NetSheetView({
           <div className="space-y-5 pb-8">
             <h3 className="text-2xl font-black text-white">Add extra costs</h3>
             <p className="text-base text-slate-400">Turn on only what applies. Leave the rest off. You can come back later.</p>
+
+            <div className="space-y-3">
+              <p className="text-sm font-bold tracking-widest uppercase text-slate-500">Most common</p>
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <div>
+                  <p className="font-bold text-white">Custom cost</p>
+                  <p className="text-sm text-slate-400 mt-1">Anything else the seller is paying that is not in the list.</p>
+                </div>
+                {(sheet.customCosts || []).map(item => (
+                  <div key={item.id} className="space-y-2 bg-slate-900 rounded-xl p-3">
+                    <input
+                      value={item.label}
+                      onChange={e => setCustomCost(item.id, { label: e.target.value })}
+                      placeholder="What is this for?"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatMoneyInput(item.amount)}
+                          onChange={e => setCustomCost(item.id, { amount: parseMoneyInput(e.target.value) })}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCustomCost(item.id, null)}
+                        className="px-3 text-slate-500 hover:text-rose-400 font-bold"
+                        aria-label="Remove custom cost"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addCustomCost}
+                  className="w-full bg-slate-900 hover:bg-slate-700 text-emerald-400 font-bold py-3 rounded-xl"
+                >
+                  {(sheet.customCosts || []).length ? 'Add another custom cost' : 'Add a custom cost'}
+                </button>
+              </div>
+              {extraToggle(SELLER_CONCESSION)}
+            </div>
+
             {(['loans', 'closing', 'other'] as const).map(group => (
               <div key={group} className="space-y-3">
                 <p className="text-sm font-bold tracking-widest uppercase text-slate-500">
                   {group === 'loans' ? 'Other loans & payoffs' : group === 'closing' ? 'More closing costs' : 'Other seller costs'}
                 </p>
-                {EXTRA_FIELDS.filter(f => f.group === group).map(field => {
-                  const on = sheet.extras[field.key] !== undefined
-                  return (
-                    <div key={field.key} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-white">{field.label}</p>
-                          <p className="text-sm text-slate-400 mt-1">{field.hint}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setExtra(field.key, on ? null : 0)}
-                          className={`flex-shrink-0 w-12 h-7 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}
-                          aria-label={on ? `Remove ${field.label}` : `Add ${field.label}`}
-                        >
-                          <span className={`block w-5 h-5 bg-white rounded-full mt-1 transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`}></span>
-                        </button>
-                      </div>
-                      {on && (
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="off"
-                            value={formatMoneyInput(sheet.extras[field.key] || 0)}
-                            onChange={e => setExtra(field.key, parseMoneyInput(e.target.value))}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500 [appearance:textfield]"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                {GROUPED_FIELDS.filter(f => f.group === group).map(field => extraToggle(field))}
               </div>
             ))}
           </div>

@@ -14,6 +14,9 @@ export interface Activity {
 export interface Listing {
   id: string;
   address: string;
+  city?: string;
+  state?: string;
+  county?: string;
   activities: Activity[];
 }
 

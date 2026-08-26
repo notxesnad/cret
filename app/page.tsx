@@ -154,11 +154,12 @@ function HomeContent() {
     })
   }
 
-  const updateSheets = (updater: (prev: NetSheet[]) => NetSheet[]) => {
+  const updateHomesAndSheets = (fn: (ctx: { homes: any[], sheets: NetSheet[] }) => { homes: any[], sheets: NetSheet[] }) => {
     updateListings(prev => {
       const homes = prev.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
       const sheets = prev.filter(isNetSheet)
-      return [...homes, ...updater(sheets)]
+      const next = fn({ homes, sheets })
+      return [...next.homes, ...next.sheets]
     })
   }
 
@@ -830,8 +831,9 @@ function HomeContent() {
           )}
           {currentView === 'money' && (
             <NetSheetView
+              listings={propertyListings}
               sheets={netSheets}
-              updateSheets={updateSheets}
+              updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
@@ -869,8 +871,9 @@ function HomeContent() {
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && (
             <NetSheetView
+              listings={propertyListings}
               sheets={netSheets}
-              updateSheets={updateSheets}
+              updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
