@@ -78,7 +78,7 @@ export function HomeView({ switchView, showCustomModal }: { switchView: (view: s
 
         <div onClick={() => switchView('money')} className="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:rotate-12">💵</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Calculator Suite</span>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller net sheets</span>
           <h2 className="font-money text-3xl md:text-4xl tracking-wide uppercase mt-1">Money Stuff</h2>
         </div>
 

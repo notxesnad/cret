@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay } from '@/app/lib/tourFormat'
+import { NET_SHEET_KIND } from '@/app/lib/netSheet'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
   let listing = null
 
   if (profile && profile.listings) {
-    listing = profile.listings.find((l: any) => l.id === listingId)
+    listing = profile.listings.find((l: any) => l.id === listingId && l.kind !== NET_SHEET_KIND)
   }
 
   if (!profile || !listing) {

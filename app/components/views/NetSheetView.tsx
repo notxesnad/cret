@@ -1,267 +1,493 @@
+'use client'
+
 import { useState } from 'react'
+import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import {
+  EXTRA_FIELDS,
+  applyAiToSheet,
+  blankNetSheet,
+  commissionAmount,
+  extraField,
+  asNetSheet,
+  money,
+  netProceeds,
+  netSheetAiPrompt,
+  parseNetSheetAi,
+  sheetTitle,
+  transferTaxAmount,
+  type ExtraFieldKey,
+  type NetSheet,
+} from '@/app/lib/netSheet'
 
 interface NetSheetViewProps {
-  netData: any;
-  handleNetInputChange: (field: string, val: string) => void;
-  calculatedNetProceeds: number;
-  activeFields: any;
-  toggleFieldCheckbox: (fieldKey: string) => void;
-  showCustomModal: (msg: string, requireAuth?: boolean) => void;
-  renderAgentHeader: () => React.ReactNode;
-  switchView: (viewId: string) => void;
-  signedIn?: boolean;
+  sheets: NetSheet[]
+  updateSheets: (updater: (prev: NetSheet[]) => NetSheet[]) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
+  switchView: (view: string) => void
+  userId?: string
+  persistWorkspace?: () => Promise<boolean>
+  signedIn?: boolean
+  exitView?: string
+}
+
+const PLACE = 2
+const PRICE = 3
+const LOAN = 4
+const COMMISSION = 5
+const CLOSING = 6
+const REVIEW = 7
+const EXTRAS = 8
+const LAST = 8
+
+function DollarField({
+  label,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  value: number
+  onChange: (n: number) => void
+}) {
+  return (
+    <div>
+      <label className="text-base font-bold text-slate-300 block mb-1">{label}</label>
+      {hint && <p className="text-base text-slate-400 mb-2">{hint}</p>}
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black text-xl">$</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          value={value || ''}
+          onChange={e => onChange(parseFloat(e.target.value) || 0)}
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+        />
+      </div>
+    </div>
+  )
 }
 
 export function NetSheetView({
-  netData,
-  handleNetInputChange,
-  calculatedNetProceeds,
-  activeFields,
-  toggleFieldCheckbox,
+  sheets,
+  updateSheets,
   showCustomModal,
-  renderAgentHeader,
   switchView,
-  signedIn
+  userId,
+  persistWorkspace,
+  signedIn,
+  exitView = 'home',
 }: NetSheetViewProps) {
-  const [netSheetView, setNetSheetView] = useState<string>('calc')
+  const [step, setStep] = useState(1)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [aiPaste, setAiPaste] = useState('')
+  const [aiError, setAiError] = useState('')
+  const [aiNote, setAiNote] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const sheet = asNetSheet(sheets.find(s => s.id === activeId) || null)
+
+  const save = (next: NetSheet) => {
+    const stamped = { ...next, updatedAt: new Date().toISOString() }
+    updateSheets(prev => prev.some(s => s.id === stamped.id)
+      ? prev.map(s => s.id === stamped.id ? stamped : s)
+      : [stamped, ...prev])
+  }
+
+  const startNew = () => {
+    const created = blankNetSheet()
+    updateSheets(prev => [created, ...prev])
+    setActiveId(created.id)
+    setAiPaste('')
+    setAiError('')
+    setAiNote('')
+    setStep(PLACE)
+  }
+
+  const openSheet = (id: string) => {
+    setActiveId(id)
+    setAiPaste('')
+    setAiError('')
+    setAiNote('')
+    setStep(REVIEW)
+  }
+
+  const removeSheet = (id: string) => {
+    updateSheets(prev => prev.filter(s => s.id !== id))
+    if (activeId === id) {
+      setActiveId(null)
+      setStep(1)
+    }
+  }
+
+  const patch = (partial: Partial<NetSheet>) => {
+    if (!sheet) return
+    save({ ...sheet, ...partial })
+  }
+
+  const setExtra = (key: ExtraFieldKey, amount: number | null) => {
+    if (!sheet) return
+    const extras = { ...sheet.extras }
+    if (amount === null) delete extras[key]
+    else extras[key] = amount
+    patch({ extras })
+  }
+
+  const applyAi = () => {
+    if (!sheet) return
+    setAiError('')
+    try {
+      const parsed = parseNetSheetAi(aiPaste)
+      const next = applyAiToSheet(sheet, parsed)
+      save(next)
+      setAiNote(parsed.notes || 'Local estimates added. You can still change any number.')
+    } catch {
+      setAiError('That did not look like the JSON we need. Copy the whole AI answer and paste it again.')
+    }
+  }
+
+  const copyPrompt = () => {
+    if (!sheet) return
+    navigator.clipboard.writeText(netSheetAiPrompt(sheet)).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    }).catch(() => showCustomModal('Copy the prompt from the box above.'))
+  }
+
+  const shareUrl = userId && activeId
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/netsheet/${userId}/${activeId}`
+    : ''
+
+  const handleCopy = () => {
+    if (!signedIn) {
+      showCustomModal('', true)
+      return
+    }
+    if (!shareUrl) {
+      showCustomModal('Save this sheet first.')
+      return
+    }
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showCustomModal(`Link copied. Send this to your seller:\n\n${shareUrl}`)
+    }).catch(() => {
+      showCustomModal(`Copy this link:\n\n${shareUrl}`)
+    })
+  }
+
+  const back = () => {
+    if (step === 1) switchView(exitView)
+    else if (step === REVIEW) setStep(1)
+    else if (step === EXTRAS) setStep(REVIEW)
+    else if (step === PLACE) setStep(1)
+    else setStep(step - 1)
+  }
+
+  const progress = step === 1 ? 0 : (step / LAST) * 100
+  const questionStep = step >= PLACE && step <= CLOSING
+  const sortedSheets = [...sheets].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
 
   return (
-    <div id="view-netsheet" className="app-view active bg-white text-slate-900 rounded-3xl p-6 shadow-2xl space-y-5">
-      {/* Back Button */}
-      <button 
-        onClick={() => switchView('seller')}
-        className="flex items-center text-xs font-bold text-slate-500 hover:text-slate-800 transition"
-      >
-        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-        Back to Seller Tools
-      </button>
+    <div id="view-netsheet" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
+      <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
+        <button onClick={back} className="text-slate-400 hover:text-white transition flex items-center">
+          <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
+          <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline-block">{step === 1 ? 'Close' : 'Back'}</span>
+        </button>
+        <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
+          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+        </div>
+        {questionStep && (
+          <span className="text-xs font-bold tracking-wider uppercase text-slate-500 whitespace-nowrap">{step - 1} of 5</span>
+        )}
+      </div>
 
-      {netSheetView === 'calc' ? (
-        <>
-          <div className="-mx-6 -mt-6 [&>*]:mb-0">
-            {renderAgentHeader()}
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-black text-slate-900">Customizable Seller Net Sheet</h2>
-              <p className="text-[11px] text-slate-500">Core figures plus any active detailed line items.</p>
+      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-6 py-6">
+        {step === 1 && (
+          <div>
+            <div className="text-center mb-8">
+              <span className="text-sm font-bold tracking-widest text-emerald-400 uppercase font-money">Money Stuff</span>
+              <h3 className="text-2xl font-black text-white mt-1">Seller Net Sheet</h3>
+              <p className="text-base text-slate-400 mt-2">We will ask a few easy questions and do the math. You can add extra costs at the end.</p>
             </div>
-            <button 
-              onClick={() => setNetSheetView('checkboxes')}
-              className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow"
+            <button
+              onClick={startNew}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
             >
-              ➕ Add / Edit Fields
+              Start a new net sheet
             </button>
+            <div className="space-y-3">
+              {sortedSheets.length === 0 ? (
+                <p className="text-base text-slate-500 text-center py-8">No sheets yet. Start one for a listing.</p>
+              ) : (
+                sortedSheets.map(item => (
+                  <div key={item.id} className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openSheet(item.id)}
+                      className="flex-1 text-left bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4"
+                    >
+                      <h4 className="font-bold text-white text-lg">{sheetTitle(item)}</h4>
+                      <p className="text-sm text-emerald-400 font-black mt-1">{money(netProceeds(item))} estimated net</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSheet(item.id)}
+                      aria-label={`Remove ${sheetTitle(item)}`}
+                      className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+        )}
 
-          {/* Core Basic Fields Inputs */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 text-xs">
+        {sheet && step === PLACE && (
+          <div className="space-y-5">
+            <h3 className="text-2xl font-black text-white">Where is the house?</h3>
+            <p className="text-base text-slate-400">City, state, and county help us estimate local fees. Street address is for the seller copy.</p>
+            <div>
+              <label className="text-base font-bold text-slate-300 block mb-1">Street address</label>
+              <input value={sheet.address} onChange={e => patch({ address: e.target.value })} placeholder="123 Main Street" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="text-base font-bold text-slate-300 block mb-1">City</label>
+              <input value={sheet.city} onChange={e => patch({ city: e.target.value })} placeholder="Fort Lauderdale" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-bold text-slate-600 block mb-1">Sale Price ($)</label>
-                <input type="number" value={netData.salePrice} onChange={(e) => handleNetInputChange('salePrice', e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
+                <label className="text-base font-bold text-slate-300 block mb-1">State</label>
+                <input value={sheet.state} onChange={e => patch({ state: e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() })} placeholder="FL" maxLength={2} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold uppercase text-center focus:outline-none focus:border-emerald-500" />
               </div>
               <div>
-                <label className="font-bold text-slate-600 block mb-1">Mortgage Payoff ($)</label>
-                <input type="number" value={netData.mortgagePayoff} onChange={(e) => handleNetInputChange('mortgagePayoff', e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
+                <label className="text-base font-bold text-slate-300 block mb-1">County</label>
+                <input value={sheet.county} onChange={e => patch({ county: e.target.value })} placeholder="Broward" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500" />
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Commission %</label>
-                <input type="number" step="0.5" value={netData.agentCommissionPct} onChange={(e) => handleNetInputChange('agentCommissionPct', e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 font-bold text-slate-900" />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Transfer Tax %</label>
-                <input type="number" step="0.25" value={netData.transferTaxPct} onChange={(e) => handleNetInputChange('transferTaxPct', e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 font-bold text-slate-900" />
-              </div>
-              <div>
-                <label className="font-bold text-slate-600 block mb-1">Title &amp; Escrow ($)</label>
-                <input type="number" value={netData.titleEscrowFee} onChange={(e) => handleNetInputChange('titleEscrowFee', e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 font-bold text-slate-900" />
-              </div>
+        {sheet && step === PRICE && (
+          <div className="space-y-5">
+            <h3 className="text-2xl font-black text-white">What is the sale price?</h3>
+            <DollarField
+              label="Sale price"
+              hint="The price the buyer is paying. If you are still pricing it, use your recommended list price."
+              value={sheet.salePrice}
+              onChange={salePrice => patch({ salePrice })}
+            />
+          </div>
+        )}
+
+        {sheet && step === LOAN && (
+          <div className="space-y-5">
+            <h3 className="text-2xl font-black text-white">What do they still owe?</h3>
+            <DollarField
+              label="Mortgage payoff"
+              hint="The remaining first mortgage. If you do not know yet, put your best guess. You can add a second mortgage later."
+              value={sheet.mortgagePayoff}
+              onChange={mortgagePayoff => patch({ mortgagePayoff })}
+            />
+            <button
+              type="button"
+              onClick={() => { patch({ mortgagePayoff: 0 }); setStep(COMMISSION) }}
+              className="w-full text-emerald-400 font-bold py-2"
+            >
+              They don&apos;t have a mortgage
+            </button>
+          </div>
+        )}
+
+        {sheet && step === COMMISSION && (
+          <div className="space-y-5">
+            <h3 className="text-2xl font-black text-white">What is the commission?</h3>
+            <p className="text-base text-slate-400">This is the total percent paid from the sale, usually split between both agents. 5% or 6% is common.</p>
+            <div>
+              <label className="text-base font-bold text-slate-300 block mb-1">Total commission %</label>
+              <input
+                type="number"
+                step="0.25"
+                value={sheet.agentCommissionPct || ''}
+                onChange={e => patch({ agentCommissionPct: parseFloat(e.target.value) || 0 })}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+              />
             </div>
+            <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-center">
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">That equals</p>
+              <p className="text-3xl font-black text-white mt-1">{money(commissionAmount(sheet))}</p>
+            </div>
+          </div>
+        )}
 
-            {/* Render any actively checked additional inputs */}
-            {(Object.values(activeFields).some(v => v === true)) && (
-              <div className="pt-3 mt-3 border-t border-slate-200">
-                <p className="text-[9px] uppercase font-bold text-slate-400 mb-2">Additional Line Items</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {activeFields.sellerConcessions && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Seller Concessions ($)</label><input type="number" value={netData.sellerConcessions} onChange={(e) => handleNetInputChange('sellerConcessions', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.personalProperty && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Personal Property Value ($)</label><input type="number" value={netData.personalProperty} onChange={(e) => handleNetInputChange('personalProperty', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.secondMortgage && <div><label className="text-[10px] font-bold text-slate-500 uppercase">2nd Mortgage / HELOC ($)</label><input type="number" value={netData.secondMortgage} onChange={(e) => handleNetInputChange('secondMortgage', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.prepaymentPenalties && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Prepayment Penalties ($)</label><input type="number" value={netData.prepaymentPenalties} onChange={(e) => handleNetInputChange('prepaymentPenalties', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.propertyLiens && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Outstanding Property Liens ($)</label><input type="number" value={netData.propertyLiens} onChange={(e) => handleNetInputChange('propertyLiens', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.transactionCoordFees && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Transaction Coordination / Admin Fee ($)</label><input type="number" value={netData.transactionCoordFees} onChange={(e) => handleNetInputChange('transactionCoordFees', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.attorneyFees && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Attorney Fees ($)</label><input type="number" value={netData.attorneyFees} onChange={(e) => handleNetInputChange('attorneyFees', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.recordingFees && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Recording Fees ($)</label><input type="number" value={netData.recordingFees} onChange={(e) => handleNetInputChange('recordingFees', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.ownersTitleInsurance && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Owner&apos;s Title Insurance Policy ($)</label><input type="number" value={netData.ownersTitleInsurance} onChange={(e) => handleNetInputChange('ownersTitleInsurance', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.courierWireFees && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Courier / Wire Fees ($)</label><input type="number" value={netData.courierWireFees} onChange={(e) => handleNetInputChange('courierWireFees', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.propertyTaxesPrarated && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Prorated Property Taxes ($)</label><input type="number" value={netData.propertyTaxesPrarated} onChange={(e) => handleNetInputChange('propertyTaxesPrarated', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.hoaDues && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Prorated HOA Dues ($)</label><input type="number" value={netData.hoaDues} onChange={(e) => handleNetInputChange('hoaDues', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.hoaEstoppel && <div><label className="text-[10px] font-bold text-slate-500 uppercase">HOA Estoppel / Transfer Fee ($)</label><input type="number" value={netData.hoaEstoppel} onChange={(e) => handleNetInputChange('hoaEstoppel', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.specialAssessments && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Special Assessments ($)</label><input type="number" value={netData.specialAssessments} onChange={(e) => handleNetInputChange('specialAssessments', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.utilitiesProration && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Utilities Proration ($)</label><input type="number" value={netData.utilitiesProration} onChange={(e) => handleNetInputChange('utilitiesProration', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.homeWarranty && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Home Warranty ($)</label><input type="number" value={netData.homeWarranty} onChange={(e) => handleNetInputChange('homeWarranty', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.stagingPhotography && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Staging &amp; Photography ($)</label><input type="number" value={netData.stagingPhotography} onChange={(e) => handleNetInputChange('stagingPhotography', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
-                  {activeFields.repairCredits && <div><label className="text-[10px] font-bold text-slate-500 uppercase">Repair Credits ($)</label><input type="number" value={netData.repairCredits} onChange={(e) => handleNetInputChange('repairCredits', e.target.value)} className="w-full bg-white border border-slate-300 rounded px-2 py-1" /></div>}
+        {sheet && step === CLOSING && (
+          <div className="space-y-5">
+            <h3 className="text-2xl font-black text-white">Typical closing costs</h3>
+            <p className="text-base text-slate-400">Transfer tax is a percent of the sale price. Title and escrow is a dollar amount from the closing company.</p>
+            <div>
+              <label className="text-base font-bold text-slate-300 block mb-1">Transfer tax %</label>
+              <input
+                type="number"
+                step="0.01"
+                value={sheet.transferTaxPct || ''}
+                onChange={e => patch({ transferTaxPct: parseFloat(e.target.value) || 0 })}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+              />
+              <p className="text-sm text-slate-500 mt-2">{money(transferTaxAmount(sheet))} on this sale price</p>
+            </div>
+            <DollarField
+              label="Title & escrow fees"
+              hint="What the title company charges to close. If you are unsure, use the AI helper below."
+              value={sheet.titleEscrowFee}
+              onChange={titleEscrowFee => patch({ titleEscrowFee })}
+            />
+
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+              <h4 className="text-emerald-400 font-black">Optional: ask AI for local numbers</h4>
+              <p className="text-base text-slate-300">Copy this prompt into ChatGPT, Claude, Gemini, or any model. Then paste the JSON it returns.</p>
+              <pre className="bg-slate-950 text-[11px] leading-relaxed text-slate-400 rounded-xl p-3 max-h-36 overflow-y-auto whitespace-pre-wrap">{netSheetAiPrompt(sheet)}</pre>
+              <button type="button" onClick={copyPrompt} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl">
+                {copied ? 'Copied' : 'Copy prompt'}
+              </button>
+              <textarea
+                value={aiPaste}
+                onChange={e => setAiPaste(e.target.value)}
+                placeholder='Paste the JSON here. It should start with { and end with }'
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white min-h-[110px] focus:outline-none focus:border-emerald-500"
+              />
+              <button type="button" onClick={applyAi} className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl">
+                Use these numbers
+              </button>
+              {aiError && <p className="text-sm text-rose-400">{aiError}</p>}
+              {aiNote && <p className="text-sm text-emerald-300">{aiNote}</p>}
+            </div>
+          </div>
+        )}
+
+        {sheet && step === REVIEW && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <span className="text-sm font-bold tracking-widest text-emerald-400 uppercase font-money">Basic net sheet</span>
+              <h3 className="text-2xl font-black text-white mt-1">{sheetTitle(sheet)}</h3>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 text-center">
+              <p className="text-sm font-bold text-emerald-400 uppercase tracking-widest">Estimated cash at closing</p>
+              <p className="text-5xl font-black text-emerald-400 mt-1">{money(netProceeds(sheet))}</p>
+            </div>
+            <div className="bg-slate-800 rounded-2xl p-4 text-base font-bold space-y-2">
+              <div className="flex justify-between text-white"><span>Sale price</span><span>{money(sheet.salePrice)}</span></div>
+              <div className="flex justify-between text-rose-400"><span>Mortgage payoff</span><span>-{money(sheet.mortgagePayoff)}</span></div>
+              <div className="flex justify-between text-rose-400"><span>{sheet.agentCommissionPct}% commission</span><span>-{money(commissionAmount(sheet))}</span></div>
+              <div className="flex justify-between text-rose-400"><span>Transfer tax</span><span>-{money(transferTaxAmount(sheet))}</span></div>
+              <div className="flex justify-between text-rose-400"><span>Title & escrow</span><span>-{money(sheet.titleEscrowFee)}</span></div>
+              {Object.entries(sheet.extras).filter(([, amount]) => Number(amount) > 0).map(([key, amount]) => (
+                <div key={key} className="flex justify-between text-rose-400">
+                  <span>{extraField(key)?.label || key}</span>
+                  <span>-{money(Number(amount) || 0)}</span>
                 </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStep(EXTRAS)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-xl border border-slate-700"
+            >
+              Add more costs
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(PLACE)}
+              className="w-full text-slate-400 hover:text-white font-bold py-2"
+            >
+              Change these numbers
+            </button>
+          </div>
+        )}
+
+        {sheet && step === EXTRAS && (
+          <div className="space-y-5 pb-8">
+            <h3 className="text-2xl font-black text-white">Add extra costs</h3>
+            <p className="text-base text-slate-400">Turn on only what applies. Leave the rest off. You can come back later.</p>
+            {(['loans', 'closing', 'other'] as const).map(group => (
+              <div key={group} className="space-y-3">
+                <p className="text-sm font-bold tracking-widest uppercase text-slate-500">
+                  {group === 'loans' ? 'Other loans & payoffs' : group === 'closing' ? 'More closing costs' : 'Other seller costs'}
+                </p>
+                {EXTRA_FIELDS.filter(f => f.group === group).map(field => {
+                  const on = sheet.extras[field.key] !== undefined
+                  return (
+                    <div key={field.key} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-white">{field.label}</p>
+                          <p className="text-sm text-slate-400 mt-1">{field.hint}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setExtra(field.key, on ? null : 0)}
+                          className={`flex-shrink-0 w-12 h-7 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}
+                          aria-label={on ? `Remove ${field.label}` : `Add ${field.label}`}
+                        >
+                          <span className={`block w-5 h-5 bg-white rounded-full mt-1 transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`}></span>
+                        </button>
+                      </div>
+                      {on && (
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                          <input
+                            type="number"
+                            value={sheet.extras[field.key] || ''}
+                            onChange={e => setExtra(field.key, parseFloat(e.target.value) || 0)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-            )}
+            ))}
           </div>
+        )}
+      </div>
 
-          <div className="border border-slate-200 rounded-2xl p-5 text-sm font-bold bg-white">
-            <div className="flex justify-between py-1 text-slate-900">
-              <span>Sale Price</span>
-              <span>${Number(netData.salePrice).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-1 text-rose-600">
-              <span>Mortgage Payoff</span>
-              <span>-${Number(netData.mortgagePayoff).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-1 text-rose-600">
-              <span>Agent Commission</span>
-              <span>-${(netData.salePrice * (netData.agentCommissionPct/100)).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-1 text-rose-600">
-              <span>Transfer Tax</span>
-              <span>-${(netData.salePrice * (netData.transferTaxPct/100)).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-1 text-rose-600">
-              <span>Title &amp; Escrow Fees</span>
-              <span>-${Number(netData.titleEscrowFee).toLocaleString()}</span>
-            </div>
-            
-            {/* Dynamic Deductions List rendered here */}
-            {Object.keys(activeFields).map(key => {
-              if (!activeFields[key]) return null
-              if (key === 'sellerConcessions') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Seller Concessions</span><span>-${Number(netData.sellerConcessions).toLocaleString()}</span></div>
-              if (key === 'personalProperty') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Personal Property</span><span>-${Number(netData.personalProperty).toLocaleString()}</span></div>
-              if (key === 'secondMortgage') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>2nd Mortgage Payoff</span><span>-${Number(netData.secondMortgage).toLocaleString()}</span></div>
-              if (key === 'prepaymentPenalties') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Prepayment Penalties</span><span>-${Number(netData.prepaymentPenalties).toLocaleString()}</span></div>
-              if (key === 'propertyLiens') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Outstanding Liens</span><span>-${Number(netData.propertyLiens).toLocaleString()}</span></div>
-              if (key === 'transactionCoordFees') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Admin / TC Fees</span><span>-${Number(netData.transactionCoordFees).toLocaleString()}</span></div>
-              if (key === 'attorneyFees') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Attorney Fees</span><span>-${Number(netData.attorneyFees).toLocaleString()}</span></div>
-              if (key === 'recordingFees') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Recording Fees</span><span>-${Number(netData.recordingFees).toLocaleString()}</span></div>
-              if (key === 'ownersTitleInsurance') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Owner&apos;s Title Policy</span><span>-${Number(netData.ownersTitleInsurance).toLocaleString()}</span></div>
-              if (key === 'courierWireFees') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Courier & Wire Fees</span><span>-${Number(netData.courierWireFees).toLocaleString()}</span></div>
-              if (key === 'propertyTaxesPrarated') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Prorated Taxes</span><span>-${Number(netData.propertyTaxesPrarated).toLocaleString()}</span></div>
-              if (key === 'hoaDues') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>HOA Dues</span><span>-${Number(netData.hoaDues).toLocaleString()}</span></div>
-              if (key === 'hoaEstoppel') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>HOA Estoppel Fee</span><span>-${Number(netData.hoaEstoppel).toLocaleString()}</span></div>
-              if (key === 'specialAssessments') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Special Assessments</span><span>-${Number(netData.specialAssessments).toLocaleString()}</span></div>
-              if (key === 'utilitiesProration') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Utilities Proration</span><span>-${Number(netData.utilitiesProration).toLocaleString()}</span></div>
-              if (key === 'homeWarranty') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Home Warranty</span><span>-${Number(netData.homeWarranty).toLocaleString()}</span></div>
-              if (key === 'stagingPhotography') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Staging & Photo</span><span>-${Number(netData.stagingPhotography).toLocaleString()}</span></div>
-              if (key === 'repairCredits') return <div key={key} className="flex justify-between py-1 text-rose-600"><span>Repair Credits</span><span>-${Number(netData.repairCredits).toLocaleString()}</span></div>
-              return null
-            })}
-            
-            <div className="border-t-2 border-slate-900 mt-3 pt-3 flex justify-between text-xl font-black text-emerald-600">
-              <span>Estimated Net</span>
-              <span>${calculatedNetProceeds.toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
-            </div>
-          </div>
-          <button onClick={() => signedIn ? showCustomModal('Pro Feature Unlocked: Branded PDF and SMS link sent!') : showCustomModal('', true)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 rounded-xl transition shadow-lg mt-2 flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-            Generate Seller PDF 
+      {sheet && step > 1 && step < REVIEW && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 pb-safe">
+          <button
+            type="button"
+            onClick={() => setStep(step + 1)}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl"
+          >
+            Continue
           </button>
-        </>
-      ) : (
-        <>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-black text-slate-900">Configure Fields</h2>
-            <button onClick={() => setNetSheetView('calc')} className="text-sm font-bold text-indigo-600 hover:text-indigo-500">Done</button>
-          </div>
-          <p className="text-base text-slate-500 mb-6">Select which line items should appear in your Net Sheet layout.</p>
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            
-            {/* Hardcoded field checkboxes based on existing state */}
-            <div className="space-y-2 border-b border-slate-100 pb-4">
-              <h3 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Property & Loan</h3>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Seller Concessions</span>
-                <input type="checkbox" checked={activeFields.sellerConcessions} onChange={() => toggleFieldCheckbox('sellerConcessions')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Personal Property</span>
-                <input type="checkbox" checked={activeFields.personalProperty} onChange={() => toggleFieldCheckbox('personalProperty')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">2nd Mortgage / HELOC</span>
-                <input type="checkbox" checked={activeFields.secondMortgage} onChange={() => toggleFieldCheckbox('secondMortgage')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Prepayment Penalties</span>
-                <input type="checkbox" checked={activeFields.prepaymentPenalties} onChange={() => toggleFieldCheckbox('prepaymentPenalties')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Outstanding Liens</span>
-                <input type="checkbox" checked={activeFields.propertyLiens} onChange={() => toggleFieldCheckbox('propertyLiens')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-            </div>
+        </div>
+      )}
 
-            <div className="space-y-2 border-b border-slate-100 pb-4">
-              <h3 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Fees & Taxes</h3>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Admin / TC Fees</span>
-                <input type="checkbox" checked={activeFields.transactionCoordFees} onChange={() => toggleFieldCheckbox('transactionCoordFees')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Attorney Fees</span>
-                <input type="checkbox" checked={activeFields.attorneyFees} onChange={() => toggleFieldCheckbox('attorneyFees')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Recording Fees</span>
-                <input type="checkbox" checked={activeFields.recordingFees} onChange={() => toggleFieldCheckbox('recordingFees')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Owner&apos;s Title Policy</span>
-                <input type="checkbox" checked={activeFields.ownersTitleInsurance} onChange={() => toggleFieldCheckbox('ownersTitleInsurance')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Courier / Wire Fees</span>
-                <input type="checkbox" checked={activeFields.courierWireFees} onChange={() => toggleFieldCheckbox('courierWireFees')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Prorated Taxes</span>
-                <input type="checkbox" checked={activeFields.propertyTaxesPrarated} onChange={() => toggleFieldCheckbox('propertyTaxesPrarated')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-            </div>
+      {sheet && step === REVIEW && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 pb-safe">
+          <SharePreviewButtons
+            url={shareUrl}
+            copyLabel="Copy Link"
+            accentClass="bg-emerald-500 hover:bg-emerald-400 text-slate-950"
+            onCopy={handleCopy}
+            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+            beforeShare={persistWorkspace}
+          />
+          <p className="text-sm text-slate-500 text-center mt-3">Preview is the seller copy. They can save it as a PDF from that page.</p>
+        </div>
+      )}
 
-            <div className="space-y-2 pb-4">
-              <h3 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">HOA & Miscellaneous</h3>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">HOA Dues</span>
-                <input type="checkbox" checked={activeFields.hoaDues} onChange={() => toggleFieldCheckbox('hoaDues')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">HOA Estoppel Fee</span>
-                <input type="checkbox" checked={activeFields.hoaEstoppel} onChange={() => toggleFieldCheckbox('hoaEstoppel')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Special Assessments</span>
-                <input type="checkbox" checked={activeFields.specialAssessments} onChange={() => toggleFieldCheckbox('specialAssessments')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Utilities Proration</span>
-                <input type="checkbox" checked={activeFields.utilitiesProration} onChange={() => toggleFieldCheckbox('utilitiesProration')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Home Warranty</span>
-                <input type="checkbox" checked={activeFields.homeWarranty} onChange={() => toggleFieldCheckbox('homeWarranty')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Staging & Photo</span>
-                <input type="checkbox" checked={activeFields.stagingPhotography} onChange={() => toggleFieldCheckbox('stagingPhotography')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-              <label className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 cursor-pointer hover:border-slate-300">
-                <span className="text-sm font-bold text-slate-700">Repair Credits</span>
-                <input type="checkbox" checked={activeFields.repairCredits} onChange={() => toggleFieldCheckbox('repairCredits')} className="w-4 h-4 rounded text-emerald-600" />
-              </label>
-            </div>
-          </div>
-        </>
+      {sheet && step === EXTRAS && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 pb-safe">
+          <button
+            type="button"
+            onClick={() => setStep(REVIEW)}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl"
+          >
+            Done, show my sheet
+          </button>
+        </div>
       )}
     </div>
   )

@@ -5,11 +5,11 @@ import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersiste
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
+import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import {
   HomeView,
   SignInView,
-  MoneyStuffView,
   OpenHouseView,
   OpenHouseSignInView,
   OpenHouseFeedbackView,
@@ -140,6 +140,25 @@ function HomeContent() {
         })
       }
       return newListings
+    })
+  }
+
+  const propertyListings = listings.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
+  const netSheets = listings.filter(isNetSheet)
+
+  const updatePropertyListings = (updater: (prev: any[]) => any[]) => {
+    updateListings(prev => {
+      const sheets = prev.filter(isNetSheet)
+      const homes = prev.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
+      return [...updater(homes), ...sheets]
+    })
+  }
+
+  const updateSheets = (updater: (prev: NetSheet[]) => NetSheet[]) => {
+    updateListings(prev => {
+      const homes = prev.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
+      const sheets = prev.filter(isNetSheet)
+      return [...homes, ...updater(sheets)]
     })
   }
 
@@ -558,50 +577,6 @@ function HomeContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentView, router])
 
-
-  const calcTotalDeductions = () => {
-    const comm = netData.salePrice * (netData.agentCommissionPct / 100)
-    const transfer = netData.salePrice * (netData.transferTaxPct / 100)
-    
-    let optionalTotal = 0
-    if (activeFields.sellerConcessions) optionalTotal += Number(netData.sellerConcessions)
-    if (activeFields.personalProperty) optionalTotal += Number(netData.personalProperty)
-    if (activeFields.secondMortgage) optionalTotal += Number(netData.secondMortgage)
-    if (activeFields.prepaymentPenalties) optionalTotal += Number(netData.prepaymentPenalties)
-    if (activeFields.propertyLiens) optionalTotal += Number(netData.propertyLiens)
-    if (activeFields.transactionCoordFees) optionalTotal += Number(netData.transactionCoordFees)
-    if (activeFields.attorneyFees) optionalTotal += Number(netData.attorneyFees)
-    if (activeFields.recordingFees) optionalTotal += Number(netData.recordingFees)
-    if (activeFields.ownersTitleInsurance) optionalTotal += Number(netData.ownersTitleInsurance)
-    if (activeFields.courierWireFees) optionalTotal += Number(netData.courierWireFees)
-    if (activeFields.propertyTaxesPrarated) optionalTotal += Number(netData.propertyTaxesPrarated)
-    if (activeFields.hoaDues) optionalTotal += Number(netData.hoaDues)
-    if (activeFields.hoaEstoppel) optionalTotal += Number(netData.hoaEstoppel)
-    if (activeFields.specialAssessments) optionalTotal += Number(netData.specialAssessments)
-    if (activeFields.utilitiesProration) optionalTotal += Number(netData.utilitiesProration)
-    if (activeFields.homeWarranty) optionalTotal += Number(netData.homeWarranty)
-    if (activeFields.stagingPhotography) optionalTotal += Number(netData.stagingPhotography)
-    if (activeFields.repairCredits) optionalTotal += Number(netData.repairCredits)
-
-    return (
-      Number(netData.mortgagePayoff) +
-      comm +
-      transfer +
-      Number(netData.titleEscrowFee) +
-      optionalTotal
-    )
-  }
-
-  const calculatedNetProceeds = netData.salePrice - calcTotalDeductions()
-
-  const handleNetInputChange = (field: string, val: any) => {
-    setNetData((prev: any) => ({ ...prev, [field]: parseFloat(val) || 0 }))
-  }
-
-  const toggleFieldCheckbox = (fieldKey: string) => {
-    setActiveFields((prev: any) => ({ ...prev, [fieldKey]: !prev[fieldKey] }))
-  }
-
   const handleNextStep = async () => {
     if (profileStep === 1) {
       if (!profile.full_name?.trim()) {
@@ -809,7 +784,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; animation: fadeIn 0.3s ease-out; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -853,12 +828,23 @@ function HomeContent() {
               }}
             />
           )}
-          {currentView === 'money' && <MoneyStuffView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} switchView={switchView} showCustomModal={showCustomModal} signedIn={!!user} />}
+          {currentView === 'money' && (
+            <NetSheetView
+              sheets={netSheets}
+              updateSheets={updateSheets}
+              showCustomModal={showCustomModal}
+              switchView={switchView}
+              userId={user?.id}
+              persistWorkspace={persistWorkspace}
+              signedIn={!!user}
+              exitView="home"
+            />
+          )}
           {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
           {currentView === 'ohsignin' && (
             <OpenHouseSignInView
-              listings={listings}
-              updateListings={updateListings}
+              listings={propertyListings}
+              updateListings={updatePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
@@ -872,8 +858,8 @@ function HomeContent() {
                 const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_FEEDBACK_KIND)
                 return [...updater(mine), ...others]
               })}
-              listings={listings}
-              updateListings={updateListings}
+              listings={propertyListings}
+              updateListings={updatePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
@@ -881,8 +867,19 @@ function HomeContent() {
             />
           )}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
-          {currentView === 'netsheet' && <NetSheetView netData={netData} handleNetInputChange={handleNetInputChange} calculatedNetProceeds={calculatedNetProceeds} activeFields={activeFields} toggleFieldCheckbox={toggleFieldCheckbox} showCustomModal={showCustomModal} renderAgentHeader={() => renderAgentHeader(profile)} switchView={switchView} signedIn={!!user} />}
-          {currentView === 'sellertracker' && <SellerTrackerView listings={listings} updateListings={updateListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistWorkspace} />}
+          {currentView === 'netsheet' && (
+            <NetSheetView
+              sheets={netSheets}
+              updateSheets={updateSheets}
+              showCustomModal={showCustomModal}
+              switchView={switchView}
+              userId={user?.id}
+              persistWorkspace={persistWorkspace}
+              signedIn={!!user}
+              exitView="seller"
+            />
+          )}
+          {currentView === 'sellertracker' && <SellerTrackerView listings={propertyListings} updateListings={updatePropertyListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistWorkspace} />}
           {currentView === 'driving' && (
             <DrivingView
               clients={clients.filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)}
@@ -898,7 +895,7 @@ function HomeContent() {
             />
           )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
-          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={listings} signedIn={!!user} />}
+          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={propertyListings} signedIn={!!user} />}
           {currentView === 'profile' && (
             <ProfileBuilderView 
               profileStep={profileStep} 
