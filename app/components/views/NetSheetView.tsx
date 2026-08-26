@@ -180,29 +180,6 @@ export function NetSheetView({
     setStep(REVIEW)
   }
 
-  const openListing = (listing: HomeListing) => {
-    const existing = sheets.find(item => item.listingId === listing.id)
-    if (existing) {
-      openSheet(existing.id)
-      return
-    }
-    const created = {
-      ...blankNetSheet(),
-      listingId: listing.id,
-      address: listing.address || '',
-      city: listing.city || '',
-      state: listing.state || '',
-      county: listing.county || '',
-    }
-    save(created)
-    setActiveId(created.id)
-    setAiPaste('')
-    setAiError('')
-    setAiNote('')
-    setEditing(false)
-    setStep(listing.address || listing.city ? PRICE : PLACE)
-  }
-
   const removeSheet = (id: string) => {
     updateHomesAndSheets(({ homes, sheets: prevSheets }) => ({
       homes,
@@ -322,8 +299,6 @@ export function NetSheetView({
 
   const progress = step === 1 ? 0 : (step / LAST) * 100
   const questionStep = step >= PLACE && step <= CLOSING
-  const orphanSheets = sheets.filter(item => !item.listingId || !listings.some(listing => listing.id === item.listingId))
-  const listingRows = [...listings].sort((a, b) => listingLabel(a).localeCompare(listingLabel(b)))
 
   const extraToggle = (field: ExtraField) => {
     if (!sheet) return null
@@ -382,7 +357,7 @@ export function NetSheetView({
             <div className="text-center mb-8">
               <span className="text-sm font-bold tracking-widest text-emerald-400 uppercase font-money">Money Stuff</span>
               <h3 className="text-2xl font-black text-white mt-1">Seller Net Sheet</h3>
-              <p className="text-base text-slate-400 mt-2">Pick a listing you already have, or add a new one. It will show up in your other tools too.</p>
+              <p className="text-base text-slate-400 mt-2">Start a new sheet, or open one you already made.</p>
             </div>
             <button
               onClick={startNew}
@@ -391,40 +366,12 @@ export function NetSheetView({
               Start a new net sheet
             </button>
             <div className="space-y-3">
-              {listingRows.length === 0 && orphanSheets.length === 0 ? (
-                <p className="text-base text-slate-500 text-center py-8">No listings yet. Start a net sheet and we will save it as a listing.</p>
+              {sheets.length === 0 ? (
+                <p className="text-base text-slate-500 text-center py-8">No sheets yet. Start one and we will save the home as a listing for your other tools.</p>
               ) : (
-                <>
-                  {listingRows.map(listing => {
-                    const item = sheets.find(s => s.listingId === listing.id)
-                    return (
-                      <div key={listing.id} className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openListing(listing)}
-                          className="flex-1 text-left bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-xl p-4"
-                        >
-                          <h4 className="font-bold text-white text-lg">{listingLabel(listing)}</h4>
-                          {item ? (
-                            <p className="text-sm text-emerald-400 font-black mt-1">{money(netProceeds(item))} estimated net</p>
-                          ) : (
-                            <p className="text-sm text-slate-400 mt-1">Tap to make a net sheet</p>
-                          )}
-                        </button>
-                        {item && (
-                          <button
-                            type="button"
-                            onClick={() => removeSheet(item.id)}
-                            aria-label={`Remove net sheet for ${listingLabel(listing)}`}
-                            className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                  {orphanSheets.map(item => (
+                [...sheets]
+                  .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+                  .map(item => (
                     <div key={item.id} className="flex gap-2">
                       <button
                         type="button"
@@ -443,8 +390,7 @@ export function NetSheetView({
                         ×
                       </button>
                     </div>
-                  ))}
-                </>
+                  ))
               )}
             </div>
           </div>
@@ -453,21 +399,27 @@ export function NetSheetView({
         {sheet && step === PLACE && (
           <div className="space-y-5">
             <h3 className="text-2xl font-black text-white">Where is the house?</h3>
-            <p className="text-base text-slate-400">Pick a listing you already entered, or type a new one. New listings also show up in Seller Tracking and Open House.</p>
+            <p className="text-base text-slate-400">Choose a listing you already have, or type a new address. New listings also show up in Seller Tracking and Open House.</p>
             {listings.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-bold tracking-widest uppercase text-slate-500">Your listings</p>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {listings.map(listing => (
-                    <button
-                      key={listing.id}
-                      type="button"
-                      onClick={() => attachListing(listing)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border font-bold ${sheet.listingId === listing.id ? 'bg-emerald-500/15 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:border-emerald-500/50'}`}
-                    >
-                      {listingLabel(listing)}
-                    </button>
-                  ))}
+              <div>
+                <label className="text-base font-bold text-slate-300 block mb-1">Use a listing I already have</label>
+                <div className="relative">
+                  <select
+                    value={sheet.listingId && listings.some(listing => listing.id === sheet.listingId) ? sheet.listingId : ''}
+                    onChange={e => {
+                      const listing = listings.find(item => item.id === e.target.value)
+                      if (listing) attachListing(listing)
+                    }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer"
+                  >
+                    <option value="">Type a new address below</option>
+                    {listings.map(listing => (
+                      <option key={listing.id} value={listing.id}>{listingLabel(listing)}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
                 </div>
               </div>
             )}

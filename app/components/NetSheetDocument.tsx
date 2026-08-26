@@ -79,10 +79,7 @@ export function NetSheetDocument({
         <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
             <p className="text-[11px] font-bold tracking-[0.22em] uppercase text-slate-500">Seller&apos;s net proceeds</p>
-            <h1
-              className="text-3xl md:text-[2.5rem] leading-tight text-slate-950 mt-1"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 900 }}
-            >
+            <h1 className="text-3xl md:text-4xl font-black leading-tight text-slate-950 mt-2">
               {sheetTitle(sheet)}
             </h1>
             {place && <p className="text-lg text-slate-500 mt-1">{place}</p>}
@@ -94,10 +91,10 @@ export function NetSheetDocument({
           )}
         </div>
 
-        <div className="mt-8 bg-slate-950 text-white px-6 md:px-8 py-7">
-          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-emerald-400">Estimated cash at closing</p>
-          <p className="text-5xl md:text-6xl font-black tabular-nums tracking-tight mt-2">{money(net)}</p>
-          <p className="text-base text-slate-300 mt-3">What the seller may walk away with after the costs below.</p>
+        <div className="mt-8 border border-slate-200 bg-[#f6f4ef] px-6 md:px-8 py-7">
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-slate-500">Estimated cash at closing</p>
+          <p className="text-5xl md:text-6xl font-black tabular-nums tracking-tight mt-2 text-slate-950">{money(net)}</p>
+          <p className="text-base text-slate-500 mt-3">What the seller may walk away with after the costs below.</p>
         </div>
 
         <table className="w-full mt-8 border-collapse">
@@ -145,9 +142,9 @@ export function NetSheetDocument({
           </tbody>
         </table>
 
-        <div className="mt-2 bg-slate-950 text-white px-5 md:px-6 py-5 flex justify-between items-baseline gap-4">
-          <span className="text-lg md:text-xl font-bold">Estimated cash to seller</span>
-          <span className="text-2xl md:text-3xl font-black text-emerald-300 tabular-nums">{money(net)}</span>
+        <div className="mt-1 pt-5 border-t-2 border-slate-900 flex justify-between items-baseline gap-4">
+          <span className="text-lg md:text-xl font-bold text-slate-900">Estimated cash to seller</span>
+          <span className="text-2xl md:text-3xl font-black text-slate-950 tabular-nums">{money(net)}</span>
         </div>
         {extraTotal(sheet) > 0 && (
           <p className="text-sm text-slate-500 mt-3">Includes additional costs your agent added for this sale.</p>
