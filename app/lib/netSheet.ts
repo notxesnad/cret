@@ -94,6 +94,17 @@ export function money(n: number) {
   }).format(Number(n) || 0)
 }
 
+export function formatMoneyInput(n: number) {
+  if (!n) return ''
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)
+}
+
+export function parseMoneyInput(raw: string) {
+  const n = Number(String(raw).replace(/[^0-9.]/g, ''))
+  if (!Number.isFinite(n)) return 0
+  return Math.round(n)
+}
+
 export function commissionAmount(sheet: NetSheet) {
   return (Number(sheet.salePrice) || 0) * ((Number(sheet.agentCommissionPct) || 0) / 100)
 }
@@ -187,42 +198,186 @@ export interface ParsedNetSheetAi {
   county?: string
 }
 
-export function parseNetSheetAi(raw: string): ParsedNetSheetAi {
-  const cleaned = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim()
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('Paste the JSON the AI returned.')
-  const data = JSON.parse(jsonMatch[0]) as Record<string, unknown>
+function softenAiText(raw: string) {
+  return raw
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/```(?:json|javascript|js)?/gi, '')
+    .replace(/,\s*([}\]])/g, '$1')
+    .trim()
+}
 
-  const num = (value: unknown) => {
-    if (typeof value === 'number' && Number.isFinite(value)) return value
-    if (typeof value === 'string') {
-      const n = Number(String(value).replace(/[^0-9.]/g, ''))
-      return Number.isFinite(n) ? n : 0
+function extractJsonObjects(text: string): string[] {
+  const objects: string[] = []
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '{') continue
+    let depth = 0
+    let inStr = false
+    let esc = false
+    for (let j = i; j < text.length; j++) {
+      const c = text[j]
+      if (inStr) {
+        if (esc) {
+          esc = false
+          continue
+        }
+        if (c === '\\') {
+          esc = true
+          continue
+        }
+        if (c === '"') inStr = false
+        continue
+      }
+      if (c === '"') {
+        inStr = true
+        continue
+      }
+      if (c === '{') depth++
+      if (c === '}') {
+        depth--
+        if (depth === 0) {
+          objects.push(text.slice(i, j + 1))
+          i = j
+          break
+        }
+      }
     }
-    return 0
   }
+  return objects
+}
 
+function normalizeKey(key: string) {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function flattenRecord(record: Record<string, unknown>, into: Record<string, unknown> = {}) {
+  for (const [key, value] of Object.entries(record)) {
+    into[normalizeKey(key)] = value
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      flattenRecord(value as Record<string, unknown>, into)
+    }
+  }
+  return into
+}
+
+function lookup(flat: Record<string, unknown>, aliases: string[]) {
+  for (const alias of aliases) {
+    if (flat[alias] !== undefined) return flat[alias]
+  }
+  return undefined
+}
+
+function num(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/[^0-9.]/g, ''))
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
+}
+
+function maybeNum(value: unknown) {
+  if (value === undefined || value === null || value === '') return undefined
+  return num(value)
+}
+
+function parseAiRecord(data: Record<string, unknown>): ParsedNetSheetAi {
+  const flat = flattenRecord(data)
   const extras: Partial<Record<ExtraFieldKey, number>> = {}
-  const recording = num(data.recording_fees_dollars)
-  const titleIns = num(data.owners_title_insurance_dollars)
-  const attorney = num(data.attorney_fees_dollars)
-  if (recording > 0) extras.recordingFees = Math.round(recording)
-  if (titleIns > 0) extras.ownersTitleInsurance = Math.round(titleIns)
-  if (attorney > 0) extras.attorneyFees = Math.round(attorney)
+  const recording = maybeNum(lookup(flat, ['recordingfeesdollars', 'recordingfees', 'recordingfee']))
+  const titleIns = maybeNum(lookup(flat, ['ownerstitleinsurancedollars', 'ownerstitleinsurance', 'ownerstitle', 'titleinsurance', 'titlepolicy']))
+  const attorney = maybeNum(lookup(flat, ['attorneyfeesdollars', 'attorneyfees', 'attorneyfee', 'closingattorney']))
+  if (recording && recording > 0) extras.recordingFees = Math.round(recording)
+  if (titleIns && titleIns > 0) extras.ownersTitleInsurance = Math.round(titleIns)
+  if (attorney && attorney > 0) extras.attorneyFees = Math.round(attorney)
 
-  const state = typeof data.state === 'string'
-    ? data.state.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase()
+  const stateRaw = lookup(flat, ['state'])
+  const countyRaw = lookup(flat, ['county'])
+  const state = typeof stateRaw === 'string'
+    ? stateRaw.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase()
     : ''
-  const county = typeof data.county === 'string' ? data.county.trim() : ''
+  const county = typeof countyRaw === 'string' ? countyRaw.trim() : ''
+  const notesRaw = lookup(flat, ['notes', 'note', 'summary'])
+  const titleFee = maybeNum(lookup(flat, [
+    'titleescrowfeedollars',
+    'titleescrowfee',
+    'titleescrow',
+    'titleandescrow',
+    'titlefees',
+    'escrowfee',
+    'settlementfee',
+  ]))
 
   return {
-    transferTaxPct: num(data.transfer_tax_percent),
-    titleEscrowFee: Math.round(num(data.title_escrow_fee_dollars)),
+    transferTaxPct: maybeNum(lookup(flat, [
+      'transfertaxpercent',
+      'transfertaxpercentage',
+      'transfertaxpct',
+      'transfertaxrate',
+      'transfertax',
+      'documentarystamptax',
+      'documentarystamp',
+      'docstamptax',
+      'docstamps',
+    ])),
+    titleEscrowFee: titleFee === undefined ? undefined : Math.round(titleFee),
     extras,
-    notes: typeof data.notes === 'string' ? data.notes.trim() : undefined,
+    notes: typeof notesRaw === 'string' ? notesRaw.trim() : undefined,
     state: state || undefined,
     county: county || undefined,
   }
+}
+
+function aiScore(parsed: ParsedNetSheetAi) {
+  return (
+    (parsed.transferTaxPct ? 1 : 0) +
+    (parsed.titleEscrowFee ? 1 : 0) +
+    Object.keys(parsed.extras).length +
+    (parsed.notes ? 0.25 : 0)
+  )
+}
+
+export function parseNetSheetAi(raw: string): ParsedNetSheetAi {
+  const cleaned = softenAiText(raw)
+  const objects = extractJsonObjects(cleaned)
+  if (objects.length === 0) throw new Error('Paste the JSON the AI returned.')
+
+  let best: ParsedNetSheetAi | null = null
+  let bestScore = -1
+  for (const object of objects) {
+    try {
+      const parsed = parseAiRecord(JSON.parse(object) as Record<string, unknown>)
+      const score = aiScore(parsed)
+      if (score >= bestScore) {
+        best = parsed
+        bestScore = score
+      }
+    } catch {
+      // skip malformed blocks
+    }
+  }
+
+  if (!best) throw new Error('Paste the JSON the AI returned.')
+  if (/return only valid json/i.test(raw) && bestScore < 1) {
+    throw new Error('Paste the AI answer, not the prompt.')
+  }
+  const hasCosts = Boolean(best.transferTaxPct || best.titleEscrowFee || Object.keys(best.extras).length)
+  if (!hasCosts) {
+    throw new Error('We found a reply, but not the cost numbers. Paste the whole AI answer, including the JSON.')
+  }
+  return best
+}
+
+export function describeAiApply(parsed: ParsedNetSheetAi) {
+  const bits: string[] = []
+  if (parsed.transferTaxPct) bits.push(`Transfer tax ${parsed.transferTaxPct}%`)
+  if (parsed.titleEscrowFee) bits.push(`Title & escrow ${money(parsed.titleEscrowFee)}`)
+  for (const [key, amount] of Object.entries(parsed.extras)) {
+    bits.push(`${extraField(key)?.label || key} ${money(Number(amount) || 0)}`)
+  }
+  if (parsed.notes) bits.push(parsed.notes)
+  return bits.join(' · ') || 'Local estimates added. You can still change any number.'
 }
 
 export function applyAiToSheet(sheet: NetSheet, parsed: ParsedNetSheetAi): NetSheet {

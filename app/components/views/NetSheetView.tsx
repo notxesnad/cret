@@ -5,13 +5,16 @@ import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import {
   EXTRA_FIELDS,
   applyAiToSheet,
+  asNetSheet,
   blankNetSheet,
   commissionAmount,
+  describeAiApply,
   extraField,
-  asNetSheet,
+  formatMoneyInput,
   money,
   netProceeds,
   netSheetAiPrompt,
+  parseMoneyInput,
   parseNetSheetAi,
   sheetTitle,
   transferTaxAmount,
@@ -39,6 +42,8 @@ const REVIEW = 7
 const EXTRAS = 8
 const LAST = 8
 
+const inputClass = 'w-full bg-slate-800 border border-slate-700 rounded-xl py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+
 function DollarField({
   label,
   hint,
@@ -57,11 +62,28 @@ function DollarField({
       <div className="relative">
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black text-xl">$</span>
         <input
-          type="number"
-          inputMode="decimal"
-          value={value || ''}
-          onChange={e => onChange(parseFloat(e.target.value) || 0)}
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={formatMoneyInput(value)}
+          onChange={e => {
+            const el = e.target
+            const caret = el.selectionStart ?? el.value.length
+            const digitsBefore = el.value.slice(0, caret).replace(/\D/g, '').length
+            const next = parseMoneyInput(el.value)
+            onChange(next)
+            requestAnimationFrame(() => {
+              const shown = formatMoneyInput(next)
+              let i = 0
+              let seen = 0
+              while (i < shown.length && seen < digitsBefore) {
+                if (/\d/.test(shown[i])) seen++
+                i++
+              }
+              el.setSelectionRange(i, i)
+            })
+          }}
+          className={`${inputClass} pl-9 pr-4`}
         />
       </div>
     </div>
@@ -133,17 +155,26 @@ export function NetSheetView({
     patch({ extras })
   }
 
-  const applyAi = () => {
-    if (!sheet) return
-    setAiError('')
+  const applyFromPaste = (raw: string, { requireValid = false } = {}) => {
+    if (!sheet) return false
+    const text = raw.trim()
+    if (!text) return !requireValid
     try {
-      const parsed = parseNetSheetAi(aiPaste)
-      const next = applyAiToSheet(sheet, parsed)
-      save(next)
-      setAiNote(parsed.notes || 'Local estimates added. You can still change any number.')
-    } catch {
-      setAiError('That did not look like the JSON we need. Copy the whole AI answer and paste it again.')
+      const parsed = parseNetSheetAi(text)
+      save(applyAiToSheet(sheet, parsed))
+      setAiNote(describeAiApply(parsed))
+      setAiError('')
+      return true
+    } catch (error) {
+      if (requireValid) {
+        setAiError(error instanceof Error ? error.message : 'That did not look like the JSON we need. Copy the whole AI answer and paste it again.')
+      }
+      return false
     }
+  }
+
+  const applyAi = () => {
+    applyFromPaste(aiPaste, { requireValid: true })
   }
 
   const copyPrompt = () => {
@@ -307,11 +338,12 @@ export function NetSheetView({
             <div>
               <label className="text-base font-bold text-slate-300 block mb-1">Total commission %</label>
               <input
-                type="number"
-                step="0.25"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 value={sheet.agentCommissionPct || ''}
-                onChange={e => patch({ agentCommissionPct: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+                onChange={e => patch({ agentCommissionPct: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })}
+                className={`${inputClass} px-4`}
               />
             </div>
             <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-center">
@@ -328,11 +360,12 @@ export function NetSheetView({
             <div>
               <label className="text-base font-bold text-slate-300 block mb-1">Transfer tax %</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 value={sheet.transferTaxPct || ''}
-                onChange={e => patch({ transferTaxPct: parseFloat(e.target.value) || 0 })}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-white focus:outline-none focus:border-emerald-500"
+                onChange={e => patch({ transferTaxPct: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })}
+                className={`${inputClass} px-4`}
               />
               <p className="text-sm text-slate-500 mt-2">{money(transferTaxAmount(sheet))} on this sale price</p>
             </div>
@@ -345,15 +378,26 @@ export function NetSheetView({
 
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 space-y-3">
               <h4 className="text-emerald-400 font-black">Optional: ask AI for local numbers</h4>
-              <p className="text-base text-slate-300">Copy this prompt into ChatGPT, Claude, Gemini, or any model. Then paste the JSON it returns.</p>
+              <p className="text-base text-slate-300">Copy this prompt into ChatGPT, Claude, Gemini, or any model. Paste the answer below — we fill in the numbers for you.</p>
               <pre className="bg-slate-950 text-[11px] leading-relaxed text-slate-400 rounded-xl p-3 max-h-36 overflow-y-auto whitespace-pre-wrap">{netSheetAiPrompt(sheet)}</pre>
               <button type="button" onClick={copyPrompt} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl">
                 {copied ? 'Copied' : 'Copy prompt'}
               </button>
               <textarea
                 value={aiPaste}
-                onChange={e => setAiPaste(e.target.value)}
-                placeholder='Paste the JSON here. It should start with { and end with }'
+                onChange={e => {
+                  const value = e.target.value
+                  setAiPaste(value)
+                  applyFromPaste(value)
+                }}
+                onPaste={e => {
+                  const text = e.clipboardData.getData('text')
+                  if (!text) return
+                  e.preventDefault()
+                  setAiPaste(text)
+                  applyFromPaste(text)
+                }}
+                placeholder="Paste the AI answer here. We will pull the numbers out automatically."
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-white min-h-[110px] focus:outline-none focus:border-emerald-500"
               />
               <button type="button" onClick={applyAi} className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl">
@@ -436,10 +480,12 @@ export function NetSheetView({
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
                           <input
-                            type="number"
-                            value={sheet.extras[field.key] || ''}
-                            onChange={e => setExtra(field.key, parseFloat(e.target.value) || 0)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            value={formatMoneyInput(sheet.extras[field.key] || 0)}
+                            onChange={e => setExtra(field.key, parseMoneyInput(e.target.value))}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-3 text-white font-bold focus:outline-none focus:border-emerald-500 [appearance:textfield]"
                           />
                         </div>
                       )}
@@ -456,7 +502,10 @@ export function NetSheetView({
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 pb-safe">
           <button
             type="button"
-            onClick={() => setStep(step + 1)}
+            onClick={() => {
+              if (step === CLOSING && aiPaste.trim() && !applyFromPaste(aiPaste, { requireValid: true })) return
+              setStep(step + 1)
+            }}
             className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-xl"
           >
             Continue

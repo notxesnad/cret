@@ -40,7 +40,7 @@ export default async function NetSheetSharePage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
+    <div className="min-h-screen bg-[#ece8df] text-slate-900 font-sans pb-20">
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -51,13 +51,13 @@ export default async function NetSheetSharePage({
           }
         }
       `}</style>
-      <div id="report-print-root" className="w-full">
+      <div id="report-print-root" className="w-full max-w-3xl mx-auto bg-white shadow-xl my-0 md:my-8">
         <NetSheetDocument
           sheet={sheet}
           header={renderAgentHeader(profile)}
         />
       </div>
-      <div className="no-print max-w-2xl mx-auto px-5 md:px-8 -mt-4 mb-10">
+      <div className="no-print max-w-3xl mx-auto px-5 md:px-8 mt-6 mb-10">
         <PrintButtons listingAddress={sheetTitle(sheet)} />
       </div>
     </div>
