@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } from '@/app/lib/tourFormat'
+import { unpackTourData, resolveTourHomes } from '@/app/lib/tourHomes'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,13 +38,14 @@ export default async function TourItineraryPage({
     console.error('Supabase Error fetching profile for tour:', error)
   }
 
-  const client = profile?.clients?.find((c: any) => c.id === clientId)
-  const tour = client?.tours?.find((t: any) => t.id === tourId)
-  const homes = client?.homes || []
+  const { people } = unpackTourData(profile?.clients)
+  const client = people.find((c) => c.id === clientId)
+  const tour = client?.tours?.find((t) => t.id === tourId)
+  const homes = resolveTourHomes(profile)
 
-  const stops = (tour?.stops || []).map((stop: any, index: number) => {
-    const home = homes.find((h: any) => h.id === stop.homeId)
-    return home ? { ...stop, home, index } : null
+  const stops = (tour?.stops || []).map((stop, index) => {
+    const home = homes.find((h) => h.id === stop.homeId)
+    return home ? { ...stop, home, index, clientNotes: client?.homeNotes?.[home.id] || '' } : null
   }).filter(Boolean)
 
   if (!profile || !client || !tour) {
@@ -258,6 +260,12 @@ export default async function TourItineraryPage({
 
                         {item.home.notes && (
                           <p className="text-base text-slate-600 mb-4 whitespace-pre-wrap">{item.home.notes}</p>
+                        )}
+                        {item.clientNotes && (
+                          <div className="mb-4">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notes for {client.name}</p>
+                            <p className="text-base text-slate-600 whitespace-pre-wrap">{item.clientNotes}</p>
+                          </div>
                         )}
 
                         <div className="flex flex-wrap gap-2 no-print">

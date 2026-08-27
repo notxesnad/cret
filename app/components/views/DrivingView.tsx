@@ -17,42 +17,23 @@ import {
   stopTimeConflicts,
   suggestedTimeForIndex,
 } from '@/app/lib/tourFormat'
+import {
+  homesOnClientTours,
+  type TourHome,
+  type TourStop,
+  type ClientTour,
+  type TourClient,
+} from '@/app/lib/tourHomes'
 
-export interface ClientHome {
-  id: string
-  address: string
-  city?: string
-  state?: string
-  price?: string
-  notes?: string
-  photo_url?: string
-  mls_pdf_url?: string
-}
-
-export interface TourStop {
-  homeId: string
-  time?: string
-}
-
-export interface ClientTour {
-  id: string
-  title: string
-  date?: string
-  stops: TourStop[]
-}
-
-export interface Client {
-  id: string
-  name: string
-  email?: string
-  phone?: string
-  homes: ClientHome[]
-  tours: ClientTour[]
-}
+export type ClientHome = TourHome
+export type { TourStop, ClientTour }
+export type Client = TourClient
 
 interface DrivingViewProps {
   clients: Client[]
+  homes: TourHome[]
   updateClients: (updater: (prev: Client[]) => Client[]) => void
+  updateHomes: (updater: (prev: TourHome[]) => TourHome[]) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   switchView: (view: string) => void
   userId?: string
@@ -104,7 +85,9 @@ function StopPreview({
 
 export function DrivingView({
   clients,
+  homes,
   updateClients,
+  updateHomes,
   showCustomModal,
   switchView,
   userId,
@@ -134,7 +117,7 @@ export function DrivingView({
   const [editingTourTitle, setEditingTourTitle] = useState(false)
   const [tourTitleDraft, setTourTitleDraft] = useState('')
 
-  const [editHomeForm, setEditHomeForm] = useState<Partial<ClientHome> & { time?: string }>({})
+  const [editHomeForm, setEditHomeForm] = useState<Partial<TourHome> & { time?: string; clientNotes?: string }>({})
   const [uploading, setUploading] = useState<'photo' | 'mls' | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [showMapsInfo, setShowMapsInfo] = useState(false)
@@ -179,14 +162,14 @@ export function DrivingView({
 
   const activeClient = clients.find(c => c.id === activeClientId)
   const activeTour = activeClient?.tours.find(t => t.id === activeTourId)
-  const activeHome = activeClient?.homes.find(h => h.id === activeHomeId)
+  const activeHome = homes.find(h => h.id === activeHomeId)
 
   const tourHomes = (activeTour?.stops || []).map(stop => {
-    const home = activeClient?.homes.find(h => h.id === stop.homeId)
+    const home = homes.find(h => h.id === stop.homeId)
     return home ? { stop, home } : null
-  }).filter(Boolean) as { stop: TourStop; home: ClientHome }[]
+  }).filter(Boolean) as { stop: TourStop; home: TourHome }[]
 
-  const unusedHomes = (activeClient?.homes || []).filter(
+  const unusedHomes = homes.filter(
     h => !(activeTour?.stops || []).some(s => s.homeId === h.id)
   )
 
@@ -202,8 +185,8 @@ export function DrivingView({
       name: newClientName.trim(),
       email: newClientEmail.trim() || undefined,
       phone: newClientPhone.trim() || undefined,
-      homes: [],
-      tours: []
+      tours: [],
+      homeNotes: {}
     }
     updateClients(prev => [client, ...prev])
     setActiveClientId(client.id)
@@ -232,15 +215,15 @@ export function DrivingView({
 
   const confirmAddHome = () => {
     if (!newHomeAddress.trim() || !activeClientId || !activeTourId) return
-    const home: ClientHome = {
+    const home: TourHome = {
       id: newId(),
       address: newHomeAddress.trim(),
       city: newHomeCity.trim() || undefined,
       state: newHomeState.trim() || undefined
     }
+    updateHomes(prev => [home, ...prev])
     updateActiveClient(c => ({
       ...c,
-      homes: [home, ...c.homes],
       tours: c.tours.map(t => t.id === activeTourId
         ? { ...t, stops: [...t.stops, { homeId: home.id }] }
         : t)
@@ -265,39 +248,50 @@ export function DrivingView({
   }
 
   const openHome = (homeId: string) => {
-    const home = activeClient?.homes.find(h => h.id === homeId)
+    const home = homes.find(h => h.id === homeId)
     const stop = activeTour?.stops.find(s => s.homeId === homeId)
     if (!home) return
     setActiveHomeId(homeId)
-    setEditHomeForm({ ...home, time: stop?.time || '' })
+    setEditHomeForm({
+      ...home,
+      time: stop?.time || '',
+      clientNotes: activeClient?.homeNotes?.[homeId] || ''
+    })
     setStep(4)
   }
 
   const handleSaveHome = () => {
     if (!activeHomeId || !editHomeForm.address?.trim()) return
-    updateActiveClient(c => ({
-      ...c,
-      homes: c.homes.map(h => h.id === activeHomeId
-        ? {
-            ...h,
-            address: editHomeForm.address!.trim(),
-            city: editHomeForm.city?.trim() || undefined,
-            state: editHomeForm.state?.trim() || undefined,
-            price: formatPrice(editHomeForm.price || '') || undefined,
-            notes: editHomeForm.notes?.trim() || undefined,
-            photo_url: editHomeForm.photo_url || h.photo_url,
-            mls_pdf_url: editHomeForm.mls_pdf_url || h.mls_pdf_url
-          }
-        : h),
-      tours: c.tours.map(t => t.id === activeTourId
-        ? {
-            ...t,
-            stops: t.stops.map(s => s.homeId === activeHomeId
-              ? { ...s, time: toTimeInput(editHomeForm.time || '') || undefined }
-              : s)
-          }
-        : t)
-    }))
+    updateHomes(prev => prev.map(h => h.id === activeHomeId
+      ? {
+          ...h,
+          address: editHomeForm.address!.trim(),
+          city: editHomeForm.city?.trim() || undefined,
+          state: editHomeForm.state?.trim() || undefined,
+          price: formatPrice(editHomeForm.price || '') || undefined,
+          notes: editHomeForm.notes?.trim() || undefined,
+          photo_url: editHomeForm.photo_url || h.photo_url,
+          mls_pdf_url: editHomeForm.mls_pdf_url || h.mls_pdf_url
+        }
+      : h))
+    updateActiveClient(c => {
+      const homeNotes = { ...(c.homeNotes || {}) }
+      const clientNotes = editHomeForm.clientNotes?.trim()
+      if (clientNotes) homeNotes[activeHomeId] = clientNotes
+      else delete homeNotes[activeHomeId]
+      return {
+        ...c,
+        homeNotes,
+        tours: c.tours.map(t => t.id === activeTourId
+          ? {
+              ...t,
+              stops: t.stops.map(s => s.homeId === activeHomeId
+                ? { ...s, time: toTimeInput(editHomeForm.time || '') || undefined }
+                : s)
+            }
+          : t)
+      }
+    })
     setStep(3)
   }
 
@@ -540,16 +534,10 @@ export function DrivingView({
     const publicUrl = supabase.storage.from('profiles').getPublicUrl(fileName).data.publicUrl
     if (kind === 'photo') {
       setEditHomeForm(prev => ({ ...prev, photo_url: publicUrl }))
-      updateActiveClient(c => ({
-        ...c,
-        homes: c.homes.map(h => h.id === activeHomeId ? { ...h, photo_url: publicUrl } : h)
-      }))
+      updateHomes(prev => prev.map(h => h.id === activeHomeId ? { ...h, photo_url: publicUrl } : h))
     } else {
       setEditHomeForm(prev => ({ ...prev, mls_pdf_url: publicUrl }))
-      updateActiveClient(c => ({
-        ...c,
-        homes: c.homes.map(h => h.id === activeHomeId ? { ...h, mls_pdf_url: publicUrl } : h)
-      }))
+      updateHomes(prev => prev.map(h => h.id === activeHomeId ? { ...h, mls_pdf_url: publicUrl } : h))
     }
     setUploading(null)
   }
@@ -690,7 +678,7 @@ export function DrivingView({
                   >
                     <div>
                       <h4 className="font-bold text-white text-lg">{client.name}</h4>
-                      <p className="text-sm text-slate-400 mt-0.5">{client.tours.length} tours • {client.homes.length} homes</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{client.tours.length} tours • {homesOnClientTours(client)} homes</p>
                     </div>
                     <div className="text-slate-500 group-hover:text-rose-400 transition">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
@@ -869,7 +857,7 @@ export function DrivingView({
 
                 {unusedHomes.length > 0 && (
                   <div className="mb-6">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">From {activeClient.name}&apos;s homes</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">From your other homes</p>
                     <div className="flex flex-wrap gap-2">
                       {unusedHomes.map(home => (
                         <button
@@ -935,7 +923,7 @@ export function DrivingView({
                 <div className="mb-6">
                   <span className="text-sm font-bold tracking-widest text-slate-400 uppercase">Edit Home</span>
                   <h3 className="text-xl font-black text-white mt-1">Home Details</h3>
-                  <p className="text-base text-slate-400 mt-1">This home stays on {activeClient?.name}&apos;s list for future tools.</p>
+                  <p className="text-base text-slate-400 mt-1">This home is shared. Any client can add it to a tour. Client notes stay private to {activeClient?.name}.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -1028,6 +1016,17 @@ export function DrivingView({
                       onChange={e => setEditHomeForm({ ...editHomeForm, notes: e.target.value })}
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500 min-h-[90px]"
                     />
+                    <p className="text-xs text-slate-500 mt-1">Shown on every tour that includes this home.</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider">Client Notes (Optional)</label>
+                    <textarea
+                      placeholder={`Private notes for ${activeClient?.name || 'this client'}...`}
+                      value={editHomeForm.clientNotes || ''}
+                      onChange={e => setEditHomeForm({ ...editHomeForm, clientNotes: e.target.value })}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:border-rose-500 min-h-[90px]"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Only {activeClient?.name || 'this client'} sees these on their itinerary.</p>
                   </div>
                   {editHomeForm.address && (
                     <div>
@@ -1116,7 +1115,7 @@ export function DrivingView({
       {confirmRemove && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
-            <p className="text-base font-bold text-white">Remove this home from the tour? It will still stay on the client&apos;s home list.</p>
+            <p className="text-base font-bold text-white">Remove this home from the tour? It stays in your home list so you can add it to other clients.</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmRemove(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Keep it</button>
               <button onClick={handleRemoveFromTour} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition">Remove</button>

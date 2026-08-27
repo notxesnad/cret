@@ -6,6 +6,7 @@ import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
+import { unpackTourData, packTourData, hydrateTourClients, mergeTourHomes, isTourHomeStore, type TourHome } from '@/app/lib/tourHomes'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import {
   HomeView,
@@ -29,16 +30,28 @@ async function saveWorkspaceToProfile(userId: string, workspace: {
   neighborhoods: any[]
   outreachCampaigns: any[]
   clients: any[]
+  homes?: TourHome[]
 }) {
-  const { error } = await supabase.from('profiles').upsert({
+  const payload: Record<string, unknown> = {
     id: userId,
     listings: workspace.listings,
     neighborhoods: workspace.neighborhoods,
     outreach_campaigns: workspace.outreachCampaigns,
     clients: workspace.clients,
     updated_at: new Date()
-  })
+  }
+  if (workspace.homes) payload.homes = workspace.homes
+  const { error } = await supabase.from('profiles').upsert(payload)
+  if (error && workspace.homes) {
+    const { homes: _homes, ...withoutHomes } = payload
+    const retry = await supabase.from('profiles').upsert(withoutHomes)
+    return retry.error
+  }
   return error
+}
+
+function extraHomesFrom(source: { homes?: TourHome[] } | null | undefined): TourHome[] {
+  return Array.isArray(source?.homes) ? source.homes : []
 }
 
 function HomeContent() {
@@ -189,13 +202,28 @@ function HomeContent() {
 
   const updateClients = (updater: (prev: any[]) => any[]) => {
     setClients(prev => {
-      const newClients = updater(prev)
+      const prevTour = unpackTourData(prev)
+      const nextRaw = updater(prev)
+      const list = Array.isArray(nextRaw) ? nextRaw : []
+      const nextTour = unpackTourData(list)
+      const hasStore = list.some((record: { kind?: string; id?: string }) => isTourHomeStore(record))
+      const hasProspects = list.some((record: { kind?: string; id?: string }) =>
+        record?.kind === PROSPECT_KIND || record?.kind === PROSPECT_STORE_KIND || record?.id === '__prospects__'
+      )
+      const homes = hasStore ? nextTour.homes : prevTour.homes
+      const prospects = hasProspects ? nextTour.prospects : prevTour.prospects
+      const packed = packTourData(nextTour.people, homes, prospects)
       if (user) {
-        supabase.from('profiles').upsert({ id: user.id, clients: newClients, updated_at: new Date() }).then(({ error }) => {
-          if (error) console.error('Error saving clients:', error)
+        const payload = { id: user.id, clients: packed, homes, updated_at: new Date() }
+        supabase.from('profiles').upsert(payload).then(({ error }) => {
+          if (error) {
+            supabase.from('profiles').upsert({ id: user.id, clients: packed, updated_at: new Date() }).then(({ error: retryError }) => {
+              if (retryError) console.error('Error saving clients:', retryError)
+            })
+          }
         })
       }
-      return newClients
+      return packed
     })
   }
 
@@ -219,7 +247,9 @@ function HomeContent() {
           if (Array.isArray(pendingFromStorage.listings)) setListings(pendingFromStorage.listings)
           if (Array.isArray(pendingFromStorage.neighborhoods)) setNeighborhoods(pendingFromStorage.neighborhoods)
           if (Array.isArray(pendingFromStorage.outreachCampaigns)) setOutreachCampaigns(pendingFromStorage.outreachCampaigns)
-          if (Array.isArray(pendingFromStorage.clients)) setClients(pendingFromStorage.clients)
+          if (Array.isArray(pendingFromStorage.clients) || Array.isArray(pendingFromStorage.homes)) {
+            setClients(hydrateTourClients(pendingFromStorage.clients, extraHomesFrom(pendingFromStorage)))
+          }
           if (pendingFromStorage.netData) setNetData(pendingFromStorage.netData)
           if (pendingFromStorage.activeFields) setActiveFields((prev: any) => ({ ...prev, ...pendingFromStorage.activeFields }))
         }
@@ -310,7 +340,8 @@ function HomeContent() {
               listings: dbListings,
               neighborhoods: dbNeighborhoods,
               outreachCampaigns: dbCampaigns,
-              clients: dbClients
+              clients: hydrateTourClients(dbClients, mergeTourHomes(extraHomesFrom(data), extraHomesFrom(pendingData))),
+              homes: mergeTourHomes(extraHomesFrom(data), extraHomesFrom(pendingData), unpackTourData(dbClients).homes)
             })
             if (saveError) console.error("Error saving pending data to DB", saveError)
             
@@ -323,7 +354,7 @@ function HomeContent() {
           setListings(dbListings)
           setNeighborhoods(dbNeighborhoods)
           setOutreachCampaigns(dbCampaigns)
-          setClients(dbClients)
+          setClients(hydrateTourClients(dbClients, mergeTourHomes(extraHomesFrom(data), extraHomesFrom(pendingData))))
 
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
@@ -344,9 +375,10 @@ function HomeContent() {
           let newListings = pendingData?.listings || []
           let newNeighborhoods = pendingData?.neighborhoods || []
           let newCampaigns = pendingData?.outreachCampaigns || []
-          let newClients = pendingData?.clients || []
+          let newClients = hydrateTourClients(pendingData?.clients || [], extraHomesFrom(pendingData))
+          const newHomes = unpackTourData(newClients).homes
 
-          const { error: createError } = await supabase.from('profiles').upsert({ 
+          const createPayload = { 
             id: currentUser.id, 
             email: currentUser.email || '',
             full_name: pendingProfile.full_name || '',
@@ -361,9 +393,15 @@ function HomeContent() {
             neighborhoods: newNeighborhoods,
             outreach_campaigns: newCampaigns,
             clients: newClients,
+            homes: newHomes,
             updated_at: new Date()
-          })
-          if (createError) console.error('Error creating initial profile:', createError)
+          }
+          const { error: createError } = await supabase.from('profiles').upsert(createPayload)
+          if (createError) {
+            const { homes: _homes, ...withoutHomes } = createPayload
+            const retry = await supabase.from('profiles').upsert(withoutHomes)
+            if (retry.error) console.error('Error creating initial profile:', retry.error)
+          }
 
           setListings(newListings)
           setNeighborhoods(newNeighborhoods)
@@ -403,6 +441,7 @@ function HomeContent() {
     neighborhoods,
     outreachCampaigns,
     clients,
+    homes: unpackTourData(clients).homes,
     profile,
     netData,
     activeFields,
@@ -426,11 +465,13 @@ function HomeContent() {
 
   const persistWorkspace = async () => {
     if (!user) return false
+    const { homes: tourHomes } = unpackTourData(clients)
     const error = await saveWorkspaceToProfile(user.id, {
       listings,
       neighborhoods,
       outreachCampaigns,
-      clients
+      clients,
+      homes: tourHomes
     })
     if (error) {
       showCustomModal('Could not save your work yet. Tap Preview again.')
@@ -440,6 +481,7 @@ function HomeContent() {
   }
 
   const saveAccountWork = async (userId: string, email: string) => {
+    const tour = unpackTourData(clients)
     const payload = {
       id: userId,
       full_name: profile.full_name || '',
@@ -458,18 +500,20 @@ function HomeContent() {
       neighborhoods,
       outreach_campaigns: outreachCampaigns,
       clients,
+      homes: tour.homes,
       updated_at: new Date()
     }
     const { error } = await supabase.from('profiles').upsert(payload)
     if (error) {
-      const { show_custom_header: _c, headshot_shape: _s, ...rest } = payload
+      const { show_custom_header: _c, headshot_shape: _s, homes: _h, ...rest } = payload
       const retry = await supabase.from('profiles').upsert(rest)
       if (retry.error) {
         const workspaceError = await saveWorkspaceToProfile(userId, {
           listings,
           neighborhoods,
           outreachCampaigns,
-          clients
+          clients,
+          homes: tour.homes
         })
         if (workspaceError) return workspaceError
       }
@@ -772,6 +816,8 @@ function HomeContent() {
     }))
   }
 
+  const tourWorkspace = unpackTourData(clients)
+
   return (
     <>
       <div className="min-h-screen flex flex-col justify-between p-4 md:p-8 bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif]">
@@ -885,11 +931,15 @@ function HomeContent() {
           {currentView === 'sellertracker' && <SellerTrackerView listings={propertyListings} updateListings={updatePropertyListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistWorkspace} />}
           {currentView === 'driving' && (
             <DrivingView
-              clients={clients.filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)}
+              clients={tourWorkspace.people}
+              homes={tourWorkspace.homes}
               updateClients={(updater) => updateClients(prev => {
-                const prospects = (prev || []).filter((c: { kind?: string }) => c.kind === PROSPECT_KIND)
-                const people = (prev || []).filter((c: { kind?: string }) => c.kind !== PROSPECT_KIND)
-                return [...updater(people), ...prospects]
+                const tour = unpackTourData(prev)
+                return packTourData(updater(tour.people), tour.homes, tour.prospects)
+              })}
+              updateHomes={(updater) => updateClients(prev => {
+                const tour = unpackTourData(prev)
+                return packTourData(tour.people, updater(tour.homes), tour.prospects)
               })}
               showCustomModal={showCustomModal}
               switchView={switchView}
