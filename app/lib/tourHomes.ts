@@ -85,9 +85,32 @@ export function unpackTourData(records: any[] | null | undefined) {
   }
 }
 
-export function hydrateTourClients(records: any[] | null | undefined, extraHomes?: TourHome[] | null) {
+export function packPeopleAndProspects(people: TourClient[], prospects: any[] = []) {
+  return [
+    ...people.map(({ homes: _ignored, ...rest }) => ({
+      ...rest,
+      tours: rest.tours || [],
+      homeNotes: rest.homeNotes || {},
+    })),
+    ...prospects,
+  ]
+}
+
+export function hydrateTourWorkspace(records: any[] | null | undefined, extraHomes?: TourHome[] | null) {
   const { people, homes, prospects } = unpackTourData(records)
-  return packTourData(people, mergeTourHomes(extraHomes, homes), prospects)
+  return {
+    clients: packPeopleAndProspects(people, prospects),
+    homes: mergeTourHomes(extraHomes, homes),
+  }
+}
+
+export function clientsHoldLegacyHomes(records: any[] | null | undefined) {
+  return (Array.isArray(records) ? records : []).some((record) => {
+    if (!record || typeof record !== 'object') return false
+    if (isTourHomeStore(record)) return true
+    if (record.kind === 'prospect' || record.kind === 'prospect_store') return false
+    return Array.isArray(record.homes) && record.homes.length > 0
+  })
 }
 
 export function resolveTourHomes(profile: { clients?: any[]; homes?: TourHome[] | null } | null | undefined) {
@@ -101,12 +124,7 @@ export function packTourData(people: TourClient[], homes: TourHome[], prospects:
     kind: TOUR_HOME_STORE_KIND,
     homes,
   }
-  const clients = people.map(({ homes: _ignored, ...rest }) => ({
-    ...rest,
-    tours: rest.tours || [],
-    homeNotes: rest.homeNotes || {},
-  }))
-  return [store, ...clients, ...prospects]
+  return [store, ...packPeopleAndProspects(people, prospects)]
 }
 
 export function homesOnClientTours(client: Pick<TourClient, 'tours'>) {
