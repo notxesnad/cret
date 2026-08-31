@@ -27,26 +27,6 @@ import {
   OutreachView
 } from './components/views'
 
-async function saveWorkspaceToProfile(userId: string, workspace: {
-  listings: any[]
-  neighborhoods: any[]
-  outreachCampaigns: any[]
-  clients: any[]
-  homes?: TourHome[]
-}) {
-  const payload: Record<string, unknown> = {
-    id: userId,
-    listings: workspace.listings,
-    neighborhoods: workspace.neighborhoods,
-    outreach_campaigns: workspace.outreachCampaigns,
-    clients: workspace.clients,
-    homes: workspace.homes || [],
-    updated_at: new Date()
-  }
-  const { error } = await supabase.from('profiles').upsert(payload)
-  return error
-}
-
 function extraHomesFrom(source: { homes?: TourHome[] } | null | undefined): TourHome[] {
   return Array.isArray(source?.homes) ? source.homes : []
 }
@@ -193,9 +173,6 @@ function HomeContent() {
       const newListings = updater(prev)
       listingsRef.current = newListings
       if (user) {
-        supabase.from('profiles').update({ listings: newListings }).eq('id', user.id).then(({ error }) => {
-          if (error) console.error('Error saving listings:', error)
-        })
         persistTables({ listings: newListings })
       }
       return newListings
@@ -227,9 +204,6 @@ function HomeContent() {
       const newNeighborhoods = updater(prev)
       neighborhoodsRef.current = newNeighborhoods
       if (user) {
-        supabase.from('profiles').update({ neighborhoods: newNeighborhoods }).eq('id', user.id).then(({ error }) => {
-          if (error) console.error('Error saving neighborhoods:', error)
-        })
         persistTables({ neighborhoods: newNeighborhoods })
       }
       return newNeighborhoods
@@ -241,9 +215,6 @@ function HomeContent() {
       const newCampaigns = updater(prev)
       campaignsRef.current = newCampaigns
       if (user) {
-        supabase.from('profiles').update({ outreach_campaigns: newCampaigns }).eq('id', user.id).then(({ error }) => {
-          if (error) console.error('Error saving outreach campaigns:', error)
-        })
         persistTables({ outreachCampaigns: newCampaigns })
       }
       return newCampaigns
@@ -252,14 +223,6 @@ function HomeContent() {
 
   const persistClientsAndHomes = (nextClients: any[], nextHomes: TourHome[]) => {
     if (!user) return
-    supabase.from('profiles').upsert({
-      id: user.id,
-      clients: nextClients,
-      homes: nextHomes,
-      updated_at: new Date()
-    }).then(({ error }) => {
-      if (error) console.error('Error saving clients:', error)
-    })
     persistTables({ clients: nextClients, homes: nextHomes })
   }
 
@@ -409,8 +372,6 @@ function HomeContent() {
           }
 
           if (pendingData || loaded.migrated) {
-            const saveError = await saveWorkspaceToProfile(currentUser.id, nextWorkspace)
-            if (saveError) console.error("Error saving pending data to DB", saveError)
             if (loaded.tablesReady) {
               const tableError = await saveWorkspaceTables(supabase, currentUser.id, nextWorkspace, { migrateResponses: loaded.migrated })
               if (tableError) console.error("Error saving workspace tables:", tableError)
@@ -461,11 +422,6 @@ function HomeContent() {
             show_logo: pendingProfile.show_logo === true,
             show_custom_header: pendingProfile.show_custom_header === true,
             headshot_shape: pendingProfile.headshot_shape === 'circle' ? 'circle' : 'square',
-            listings: newListings,
-            neighborhoods: newNeighborhoods,
-            outreach_campaigns: newCampaigns,
-            clients: workspace.clients,
-            homes: workspace.homes,
             workspace_version: 2,
             updated_at: new Date()
           }
@@ -538,13 +494,9 @@ function HomeContent() {
 
   const persistWorkspace = async () => {
     if (!user) return false
-    const workspace = currentWorkspace()
-    const error = await saveWorkspaceToProfile(user.id, workspace)
-    if (tablesReadyRef.current) {
-      const tableError = await saveWorkspaceTables(supabase, user.id, workspace)
-      if (tableError) console.error('Error saving workspace tables:', tableError)
-    }
-    if (error) {
+    const tableError = await saveWorkspaceTables(supabase, user.id, currentWorkspace())
+    tablesReadyRef.current = !tableError
+    if (tableError) {
       showCustomModal('Could not save your work yet. Tap Preview again.')
       return false
     }
@@ -566,32 +518,18 @@ function HomeContent() {
       headshot_url: profile.headshot_url || '',
       logo_url: profile.logo_url || '',
       custom_header_url: profile.custom_header_url || '',
-      listings,
-      neighborhoods,
-      outreach_campaigns: outreachCampaigns,
-      clients,
-      homes: tourHomes,
+      workspace_version: 2,
       updated_at: new Date()
     }
     const { error } = await supabase.from('profiles').upsert(payload)
-    if (!error) {
-      await saveWorkspaceTables(supabase, userId, currentWorkspace())
-    }
     if (error) {
-      const { show_custom_header: _c, headshot_shape: _s, ...rest } = payload
+      const { show_custom_header: _c, headshot_shape: _s, workspace_version: _v, ...rest } = payload
       const retry = await supabase.from('profiles').upsert(rest)
-      if (retry.error) {
-        const workspaceError = await saveWorkspaceToProfile(userId, {
-          listings,
-          neighborhoods,
-          outreachCampaigns,
-          clients,
-          homes: tourHomes
-        })
-        if (workspaceError) return workspaceError
-      }
+      if (retry.error) return retry.error
     }
-    return null
+    const tableError = await saveWorkspaceTables(supabase, userId, currentWorkspace())
+    tablesReadyRef.current = !tableError
+    return tableError
   }
 
   const completeEmailAuth = async (email: string) => {

@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@supabase/supabase-js'
-import { isMissingRelation } from '@/app/lib/workspace'
 
 export async function submitOutreachResponse(profileId: string, campaignId: string, response: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -16,39 +15,9 @@ export async function submitOutreachResponse(profileId: string, campaignId: stri
     created_at: new Date().toISOString(),
   }
 
-  const tableInsert = await supabase.from('campaign_responses').insert(row)
-  if (!tableInsert.error) return { success: true }
+  const { error } = await supabase.from('campaign_responses').insert(row)
+  if (!error) return { success: true }
 
-  if (!isMissingRelation(tableInsert.error) && !/foreign key|violat/i.test(tableInsert.error.message || '')) {
-    console.error('Error saving campaign response:', tableInsert.error)
-  }
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('outreach_campaigns')
-    .eq('id', profileId)
-    .single()
-
-  if (error || !profile) return { error: 'Profile not found' }
-
-  const campaigns = profile.outreach_campaigns || []
-  const idx = campaigns.findIndex((c: any) => c.id === campaignId)
-  if (idx === -1) return { error: 'Campaign not found' }
-
-  if (!campaigns[idx].responses) {
-    campaigns[idx].responses = []
-  }
-
-  campaigns[idx].responses.push({
-    id: row.id,
-    date: row.created_at,
-    answers: response
-  })
-
-  await supabase
-    .from('profiles')
-    .update({ outreach_campaigns: campaigns })
-    .eq('id', profileId)
-
-  return { success: true }
+  console.error('Error saving campaign response:', error)
+  return { error: 'Could not save your response.' }
 }

@@ -3,8 +3,6 @@
 import { createClient } from '@supabase/supabase-js'
 import {
   PROSPECT_KIND,
-  PROSPECT_STORE_ID,
-  PROSPECT_STORE_KIND,
   type Prospect,
   type ProspectSourceTool,
 } from '@/app/lib/prospects'
@@ -46,9 +44,7 @@ export async function saveProspect(input: {
     createdAt: new Date().toISOString(),
   }
 
-  const supabase = admin()
-
-  const tableInsert = await supabase.from('prospects').insert({
+  const { error } = await admin().from('prospects').insert({
     id: prospect.id,
     profile_id: prospect.profileId,
     name: prospect.name || null,
@@ -61,42 +57,8 @@ export async function saveProspect(input: {
     created_at: prospect.createdAt,
   })
 
-  if (!tableInsert.error) return { success: true, id: prospect.id }
+  if (!error) return { success: true, id: prospect.id }
 
-  const { data: profile, error: readError } = await supabase
-    .from('profiles')
-    .select('outreach_campaigns')
-    .eq('id', input.profileId)
-    .single()
-
-  if (readError || !profile) return { error: 'Could not save contact.' }
-
-  const campaigns = Array.isArray(profile.outreach_campaigns) ? [...profile.outreach_campaigns] : []
-  const storeIndex = campaigns.findIndex(
-    (c: { id?: string; kind?: string }) => c.id === PROSPECT_STORE_ID || c.kind === PROSPECT_STORE_KIND
-  )
-
-  if (storeIndex >= 0) {
-    const store = campaigns[storeIndex]
-    campaigns[storeIndex] = {
-      ...store,
-      id: PROSPECT_STORE_ID,
-      kind: PROSPECT_STORE_KIND,
-      items: [...(store.items || []), prospect],
-    }
-  } else {
-    campaigns.push({
-      id: PROSPECT_STORE_ID,
-      kind: PROSPECT_STORE_KIND,
-      items: [prospect],
-    })
-  }
-
-  const { error: writeError } = await supabase
-    .from('profiles')
-    .update({ outreach_campaigns: campaigns })
-    .eq('id', input.profileId)
-
-  if (writeError) return { error: writeError.message }
-  return { success: true, id: prospect.id }
+  console.error('Error saving prospect:', error)
+  return { error: 'Could not save contact.' }
 }

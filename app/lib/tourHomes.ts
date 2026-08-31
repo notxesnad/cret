@@ -130,7 +130,3 @@ export function packTourData(people: TourClient[], homes: TourHome[], prospects:
 export function homesOnClientTours(client: Pick<TourClient, 'tours'>) {
   return new Set((client.tours || []).flatMap(tour => (tour.stops || []).map(stop => stop.homeId))).size
 }
-
-export const TOUR_HOMES_COLUMN_SQL = `
-alter table public.profiles add column if not exists homes jsonb default '[]'::jsonb;
-`

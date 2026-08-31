@@ -1,5 +1,6 @@
 -- Production workspace schema.
 -- Run this in the Supabase SQL editor. Safe to re-run.
+-- After this is live, drop leftover JSON blobs with cleanup-profile-json.sql.
 
 alter table public.profiles
   add column if not exists workspace_version integer default 1;
