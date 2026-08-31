@@ -1,9 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
-import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,20 +17,7 @@ async function getShareUrl(path: string) {
 
 export default async function OpenHouseFeedbackPrintPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  const campaign = (profile?.outreach_campaigns || []).find(
-    (c: any) => c.id === campaignId && c.kind === OPENHOUSE_FEEDBACK_KIND
-  )
+  const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'feedback')
 
   if (!profile || !campaign) {
     return (

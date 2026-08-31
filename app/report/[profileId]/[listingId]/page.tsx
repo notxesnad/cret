@@ -1,35 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay } from '@/app/lib/tourFormat'
-import { NET_SHEET_KIND } from '@/app/lib/netSheet'
+import { adminClient, findPublicListing } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
 export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
   const { profileId, listingId } = await params
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  // Fall back to anon key if service role is missing during build time
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  if (error) {
-    console.error("Supabase Error fetching profile:", error)
-  }
-
-  let listing = null
-
-  if (profile && profile.listings) {
-    listing = profile.listings.find((l: any) => l.id === listingId && l.kind !== NET_SHEET_KIND)
-  }
+  const supabaseAdmin = adminClient()
+  const { profile, listing } = await findPublicListing(supabaseAdmin, profileId, listingId)
 
   if (!profile || !listing) {
     return (

@@ -1,10 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } from '@/app/lib/tourFormat'
-import { unpackTourData, resolveTourHomes } from '@/app/lib/tourHomes'
+import { adminClient, findPublicTour } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,25 +22,8 @@ export default async function TourItineraryPage({
   params: Promise<{ profileId: string; clientId: string; tourId: string }>
 }) {
   const { profileId, clientId, tourId } = await params
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  if (error) {
-    console.error('Supabase Error fetching profile for tour:', error)
-  }
-
-  const { people } = unpackTourData(profile?.clients)
-  const client = people.find((c) => c.id === clientId)
-  const tour = client?.tours?.find((t) => t.id === tourId)
-  const homes = resolveTourHomes(profile)
+  const supabaseAdmin = adminClient()
+  const { profile, client, tour, homes } = await findPublicTour(supabaseAdmin, profileId, clientId, tourId)
 
   const stops = (tour?.stops || []).map((stop, index) => {
     const home = homes.find((h) => h.id === stop.homeId)

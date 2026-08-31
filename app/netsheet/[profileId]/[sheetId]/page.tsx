@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { NetSheetDocument } from '@/app/components/NetSheetDocument'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { asNetSheet, sheetTitle } from '@/app/lib/netSheet'
+import { adminClient, findPublicNetSheet } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,22 +12,7 @@ export default async function NetSheetSharePage({
   params: Promise<{ profileId: string; sheetId: string }>
 }) {
   const { profileId, sheetId } = await params
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  const listings = Array.isArray(profile?.listings) ? profile.listings : []
-  const fromListings = listings.find((item: { id?: string }) => item.id === sheetId)
-  const fromColumn = Array.isArray(profile?.net_sheets)
-    ? profile.net_sheets.find((item: { id?: string }) => item.id === sheetId)
-    : null
-  const raw = fromListings || fromColumn
+  const { profile, sheet: raw } = await findPublicNetSheet(adminClient(), profileId, sheetId)
   const sheet = asNetSheet(raw)
 
   if (!profile || !sheet) {

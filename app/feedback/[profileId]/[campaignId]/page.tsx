@@ -1,31 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { FeedbackClient } from './FeedbackClient'
-import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
+import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
 export default async function OpenHouseFeedbackPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  if (error) {
-    console.error('Supabase Error fetching profile for open house feedback:', error)
-  }
-
-  const campaign = (profile?.outreach_campaigns || []).find(
-    (c: any) => c.id === campaignId && c.kind === OPENHOUSE_FEEDBACK_KIND
-  )
+  const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'feedback')
 
   if (!profile || !campaign) {
     return (

@@ -1,37 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { AdviceClient } from './AdviceClient'
-import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
-import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
+import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdvicePage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
   const { profileId, campaignId } = await params
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
-
-  const { data: profile, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', profileId)
-    .single()
-
-  if (error) {
-    console.error("Supabase Error fetching profile for advice:", error)
-  }
-
-  let campaign = null
-
-  if (profile && profile.outreach_campaigns) {
-    campaign = profile.outreach_campaigns.find(
-      (c: { id?: string; kind?: string }) =>
-        c.id === campaignId && c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== PROSPECT_STORE_KIND
-    )
-  }
+  const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'advice')
 
   if (!profile || !campaign) {
     return (
