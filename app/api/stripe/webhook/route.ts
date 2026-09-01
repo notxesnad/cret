@@ -4,6 +4,8 @@ import type Stripe from 'stripe'
 import {
   getStripe,
   promoCodeFrom,
+  stripeSecretKey,
+  stripeWebhookSecret,
   subscriptionPeriodEnd,
   subscriptionPriceId,
   unixToIso,
@@ -60,8 +62,8 @@ async function syncSubscription(
 }
 
 export async function POST(req: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!secret || !process.env.STRIPE_SECRET_KEY) {
+  const secret = stripeWebhookSecret()
+  if (!secret || !stripeSecretKey()) {
     return NextResponse.json({ error: 'Billing is not configured.' }, { status: 500 })
   }
 

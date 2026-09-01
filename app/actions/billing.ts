@@ -6,6 +6,9 @@ import {
   appUrl,
   findPromotionCode,
   getStripe,
+  missingStripeConfig,
+  stripePriceId,
+  stripeSecretKey,
   TRIAL_DAYS,
 } from '@/app/lib/stripe'
 import { isSubscribed } from '@/app/lib/billing'
@@ -26,7 +29,9 @@ async function userFromToken(accessToken: string) {
 }
 
 export async function startCheckout(input: { accessToken: string; promoCode?: string }) {
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID) {
+  const missing = missingStripeConfig()
+  if (missing) {
+    console.error('Stripe checkout missing env:', missing)
     return { error: 'Billing is not configured yet.' }
   }
 
@@ -54,7 +59,7 @@ export async function startCheckout(input: { accessToken: string; promoCode?: st
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
-    line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+    line_items: [{ price: stripePriceId(), quantity: 1 }],
     success_url: `${appUrl()}/?billing=success`,
     cancel_url: `${appUrl()}/?billing=checkout_canceled`,
     client_reference_id: user.id,
@@ -79,7 +84,8 @@ export async function startCheckout(input: { accessToken: string; promoCode?: st
 }
 
 export async function startPortal(input: { accessToken: string }) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!stripeSecretKey()) {
+    console.error('Stripe portal missing env: STRIPE_SECRET_KEY')
     return { error: 'Billing is not configured yet.' }
   }
 

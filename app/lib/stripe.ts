@@ -3,8 +3,32 @@ import Stripe from 'stripe'
 export const TRIAL_DAYS = 14
 export const MONTHLY_PRICE_CENTS = 2900
 
+function readEnv(name: string) {
+  return (process.env[name] || '').trim()
+}
+
+export function stripeSecretKey() {
+  return readEnv('STRIPE_SECRET_KEY')
+}
+
+export function stripePriceId() {
+  return readEnv('STRIPE_PRICE_ID')
+}
+
+export function stripeWebhookSecret() {
+  return readEnv('STRIPE_WEBHOOK_SECRET')
+}
+
+export function missingStripeConfig() {
+  const missing = [
+    !stripeSecretKey() && 'STRIPE_SECRET_KEY',
+    !stripePriceId() && 'STRIPE_PRICE_ID',
+  ].filter(Boolean)
+  return missing.length ? missing.join(', ') : null
+}
+
 export function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY
+  const key = stripeSecretKey()
   if (!key) throw new Error('Missing STRIPE_SECRET_KEY')
   return new Stripe(key)
 }
