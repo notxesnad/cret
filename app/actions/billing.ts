@@ -59,8 +59,7 @@ export async function startCheckout(input: { accessToken: string; promoCode?: st
   try {
     const missing = missingStripeConfig()
     if (missing) {
-      console.error('Stripe checkout missing env:', missing)
-      return { error: 'Billing is not configured yet.' }
+      return { error: missing }
     }
 
     const user = await userFromToken(input.accessToken)

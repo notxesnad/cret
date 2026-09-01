@@ -4,7 +4,11 @@ export const TRIAL_DAYS = 14
 export const MONTHLY_PRICE_CENTS = 2900
 
 function readEnv(name: string) {
-  return (process.env[name] || '').trim().replace(/^['"]|['"]$/g, '')
+  const raw = String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[name] ?? '').trim()
+  if (!raw) return ''
+  const unquoted = raw.replace(/^['"]|['"]$/g, '')
+  if (unquoted.startsWith(`${name}=`)) return unquoted.slice(name.length + 1).trim()
+  return unquoted
 }
 
 export function stripeSecretKey() {
@@ -20,11 +24,15 @@ export function stripeWebhookSecret() {
 }
 
 export function missingStripeConfig() {
-  const missing = [
-    !stripeSecretKey() && 'STRIPE_SECRET_KEY',
-    !stripePriceId() && 'STRIPE_PRICE_ID',
-  ].filter(Boolean)
-  return missing.length ? missing.join(', ') : null
+  const key = stripeSecretKey()
+  const price = stripePriceId()
+  if (!key || key === 'STRIPE_SECRET_KEY' || !key.startsWith('sk_')) {
+    return 'STRIPE_SECRET_KEY must be the sk_test_ or sk_live_ key, not the name of the variable'
+  }
+  if (!price || price === 'STRIPE_PRICE_ID' || !price.startsWith('price_')) {
+    return 'STRIPE_PRICE_ID must be the price_... id, not the name of the variable'
+  }
+  return null
 }
 
 export function getStripe() {
