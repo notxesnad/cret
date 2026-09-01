@@ -1,6 +1,5 @@
 import Stripe from 'stripe'
 
-export const TRIAL_DAYS = 14
 export const MONTHLY_PRICE_CENTS = 2900
 
 function readEnv(name: string) {

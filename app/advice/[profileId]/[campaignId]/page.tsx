@@ -1,6 +1,8 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { AdviceClient } from './AdviceClient'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
+import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
+import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -16,6 +18,10 @@ export default async function AdvicePage({ params }: { params: Promise<{ profile
         <p className="text-slate-400 max-w-md mx-auto mb-4">This questionnaire may have been removed or the link is incorrect.</p>
       </div>
     )
+  }
+
+  if (!hasShareAccess(billingFromProfile(profile))) {
+    return <ShareUnavailable profile={profile} />
   }
 
   const theme = normalizeQuizTheme(campaign.theme)

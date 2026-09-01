@@ -1,6 +1,8 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay } from '@/app/lib/tourFormat'
+import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
+import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicListing } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +24,10 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
         )}
       </div>
     )
+  }
+
+  if (!hasShareAccess(billingFromProfile(profile))) {
+    return <ShareUnavailable profile={profile} />
   }
 
   return (

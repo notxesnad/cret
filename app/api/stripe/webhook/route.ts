@@ -52,7 +52,7 @@ async function syncSubscription(
       subscription_status: sub.status,
       subscription_price_id: subscriptionPriceId(sub),
       subscription_current_period_end: subscriptionPeriodEnd(sub),
-      trial_ends_at: unixToIso(sub.trial_end),
+      ...(unixToIso(sub.trial_end) ? { trial_ends_at: unixToIso(sub.trial_end) } : {}),
       ...(promoCode ? { promo_code: promoCode } : {}),
       updated_at: new Date().toISOString(),
     })

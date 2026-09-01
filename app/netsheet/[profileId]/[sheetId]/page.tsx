@@ -2,6 +2,8 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { NetSheetDocument } from '@/app/components/NetSheetDocument'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { asNetSheet, sheetTitle } from '@/app/lib/netSheet'
+import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
+import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicNetSheet } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +24,10 @@ export default async function NetSheetSharePage({
         <p className="text-slate-500 max-w-md mx-auto">This estimate might have been removed or the link is incorrect.</p>
       </div>
     )
+  }
+
+  if (!hasShareAccess(billingFromProfile(profile))) {
+    return <ShareUnavailable profile={profile} />
   }
 
   return (

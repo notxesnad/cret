@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { welcomeEmailHtml } from '@/app/lib/welcomeEmail'
+import { appTrialFields } from '@/app/lib/billing'
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -84,6 +85,23 @@ export async function registerWithoutVerify(email: string, redirectTo?: string) 
   }
 
   if (!data.user?.id) return { error: 'Could not create your account.' }
+  const trial = appTrialFields()
+  const { error: profileError } = await admin().from('profiles').upsert({
+    id: data.user.id,
+    email: trimmed,
+    ...trial,
+    workspace_version: 2,
+    updated_at: new Date().toISOString(),
+  })
+  if (profileError) {
+    const retry = await admin().from('profiles').upsert({
+      id: data.user.id,
+      email: trimmed,
+      ...trial,
+      updated_at: new Date().toISOString(),
+    })
+    if (retry.error) console.error('Could not start trial on new profile:', retry.error)
+  }
   try {
     await sendWelcomeEmail(trimmed, redirectTo)
   } catch (err) {

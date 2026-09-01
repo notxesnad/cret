@@ -9,9 +9,8 @@ import {
   missingStripeConfig,
   stripePriceId,
   stripeSecretKey,
-  TRIAL_DAYS,
 } from '@/app/lib/stripe'
-import { isSubscribed } from '@/app/lib/billing'
+import { isPaid } from '@/app/lib/billing'
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -66,7 +65,7 @@ export async function startCheckout(input: { accessToken: string; promoCode?: st
     if (!user) return { error: 'Sign in first.' }
 
     const profile = await loadBillingProfile(user.id)
-    if (isSubscribed(profile?.subscription_status)) {
+    if (isPaid(profile?.subscription_status)) {
       return startPortal({ accessToken: input.accessToken })
     }
 
@@ -88,7 +87,6 @@ export async function startCheckout(input: { accessToken: string; promoCode?: st
       customer: profile?.stripe_customer_id || undefined,
       customer_email: profile?.stripe_customer_id ? undefined : (user.email || profile?.email || undefined),
       subscription_data: {
-        trial_period_days: TRIAL_DAYS,
         metadata: { profile_id: user.id, promo_code: promoCode || '' },
       },
       metadata: { profile_id: user.id, promo_code: promoCode || '' },
@@ -120,7 +118,7 @@ export async function startPortal(input: { accessToken: string }) {
 
     const profile = await loadBillingProfile(user.id)
     if (!profile?.stripe_customer_id) {
-      return { error: 'No billing account yet. Start a trial first.' }
+      return { error: 'No billing account yet. Subscribe first.' }
     }
 
     const session = await getStripe().billingPortal.sessions.create({

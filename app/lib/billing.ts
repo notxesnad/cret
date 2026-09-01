@@ -1,8 +1,26 @@
+export const DEFAULT_TRIAL_PERIOD_DAYS = 14
+
 export type BillingState = {
   status: string | null
   trialEndsAt: string | null
   currentPeriodEnd: string | null
   promoCode: string | null
+}
+
+export function trialPeriodDays() {
+  const raw = Number(
+    process.env.NEXT_PUBLIC_TRIAL_PERIOD_DAYS
+    || process.env.TRIAL_PERIOD_DAYS
+    || DEFAULT_TRIAL_PERIOD_DAYS
+  )
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TRIAL_PERIOD_DAYS
+}
+
+export function appTrialFields() {
+  return {
+    subscription_status: 'trialing',
+    trial_ends_at: new Date(Date.now() + trialPeriodDays() * 24 * 60 * 60 * 1000).toISOString(),
+  }
 }
 
 export function emptyBilling(): BillingState {
@@ -28,14 +46,24 @@ export function billingFromProfile(profile: {
   }
 }
 
-export function isSubscribed(status?: string | null) {
-  return status === 'active' || status === 'trialing'
+export function isPaid(status?: string | null) {
+  return status === 'active' || status === 'past_due'
 }
 
-export function billingLabel(status?: string | null) {
-  if (status === 'trialing') return 'Trial'
-  if (status === 'active') return 'Subscribed'
-  if (status === 'past_due') return 'Payment issue'
-  if (status === 'canceled') return 'Canceled'
+export function isSubscribed(status?: string | null) {
+  return isPaid(status)
+}
+
+export function hasShareAccess(billing: BillingState) {
+  if (isPaid(billing.status)) return true
+  if (billing.trialEndsAt && Date.parse(billing.trialEndsAt) > Date.now()) return true
+  return false
+}
+
+export function billingLabel(billing: BillingState) {
+  if (billing.status === 'past_due') return 'Payment issue'
+  if (billing.status === 'active') return 'Subscribed'
+  if (hasShareAccess(billing)) return 'Trial'
+  if (billing.status === 'canceled') return 'Canceled'
   return null
 }

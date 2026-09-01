@@ -1,30 +1,29 @@
 import { useState, useEffect } from 'react'
-import { isSubscribed, type BillingState } from '@/app/lib/billing'
+import { hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
 
 export function HomeView({
   switchView,
   showCustomModal,
   billing,
   billingBusy,
+  signedIn,
   onStartTrial,
+  onSubscribe,
   onManageBilling,
-  initialPromo = '',
 }: {
   switchView: (view: string) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   billing: BillingState
   billingBusy?: boolean
-  onStartTrial: (promo?: string) => void
+  signedIn?: boolean
+  onStartTrial: () => void
+  onSubscribe: () => void
   onManageBilling: () => void
-  initialPromo?: string
 }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [promo, setPromo] = useState(initialPromo)
-  const subscribed = isSubscribed(billing.status)
-
-  useEffect(() => {
-    setPromo(initialPromo)
-  }, [initialPromo])
+  const paid = isPaid(billing.status)
+  const onTrial = !paid && hasShareAccess(billing)
+  const trialDays = trialPeriodDays()
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -159,49 +158,41 @@ export function HomeView({
           </li>
           <li className="flex items-center text-slate-300 font-medium text-sm">
             <svg className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-            Automated text & email
+            Client-ready branded PDFs and Links
           </li>
           <li className="flex items-center text-slate-300 font-medium text-sm">
             <svg className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-            Client-ready branded PDFs
+            White Glove Support
           </li>
           <li className="flex items-center text-slate-300 font-medium text-sm">
             <svg className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-            24/7 Priority Support
+            Your life made a little easier!
           </li>
         </ul>
-
-        {!subscribed && (
-          <label className="block max-w-[280px] mx-auto mb-4 relative z-10 text-left">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Have a code?</span>
-            <input
-              type="text"
-              value={promo}
-              onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              placeholder="Enter it here"
-              autoCapitalize="characters"
-              className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm tracking-widest focus:outline-none focus:border-emerald-500"
-            />
-          </label>
-        )}
         
         <button
           type="button"
-          disabled={billingBusy}
-          onClick={() => subscribed || billing.status === 'past_due' ? onManageBilling() : onStartTrial(promo)}
+          disabled={billingBusy || (signedIn && onTrial)}
+          onClick={() => {
+            if (paid) return onManageBilling()
+            if (!signedIn) return onStartTrial()
+            return onSubscribe()
+          }}
           className="block w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 font-black py-4 px-6 rounded-xl transition shadow-lg text-center uppercase tracking-wide text-sm relative z-10"
         >
           {billingBusy
             ? 'One sec...'
-            : subscribed
+            : paid
               ? 'Manage billing'
               : billing.status === 'past_due'
                 ? 'Update payment'
-                : 'Start your 14-day free trial'}
+                : signedIn && onTrial
+                  ? `You're on a ${trialDays}-day free trial`
+                  : signedIn
+                    ? 'Subscribe — $29/mo'
+                    : `Start your ${trialDays}-day free trial`}
         </button>
-        {!subscribed && (
-          <p className="text-xs text-slate-500 mt-3 relative z-10">Card on file. You will not be charged until the trial ends. Cancel anytime.</p>
-        )}
+        <p className="text-xs text-slate-500 mt-3 relative z-10">Cancel anytime.</p>
       </div>
     </div>
   )

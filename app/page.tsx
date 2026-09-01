@@ -11,7 +11,7 @@ import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspac
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import { startCheckout, startPortal } from '@/app/actions/billing'
-import { billingFromProfile, billingLabel, emptyBilling, isSubscribed, type BillingState } from '@/app/lib/billing'
+import { appTrialFields, billingFromProfile, billingLabel, emptyBilling, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
 import {
   HomeView,
   SignInView,
@@ -67,7 +67,7 @@ function HomeContent() {
   const [uploading, setUploading] = useState<boolean>(false)
 
 
-  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean; welcomeNew?: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
+  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean; welcomeNew?: boolean; paywall?: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
   const [modalEmail, setModalEmail] = useState('')
   const [modalAuthSent, setModalAuthSent] = useState(false)
   const [modalAuthError, setModalAuthError] = useState('')
@@ -351,6 +351,11 @@ function HomeContent() {
             headshot_shape: (dbHasName ? data.headshot_shape : pendingProfile.headshot_shape) === 'circle' ? 'circle' : 'square'
           })
           setBilling(billingFromProfile(data))
+          if (!isPaid(data.subscription_status) && !data.trial_ends_at) {
+            const trial = appTrialFields()
+            const { error: trialError } = await supabase.from('profiles').update(trial).eq('id', currentUser.id)
+            if (!trialError) setBilling(billingFromProfile({ ...data, ...trial }))
+          }
           
           const jsonWorkspace = workspaceFromProfileJson({
             listings: mergeById(data.listings || [], pendingData?.listings),
@@ -419,6 +424,7 @@ function HomeContent() {
             homes: workspace.homes,
           }
 
+          const trial = appTrialFields()
           const createPayload = { 
             id: currentUser.id, 
             email: currentUser.email || '',
@@ -431,6 +437,7 @@ function HomeContent() {
             show_custom_header: pendingProfile.show_custom_header === true,
             headshot_shape: pendingProfile.headshot_shape === 'circle' ? 'circle' : 'square',
             workspace_version: 2,
+            ...trial,
             updated_at: new Date()
           }
           const { error: createError } = await supabase.from('profiles').upsert(createPayload)
@@ -439,6 +446,7 @@ function HomeContent() {
             const retry = await supabase.from('profiles').upsert(withoutVersion)
             if (retry.error) console.error('Error creating initial profile:', retry.error)
           }
+          setBilling(billingFromProfile(trial))
           const tableError = await saveWorkspaceTables(supabase, currentUser.id, nextWorkspace, { migrateResponses: true })
           tablesReadyRef.current = !tableError
           if (tableError) console.error('Error saving workspace tables:', tableError)
@@ -492,7 +500,7 @@ function HomeContent() {
   const showCustomModal = (msg: string, requireAuth = false) => {
     if (getAwaitingMagicLink()) return
     const requiresAuth = requireAuth || msg.toLowerCase().includes('logged in') || msg.toLowerCase().includes('signed in')
-    setModalData({ isOpen: true, msg, requiresAuth, welcomeNew: false })
+    setModalData({ isOpen: true, msg, requiresAuth, welcomeNew: false, paywall: false })
     setModalAuthSent(false)
     setModalEmail(profile.email || '')
     setModalAuthError('')
@@ -666,6 +674,23 @@ function HomeContent() {
     if (intent === 'checkout') return goToCheckout()
   }
 
+  const showPaywall = () => {
+    setModalData({
+      isOpen: true,
+      msg: `Your ${trialPeriodDays()}-day free trial has ended. Subscribe for $29/month to create links and download PDFs.`,
+      requiresAuth: false,
+      paywall: true,
+    })
+  }
+
+  const persistIfSharingAllowed = async () => {
+    if (!hasShareAccess(billing)) {
+      showPaywall()
+      return false
+    }
+    return persistWorkspace()
+  }
+
   const closeCustomModal = () => {
     if (getAwaitingMagicLink()) return
     setModalData(prev => ({ ...prev, isOpen: false }))
@@ -717,8 +742,8 @@ function HomeContent() {
     if (billingParam === 'success') {
       billingHandledRef.current = true
       sessionStorage.setItem(handledKey, '1')
-      setBilling((prev) => ({ ...prev, status: prev.status || 'trialing' }))
-      showCustomModal('You are on a 14-day free trial. We will not charge you until it ends. Cancel anytime from Billing.')
+      setBilling((prev) => ({ ...prev, status: 'active' }))
+      showCustomModal('You are subscribed. Cancel anytime from Billing.')
       clearBillingQuery()
       return
     }
@@ -988,14 +1013,14 @@ function HomeContent() {
             <div id="nav-action" style={{ display: 'none' }}>
               <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
             </div>
-            {user && billingLabel(billing.status) && (
+            {user && billingLabel(billing) && (
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                {billingLabel(billing.status)}
+                {billingLabel(billing)}
               </span>
             )}
             {user && (
               <button
-                onClick={() => isSubscribed(billing.status) || billing.status === 'past_due' ? goToPortal() : goToCheckout(promoParam)}
+                onClick={() => isPaid(billing.status) ? goToPortal() : goToCheckout()}
                 disabled={billingBusy}
                 className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700 transition disabled:opacity-60"
               >
@@ -1022,9 +1047,10 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               billing={billing}
               billingBusy={billingBusy}
-              onStartTrial={goToCheckout}
+              onStartTrial={showAuthModal}
+              onSubscribe={goToCheckout}
               onManageBilling={goToPortal}
-              initialPromo={promoParam}
+              signedIn={!!user}
             />
           )}
           {currentView === 'signin' && (
@@ -1046,7 +1072,7 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
-              persistWorkspace={persistWorkspace}
+              persistWorkspace={persistIfSharingAllowed}
               signedIn={!!user}
               exitView="home"
             />
@@ -1074,7 +1100,7 @@ function HomeContent() {
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
-              persistWorkspace={persistWorkspace}
+              persistWorkspace={persistIfSharingAllowed}
             />
           )}
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
@@ -1086,12 +1112,12 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
-              persistWorkspace={persistWorkspace}
+              persistWorkspace={persistIfSharingAllowed}
               signedIn={!!user}
               exitView="seller"
             />
           )}
-          {currentView === 'sellertracker' && <SellerTrackerView listings={propertyListings} updateListings={updatePropertyListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistWorkspace} />}
+          {currentView === 'sellertracker' && <SellerTrackerView listings={propertyListings} updateListings={updatePropertyListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistIfSharingAllowed} />}
           {currentView === 'driving' && (
             <DrivingView
               clients={unpackTourData(clients).people}
@@ -1104,7 +1130,7 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
-              persistWorkspace={persistWorkspace}
+              persistWorkspace={persistIfSharingAllowed}
             />
           )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
@@ -1140,7 +1166,7 @@ function HomeContent() {
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
-              persistWorkspace={persistWorkspace}
+              persistWorkspace={persistIfSharingAllowed}
             />
           )}
         </main>
@@ -1167,6 +1193,7 @@ function HomeContent() {
                         Cool<span className="text-emerald-400">RealEstate</span>Tools
                       </p>
                       <p className="text-base font-bold text-white">We created your account.</p>
+                      <p className="text-base font-bold text-emerald-400">Your {trialPeriodDays()}-day free trial is on. No credit card needed.</p>
                       <p className="text-sm text-slate-400">
                         (Play around for now, but we will need you to eventually click the verification email sent to {modalEmail || profile.email || 'your email'})
                       </p>
@@ -1174,7 +1201,22 @@ function HomeContent() {
                   ) : (
                     <p className="text-base font-bold text-white">{modalData.msg}</p>
                   )}
+            {modalData.paywall ? (
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    closeCustomModal()
+                    void goToCheckout()
+                  }}
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3 rounded-xl transition"
+                >
+                  Subscribe — $29/mo
+                </button>
+                <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Not now</button>
+              </div>
+            ) : (
             <button onClick={closeCustomModal} className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Got it</button>
+            )}
           </div>
               ) : (
           <div>

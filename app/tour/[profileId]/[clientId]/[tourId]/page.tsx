@@ -3,6 +3,8 @@ import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } from '@/app/lib/tourFormat'
+import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
+import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicTour } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +39,10 @@ export default async function TourItineraryPage({
         <p className="text-slate-500 max-w-md mx-auto">This itinerary might have been removed or the link is incorrect.</p>
       </div>
     )
+  }
+
+  if (!hasShareAccess(billingFromProfile(profile))) {
+    return <ShareUnavailable profile={profile} />
   }
 
   const shareUrl = await getTourShareUrl(`/tour/${profileId}/${clientId}/${tourId}`)
