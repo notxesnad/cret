@@ -12,27 +12,32 @@ export default function CancelPage() {
     let cancelled = false
 
     async function run() {
-      const { data } = await supabase.auth.getSession()
-      const token = data.session?.access_token
-      if (!token) {
-        if (!cancelled) {
-          setNeedsSignIn(true)
-          setMessage('Sign in to cancel or manage billing. It takes one email link, then Stripe handles the rest.')
+      try {
+        const { data } = await supabase.auth.getSession()
+        const token = data.session?.access_token
+        if (!token) {
+          if (!cancelled) {
+            setNeedsSignIn(true)
+            setMessage('Sign in to cancel or manage billing. It takes one email link, then Stripe handles the rest.')
+          }
+          return
         }
-        return
-      }
 
-      const result = await startPortal({ accessToken: token })
-      if (cancelled) return
-      if ('url' in result && result.url) {
-        window.location.href = result.url
-        return
+        const result = await startPortal({ accessToken: token })
+        if (cancelled) return
+        if ('url' in result && result.url) {
+          window.location.href = result.url
+          return
+        }
+        if (result.error?.includes('No billing account')) {
+          setMessage("You're not subscribed yet, so there is nothing to cancel.")
+          return
+        }
+        setMessage(result.error || 'Could not open billing.')
+      } catch (err) {
+        console.error(err)
+        if (!cancelled) setMessage('Could not open billing. Try again in a moment.')
       }
-      if (result.error?.includes('No billing account')) {
-        setMessage("You're not subscribed yet, so there is nothing to cancel.")
-        return
-      }
-      setMessage(result.error || 'Could not open billing.')
     }
 
     run()

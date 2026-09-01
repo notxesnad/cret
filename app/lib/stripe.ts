@@ -4,7 +4,7 @@ export const TRIAL_DAYS = 14
 export const MONTHLY_PRICE_CENTS = 2900
 
 function readEnv(name: string) {
-  return (process.env[name] || '').trim()
+  return (process.env[name] || '').trim().replace(/^['"]|['"]$/g, '')
 }
 
 export function stripeSecretKey() {

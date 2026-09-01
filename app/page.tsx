@@ -615,17 +615,23 @@ function HomeContent() {
       return
     }
     setBillingBusy(true)
-    const result = await startCheckout({ accessToken: token, promoCode: code || undefined })
-    setBillingBusy(false)
-    if ('url' in result && result.url) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('crt_billing_intent')
-        sessionStorage.removeItem('crt_promo')
+    try {
+      const result = await startCheckout({ accessToken: token, promoCode: code || undefined })
+      if ('url' in result && result.url) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('crt_billing_intent')
+          sessionStorage.removeItem('crt_promo')
+        }
+        window.location.href = result.url
+        return
       }
-      window.location.href = result.url
-      return
+      showCustomModal(result.error || 'Could not start checkout.')
+    } catch (err) {
+      console.error(err)
+      showCustomModal('Could not start checkout. Try again in a moment.')
+    } finally {
+      setBillingBusy(false)
     }
-    showCustomModal(result.error || 'Could not start checkout.')
   }
 
   const goToPortal = async () => {
@@ -638,14 +644,20 @@ function HomeContent() {
       return
     }
     setBillingBusy(true)
-    const result = await startPortal({ accessToken: token })
-    setBillingBusy(false)
-    if ('url' in result && result.url) {
-      if (typeof window !== 'undefined') sessionStorage.removeItem('crt_billing_intent')
-      window.location.href = result.url
-      return
+    try {
+      const result = await startPortal({ accessToken: token })
+      if ('url' in result && result.url) {
+        if (typeof window !== 'undefined') sessionStorage.removeItem('crt_billing_intent')
+        window.location.href = result.url
+        return
+      }
+      showCustomModal(result.error || 'Could not open billing.')
+    } catch (err) {
+      console.error(err)
+      showCustomModal('Could not open billing. Try again in a moment.')
+    } finally {
+      setBillingBusy(false)
     }
-    showCustomModal(result.error || 'Could not open billing.')
   }
 
   const resumeBilling = async () => {
