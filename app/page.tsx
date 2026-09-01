@@ -10,6 +10,8 @@ import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTour
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { registerWithoutVerify } from '@/app/actions/auth'
+import { startCheckout, startPortal } from '@/app/actions/billing'
+import { billingFromProfile, billingLabel, emptyBilling, isSubscribed, type BillingState } from '@/app/lib/billing'
 import {
   HomeView,
   SignInView,
@@ -42,6 +44,8 @@ function HomeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentView = searchParams.get('view') || 'home'
+  const billingParam = searchParams.get('billing')
+  const promoParam = (searchParams.get('promo') || '').trim().toUpperCase()
 
   const [user, setUser] = useState<any>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
@@ -128,12 +132,15 @@ function HomeContent() {
   const [outreachCampaigns, setOutreachCampaigns] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [tourHomes, setTourHomes] = useState<TourHome[]>([])
+  const [billing, setBilling] = useState<BillingState>(emptyBilling())
+  const [billingBusy, setBillingBusy] = useState(false)
   const listingsRef = useRef(listings)
   const neighborhoodsRef = useRef(neighborhoods)
   const campaignsRef = useRef(outreachCampaigns)
   const clientsRef = useRef(clients)
   const tourHomesRef = useRef(tourHomes)
   const tablesReadyRef = useRef(false)
+  const billingHandledRef = useRef(false)
   listingsRef.current = listings
   neighborhoodsRef.current = neighborhoods
   campaignsRef.current = outreachCampaigns
@@ -343,6 +350,7 @@ function HomeContent() {
               : (pendingProfile.show_custom_header === true || pendingProfile.pdf_look === 'custom'),
             headshot_shape: (dbHasName ? data.headshot_shape : pendingProfile.headshot_shape) === 'circle' ? 'circle' : 'square'
           })
+          setBilling(billingFromProfile(data))
           
           const jsonWorkspace = workspaceFromProfileJson({
             listings: mergeById(data.listings || [], pendingData?.listings),
@@ -544,7 +552,11 @@ function HomeContent() {
 
     if (result.exists) {
       markAuthPersistPending()
-      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/?view=${currentView}` : ''
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const intent = typeof window !== 'undefined' ? sessionStorage.getItem('crt_billing_intent') : null
+      const billingQuery = intent === 'portal' ? '&billing=portal' : intent === 'checkout' ? '&billing=checkout' : ''
+      const promoQuery = promoParam ? `&promo=${encodeURIComponent(promoParam)}` : ''
+      const redirectUrl = origin ? `${origin}/?view=${currentView}${billingQuery}${promoQuery}` : ''
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: { shouldCreateUser: false, emailRedirectTo: redirectUrl }
@@ -591,6 +603,57 @@ function HomeContent() {
 
   const showAuthModal = () => showCustomModal('', true)
 
+  const goToCheckout = async (promo?: string) => {
+    if (billingBusy) return
+    const code = (promo || (typeof window !== 'undefined' ? sessionStorage.getItem('crt_promo') : null) || promoParam || '').trim()
+    if (typeof window !== 'undefined' && code) sessionStorage.setItem('crt_promo', code)
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) {
+      if (typeof window !== 'undefined') sessionStorage.setItem('crt_billing_intent', 'checkout')
+      showAuthModal()
+      return
+    }
+    setBillingBusy(true)
+    const result = await startCheckout({ accessToken: token, promoCode: code || undefined })
+    setBillingBusy(false)
+    if ('url' in result && result.url) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('crt_billing_intent')
+        sessionStorage.removeItem('crt_promo')
+      }
+      window.location.href = result.url
+      return
+    }
+    showCustomModal(result.error || 'Could not start checkout.')
+  }
+
+  const goToPortal = async () => {
+    if (billingBusy) return
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) {
+      if (typeof window !== 'undefined') sessionStorage.setItem('crt_billing_intent', 'portal')
+      showAuthModal()
+      return
+    }
+    setBillingBusy(true)
+    const result = await startPortal({ accessToken: token })
+    setBillingBusy(false)
+    if ('url' in result && result.url) {
+      if (typeof window !== 'undefined') sessionStorage.removeItem('crt_billing_intent')
+      window.location.href = result.url
+      return
+    }
+    showCustomModal(result.error || 'Could not open billing.')
+  }
+
+  const resumeBilling = async () => {
+    const intent = typeof window !== 'undefined' ? sessionStorage.getItem('crt_billing_intent') : null
+    if (intent === 'portal') return goToPortal()
+    if (intent === 'checkout') return goToCheckout()
+  }
+
   const closeCustomModal = () => {
     if (getAwaitingMagicLink()) return
     setModalData(prev => ({ ...prev, isOpen: false }))
@@ -614,11 +677,66 @@ function HomeContent() {
         setModalAuthSent(true)
         return
       }
+      const intent = typeof window !== 'undefined' ? sessionStorage.getItem('crt_billing_intent') : null
+      if (intent === 'checkout' || intent === 'portal') {
+        closeCustomModal()
+        await resumeBilling()
+        return
+      }
       showWelcomeModal()
     } finally {
       setModalAuthLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!sessionChecked) return
+    const handledKey = billingParam ? `crt_billing_handled_${billingParam}` : ''
+    if (handledKey && sessionStorage.getItem(handledKey)) return
+    if (billingHandledRef.current) return
+
+    const clearBillingQuery = () => {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('billing')
+      const qs = params.toString()
+      router.replace(qs ? `/?${qs}` : '/', { scroll: false })
+    }
+
+    if (billingParam === 'success') {
+      billingHandledRef.current = true
+      sessionStorage.setItem(handledKey, '1')
+      setBilling((prev) => ({ ...prev, status: prev.status || 'trialing' }))
+      showCustomModal('You are on a 14-day free trial. We will not charge you until it ends. Cancel anytime from Billing.')
+      clearBillingQuery()
+      return
+    }
+
+    if (billingParam === 'checkout_canceled') {
+      billingHandledRef.current = true
+      clearBillingQuery()
+      return
+    }
+
+    if (billingParam === 'portal') {
+      billingHandledRef.current = true
+      clearBillingQuery()
+      void goToPortal()
+      return
+    }
+
+    if (billingParam === 'checkout') {
+      billingHandledRef.current = true
+      clearBillingQuery()
+      void goToCheckout(promoParam)
+      return
+    }
+
+    const intent = sessionStorage.getItem('crt_billing_intent')
+    if (intent === 'checkout' || intent === 'portal') {
+      billingHandledRef.current = true
+      void resumeBilling()
+    }
+  }, [sessionChecked, billingParam])
 
   useEffect(() => {
     const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach']
@@ -858,6 +976,20 @@ function HomeContent() {
             <div id="nav-action" style={{ display: 'none' }}>
               <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
             </div>
+            {user && billingLabel(billing.status) && (
+              <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                {billingLabel(billing.status)}
+              </span>
+            )}
+            {user && (
+              <button
+                onClick={() => isSubscribed(billing.status) || billing.status === 'past_due' ? goToPortal() : goToCheckout(promoParam)}
+                disabled={billingBusy}
+                className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700 transition disabled:opacity-60"
+              >
+                Billing
+              </button>
+            )}
             {user ? (
               <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
                 Sign Out
@@ -872,7 +1004,17 @@ function HomeContent() {
 
         {/* Main Container */}
         <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
-          {currentView === 'home' && <HomeView switchView={switchView} showCustomModal={showCustomModal} />}
+          {currentView === 'home' && (
+            <HomeView
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              billing={billing}
+              billingBusy={billingBusy}
+              onStartTrial={goToCheckout}
+              onManageBilling={goToPortal}
+              initialPromo={promoParam}
+            />
+          )}
           {currentView === 'signin' && (
             <SignInView
               onExistingUserSent={(email, firstName) => {

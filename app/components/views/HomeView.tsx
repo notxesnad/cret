@@ -1,7 +1,30 @@
 import { useState, useEffect } from 'react'
+import { isSubscribed, type BillingState } from '@/app/lib/billing'
 
-export function HomeView({ switchView, showCustomModal }: { switchView: (view: string) => void, showCustomModal: (msg: string, requireAuth?: boolean) => void }) {
+export function HomeView({
+  switchView,
+  showCustomModal,
+  billing,
+  billingBusy,
+  onStartTrial,
+  onManageBilling,
+  initialPromo = '',
+}: {
+  switchView: (view: string) => void
+  showCustomModal: (msg: string, requireAuth?: boolean) => void
+  billing: BillingState
+  billingBusy?: boolean
+  onStartTrial: (promo?: string) => void
+  onManageBilling: () => void
+  initialPromo?: string
+}) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [promo, setPromo] = useState(initialPromo)
+  const subscribed = isSubscribed(billing.status)
+
+  useEffect(() => {
+    setPromo(initialPromo)
+  }, [initialPromo])
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -147,10 +170,38 @@ export function HomeView({ switchView, showCustomModal }: { switchView: (view: s
             24/7 Priority Support
           </li>
         </ul>
+
+        {!subscribed && (
+          <label className="block max-w-[280px] mx-auto mb-4 relative z-10 text-left">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Have a code?</span>
+            <input
+              type="text"
+              value={promo}
+              onChange={(e) => setPromo(e.target.value.toUpperCase())}
+              placeholder="Enter it here"
+              autoCapitalize="characters"
+              className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm tracking-widest focus:outline-none focus:border-emerald-500"
+            />
+          </label>
+        )}
         
-        <a href="#view-home" onClick={() => switchView('home')} className="block w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 px-6 rounded-xl transition shadow-lg text-center uppercase tracking-wide text-sm relative z-10">
-          Start your 14-day free trial
-        </a>
+        <button
+          type="button"
+          disabled={billingBusy}
+          onClick={() => subscribed || billing.status === 'past_due' ? onManageBilling() : onStartTrial(promo)}
+          className="block w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 font-black py-4 px-6 rounded-xl transition shadow-lg text-center uppercase tracking-wide text-sm relative z-10"
+        >
+          {billingBusy
+            ? 'One sec...'
+            : subscribed
+              ? 'Manage billing'
+              : billing.status === 'past_due'
+                ? 'Update payment'
+                : 'Start your 14-day free trial'}
+        </button>
+        {!subscribed && (
+          <p className="text-xs text-slate-500 mt-3 relative z-10">Card on file. You will not be charged until the trial ends. Cancel anytime.</p>
+        )}
       </div>
     </div>
   )
