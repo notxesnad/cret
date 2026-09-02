@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { DateField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
-import { isSellerDemoListing } from '@/app/lib/sellerDemo'
+import { isSellerDemoListing, SELLER_DEMO_PREVIEW_KEY, SELLER_DEMO_PUBLIC_PATH } from '@/app/lib/sellerDemo'
 
 export interface Activity {
   id: string;
@@ -28,6 +28,7 @@ interface SellerTrackerViewProps {
   switchView: (view: string) => void;
   userId?: string;
   persistWorkspace?: () => Promise<boolean>;
+  persistDemoShare?: () => Promise<boolean>;
 }
 
 const PRESET_ACTIVITIES = [
@@ -67,7 +68,8 @@ export function SellerTrackerView({
   showCustomModal,
   switchView,
   userId,
-  persistWorkspace
+  persistWorkspace,
+  persistDemoShare
 }: SellerTrackerViewProps) {
   const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
@@ -179,16 +181,35 @@ export function SellerTrackerView({
     setStep(2)
   }
 
+  const sharingDemo = isSellerDemoListing(activeListing)
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const shareUrl = !activeListingId
+    ? ''
+    : userId
+      ? `${origin}/report/${userId}/${activeListingId}`
+      : sharingDemo
+        ? `${origin}${SELLER_DEMO_PUBLIC_PATH}`
+        : ''
+
+  const stashDemoPreview = () => {
+    if (!sharingDemo || !activeListing) return
+    try {
+      sessionStorage.setItem(SELLER_DEMO_PREVIEW_KEY, JSON.stringify({ listing: activeListing }))
+    } catch {
+      // Preview still works with the canned public demo.
+    }
+  }
+
   const handleShareLink = () => {
-    if (!userId) {
+    if (!sharingDemo && !userId) {
       showCustomModal('', true)
       return
     }
-    if (!activeListingId) {
+    if (!shareUrl) {
       showCustomModal("You must select an active listing to share.")
       return
     }
-    const shareUrl = `${window.location.origin}/report/${userId}/${activeListingId}`
+    stashDemoPreview()
     navigator.clipboard.writeText(shareUrl).then(() => {
       showCustomModal(`Link copied! Text this directly to your seller:\n\n${shareUrl}`)
     }).catch(() => {
@@ -453,12 +474,20 @@ export function SellerTrackerView({
       {step === 2 && (
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <SharePreviewButtons
-            url={userId && activeListingId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/report/${userId}/${activeListingId}` : ''}
+            url={shareUrl}
             copyLabel="Copy Link"
             accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
             onCopy={handleShareLink}
-            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
-            beforeShare={persistWorkspace}
+            onNeedAuth={!userId && !sharingDemo ? () => showCustomModal('', true) : undefined}
+            beforeShare={async () => {
+              stashDemoPreview()
+              if (sharingDemo) {
+                if (persistDemoShare) return persistDemoShare()
+                return true
+              }
+              if (persistWorkspace) return persistWorkspace()
+              return true
+            }}
           />
         </div>
       )}

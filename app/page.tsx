@@ -1201,7 +1201,20 @@ function HomeContent() {
               exitView="seller"
             />
           )}
-          {currentView === 'sellertracker' && <SellerTrackerView listings={propertyListings} updateListings={updatePropertyListings} showCustomModal={showCustomModal} switchView={switchView} userId={user?.id} persistWorkspace={persistIfSharingAllowed} />}
+          {currentView === 'sellertracker' && (
+            <SellerTrackerView
+              listings={propertyListings}
+              updateListings={updatePropertyListings}
+              showCustomModal={showCustomModal}
+              switchView={switchView}
+              userId={user?.id}
+              persistWorkspace={persistIfSharingAllowed}
+              persistDemoShare={async () => {
+                if (!user) return true
+                return persistWorkspace()
+              }}
+            />
+          )}
           {currentView === 'driving' && (
             <DrivingView
               clients={unpackTourData(clients).people}

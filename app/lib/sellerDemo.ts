@@ -1,4 +1,6 @@
 export const SELLER_DEMO_ID_PREFIX = 'seller-demo-'
+export const SELLER_DEMO_PUBLIC_PATH = '/report/demo'
+export const SELLER_DEMO_PREVIEW_KEY = 'crt_seller_demo_preview'
 
 export function isSellerDemoListing(listing: { id?: string } | null | undefined) {
   return Boolean(listing?.id && String(listing.id).startsWith(SELLER_DEMO_ID_PREFIX))
