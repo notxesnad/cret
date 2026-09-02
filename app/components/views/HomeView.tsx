@@ -79,7 +79,7 @@ export function HomeView({
         <ToolTile onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Brand your tools &amp; PDF styles</span>
-          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Make My Profile</h2>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Make My Custom Header</h2>
         </ToolTile>
 
         <ToolTile onClick={() => switchView('seller')} className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
