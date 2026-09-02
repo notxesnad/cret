@@ -9,6 +9,7 @@ import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
+import { isSellerDemoListing, withSellerDemoListing } from '@/app/lib/sellerDemo'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import { startCheckout, startPortal } from '@/app/actions/billing'
 import { appTrialFields, billingFromProfile, emptyBilling, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
@@ -189,6 +190,28 @@ function HomeContent() {
     setTourHomes(workspace.homes)
   }
 
+  const sellerDemoIdFor = (userId?: string | null) => {
+    if (userId) return `seller-demo-${userId}`
+    try {
+      let id = localStorage.getItem('crt_seller_demo_id')
+      if (!id) {
+        id = `seller-demo-guest-${crypto.randomUUID()}`
+        localStorage.setItem('crt_seller_demo_id', id)
+      }
+      return id
+    } catch {
+      return 'seller-demo-guest'
+    }
+  }
+
+  const seedSellerDemo = (workspace: WorkspaceData, userId?: string | null) => {
+    const listings = withSellerDemoListing(workspace.listings, sellerDemoIdFor(userId))
+    return {
+      workspace: { ...workspace, listings },
+      added: listings.length !== (workspace.listings || []).length,
+    }
+  }
+
   const updateListings = (updater: (prev: any[]) => any[]) => {
     setListings(prev => {
       const newListings = updater(prev)
@@ -201,6 +224,7 @@ function HomeContent() {
   }
 
   const propertyListings = listings.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
+  const workingListings = propertyListings.filter((item: { id?: string }) => !isSellerDemoListing(item))
   const netSheets = listings.filter(isNetSheet)
 
   const updatePropertyListings = (updater: (prev: any[]) => any[]) => {
@@ -290,7 +314,6 @@ function HomeContent() {
       if (!currentUser) {
         if (pendingFromStorage) {
           if (pendingFromStorage.profile) setProfile((prev: any) => ({ ...prev, ...pendingFromStorage.profile }))
-          if (Array.isArray(pendingFromStorage.listings)) setListings(pendingFromStorage.listings)
           if (Array.isArray(pendingFromStorage.neighborhoods)) setNeighborhoods(pendingFromStorage.neighborhoods)
           if (Array.isArray(pendingFromStorage.outreachCampaigns)) setOutreachCampaigns(pendingFromStorage.outreachCampaigns)
           if (Array.isArray(pendingFromStorage.clients) || Array.isArray(pendingFromStorage.homes)) {
@@ -301,6 +324,12 @@ function HomeContent() {
           if (pendingFromStorage.netData) setNetData(pendingFromStorage.netData)
           if (pendingFromStorage.activeFields) setActiveFields((prev: any) => ({ ...prev, ...pendingFromStorage.activeFields }))
         }
+        const guestListings = withSellerDemoListing(
+          Array.isArray(pendingFromStorage?.listings) ? pendingFromStorage.listings : [],
+          sellerDemoIdFor(null)
+        )
+        listingsRef.current = guestListings
+        setListings(guestListings)
         const awaiting = getAwaitingMagicLink()
         if (awaiting) {
           setModalData({ isOpen: true, msg: '', requiresAuth: true })
@@ -398,7 +427,10 @@ function HomeContent() {
             }
           }
 
-          if (pendingData || loaded.migrated) {
+          const seeded = seedSellerDemo(nextWorkspace, currentUser.id)
+          nextWorkspace = seeded.workspace
+
+          if (pendingData || loaded.migrated || seeded.added) {
             if (loaded.tablesReady) {
               const tableError = await saveWorkspaceTables(supabase, currentUser.id, nextWorkspace, { migrateResponses: loaded.migrated })
               if (tableError) console.error("Error saving workspace tables:", tableError)
@@ -430,7 +462,7 @@ function HomeContent() {
           let newNeighborhoods = pendingData?.neighborhoods || []
           let newCampaigns = pendingData?.outreachCampaigns || []
           const workspace = hydrateTourWorkspace(pendingData?.clients || [], extraHomesFrom(pendingData))
-          const nextWorkspace: WorkspaceData = {
+          let nextWorkspace: WorkspaceData = {
             listings: newListings,
             neighborhoods: newNeighborhoods,
             outreachCampaigns: newCampaigns,
@@ -461,6 +493,8 @@ function HomeContent() {
             if (retry.error) console.error('Error creating initial profile:', retry.error)
           }
           setBilling(billingFromProfile(trial))
+          const seeded = seedSellerDemo(nextWorkspace, currentUser.id)
+          nextWorkspace = seeded.workspace
           const tableError = await saveWorkspaceTables(supabase, currentUser.id, nextWorkspace, { migrateResponses: true })
           tablesReadyRef.current = !tableError
           if (tableError) console.error('Error saving workspace tables:', tableError)
@@ -1116,7 +1150,7 @@ function HomeContent() {
           )}
           {currentView === 'money' && (
             <NetSheetView
-              listings={propertyListings}
+              listings={workingListings}
               sheets={netSheets}
               updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
@@ -1130,7 +1164,7 @@ function HomeContent() {
           {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
           {currentView === 'ohsignin' && (
             <OpenHouseSignInView
-              listings={propertyListings}
+              listings={workingListings}
               updateListings={updatePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
@@ -1145,7 +1179,7 @@ function HomeContent() {
                 const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_FEEDBACK_KIND)
                 return [...updater(mine), ...others]
               })}
-              listings={propertyListings}
+              listings={workingListings}
               updateListings={updatePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
@@ -1156,7 +1190,7 @@ function HomeContent() {
           {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
           {currentView === 'netsheet' && (
             <NetSheetView
-              listings={propertyListings}
+              listings={workingListings}
               sheets={netSheets}
               updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
@@ -1184,7 +1218,7 @@ function HomeContent() {
             />
           )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
-          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={propertyListings} signedIn={!!user} />}
+          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={workingListings} signedIn={!!user} />}
           {currentView === 'profile' && (
             <ProfileBuilderView 
               profileStep={profileStep} 

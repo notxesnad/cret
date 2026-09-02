@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { DateField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
+import { isSellerDemoListing } from '@/app/lib/sellerDemo'
 
 export interface Activity {
   id: string;
@@ -30,12 +31,12 @@ interface SellerTrackerViewProps {
 }
 
 const PRESET_ACTIVITIES = [
-  "📋 Pre-Listing Inspection Completed",
-  "🧹 Professional Deep Clean Completed",
-  "🛋️ Professional Staging Completed",
-  "📸 Professional Photography Completed",
-  "🚁 Drone/Aerial Photography Completed",
-  "🎥 Video Completed",
+  "📋 Pre-Listing Inspection",
+  "🧹 Professional Deep Clean",
+  "🛋️ Professional Staging",
+  "📸 Professional Photography",
+  "🚁 Drone/Aerial Photography",
+  "🎥 Video tour",
   "📏 Floorplan & 3D Tour Created",
   "📄 Property Brochures & Flyers Printed",
   "💻 Property Website Launched",
@@ -56,7 +57,7 @@ const PRESET_ACTIVITIES = [
   "💬 Weekly Showing Feedback Shared",
   "🤝 Received an Offer",
   "📝 Under Contract / Escrow Opened",
-  "🔍 Buyer's Appraisal Completed",
+  "🔍 Buyer's Appraisal",
   "✅ Clear to Close Received"
 ];
 
@@ -137,7 +138,7 @@ export function SellerTrackerView({
 
   const handleOpenActivity = (act: Activity) => {
     setActiveActivityId(act.id)
-    setEditActivityForm(act)
+    setEditActivityForm({ ...act, status: act.status || 'completed' })
     setStep(3)
   }
 
@@ -147,7 +148,7 @@ export function SellerTrackerView({
     updateListings(prev => prev.map(listing => {
       if (listing.id === activeListingId) {
         const updatedActivities = listing.activities.map(a => 
-          a.id === activeActivityId ? { ...a, ...editActivityForm } as Activity : a
+          a.id === activeActivityId ? { ...a, status: 'completed', ...editActivityForm } as Activity : a
         );
         // Sort by date (newest first)
         updatedActivities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -258,28 +259,43 @@ export function SellerTrackerView({
             )}
 
             <div className="space-y-3">
-              {listings.length === 0 ? (
+              {listings.filter(listing => !isSellerDemoListing(listing)).length === 0 && (
                 <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
                   <div className="text-4xl mb-3 opacity-50">🏡</div>
                   <p className="text-base text-slate-400 font-medium">You don&apos;t have any listings yet.<br/>Click above to add your first one!</p>
                 </div>
-              ) : (
-                listings.map(listing => (
-                  <div 
-                    key={listing.id}
-                    onClick={() => handleOpenListing(listing.id)}
-                    className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-amber-500/50 transition"
-                  >
-                    <div>
-                      <h4 className="font-bold text-white text-lg">{listing.address}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{listing.activities.length} activities logged</p>
-                    </div>
-                    <div className="text-slate-500 group-hover:text-amber-500 transition">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                    </div>
-                  </div>
-                ))
               )}
+              {listings.filter(listing => !isSellerDemoListing(listing)).map(listing => (
+                <div 
+                  key={listing.id}
+                  onClick={() => handleOpenListing(listing.id)}
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-amber-500/50 transition"
+                >
+                  <div>
+                    <h4 className="font-bold text-white text-lg">{listing.address}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{listing.activities.length} activities logged</p>
+                  </div>
+                  <div className="text-slate-500 group-hover:text-amber-500 transition">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </div>
+                </div>
+              ))}
+              {listings.filter(isSellerDemoListing).map(listing => (
+                <div 
+                  key={listing.id}
+                  onClick={() => handleOpenListing(listing.id)}
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-amber-500/50 transition"
+                >
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">Demo</span>
+                    <h4 className="font-bold text-white text-lg mt-1">{listing.address}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{listing.activities.length} activities logged</p>
+                  </div>
+                  <div className="text-slate-500 group-hover:text-amber-500 transition">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -348,6 +364,7 @@ export function SellerTrackerView({
                           <div>
                             <div className="flex gap-2 mb-1">
                               <span className="text-xs font-black text-slate-400 bg-slate-900 px-2 py-0.5 rounded inline-block">{formatDateDisplay(act.date)}</span>
+                              {(!act.status || act.status === 'completed') && <span className="text-xs font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded inline-block uppercase">Completed</span>}
                               {act.status === 'upcoming' && <span className="text-xs font-black text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded inline-block uppercase">Upcoming</span>}
                               {act.status === 'pending' && <span className="text-xs font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded inline-block uppercase">Pending</span>}
                             </div>
@@ -407,7 +424,7 @@ export function SellerTrackerView({
                         <button
                           key={status}
                           onClick={() => setEditActivityForm({...editActivityForm, status})}
-                          className={`py-2 px-1 text-[10px] uppercase tracking-wider font-bold rounded-lg transition-colors ${editActivityForm.status === status ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                          className={`py-2 px-1 text-[10px] uppercase tracking-wider font-bold rounded-lg transition-colors ${(editActivityForm.status || 'completed') === status ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
                         >
                           {status}
                         </button>

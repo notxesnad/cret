@@ -101,11 +101,9 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
                       <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isCompleted ? 'text-slate-500 bg-slate-100' : isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
                         {formatDateDisplay(act.date)}
                       </span>
-                      {!isCompleted && (
-                        <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
-                          {act.status}
-                        </span>
-                      )}
+                      <span className={`text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider ${isCompleted ? 'text-emerald-700 bg-emerald-50' : isUpcoming ? 'text-cyan-700 bg-cyan-50' : 'text-amber-700 bg-amber-50'}`}>
+                        {isCompleted ? 'Completed' : act.status}
+                      </span>
                     </div>
                     
                     <h3 className={`text-lg font-bold mt-1 ${!isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>{act.label}</h3>
