@@ -1,6 +1,7 @@
 'use client'
 
 import { billingLabel, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
+import { ToolTile } from '@/app/components/ToolTile'
 
 export function AccountView({
   signedIn,
@@ -63,11 +64,9 @@ export function AccountView({
         </p>
       </div>
 
-      <button
-        type="button"
-        disabled={billingBusy}
+      <ToolTile
         onClick={() => (paid ? onManageBilling() : onSubscribe())}
-        className="w-full text-left group relative bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex flex-col justify-end"
+        className={`group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl shadow-xl min-h-[120px] flex flex-col justify-end ${billingBusy ? 'opacity-60 pointer-events-none' : ''}`}
       >
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">
           {paid ? 'Stripe customer portal' : billing.status === 'past_due' ? 'Update card' : 'Start or manage'}
@@ -81,24 +80,22 @@ export function AccountView({
                 ? 'Update payment'
                 : 'Subscribe — $29/mo'}
         </h2>
-      </button>
+      </ToolTile>
 
-      <button
-        type="button"
+      <ToolTile
         onClick={onContact}
-        className="w-full text-left group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex flex-col justify-end border-2 border-slate-700"
+        className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl shadow-xl min-h-[120px] flex flex-col justify-end border-2 border-slate-700"
       >
         <span className="text-xs font-bold tracking-wider uppercase text-fuchsia-400 opacity-90">Support</span>
         <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Need help?</h2>
-      </button>
+      </ToolTile>
 
-      <button
-        type="button"
+      <ToolTile
         onClick={onSignOut}
-        className="w-full text-left group relative bg-slate-900 hover:bg-slate-800 text-rose-400 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[100px] flex flex-col justify-end border-2 border-slate-800"
+        className="group relative bg-slate-900 hover:bg-slate-800 text-rose-400 p-6 rounded-3xl shadow-xl min-h-[100px] flex flex-col justify-end border-2 border-slate-800"
       >
         <h2 className="text-2xl tracking-wide font-black">Sign out</h2>
-      </button>
+      </ToolTile>
     </div>
   )
 }

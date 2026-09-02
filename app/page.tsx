@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, Suspense, useCallback, useRef, type ChangeEvent } from 'react'
+import { useState, useEffect, Suspense, useCallback, useRef, startTransition, type ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
@@ -45,7 +45,9 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 function HomeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const currentView = searchParams.get('view') || 'home'
+  const urlView = searchParams.get('view') || 'home'
+  const [currentView, setCurrentView] = useState(urlView)
+  const viewRef = useRef(urlView)
   const billingParam = searchParams.get('billing')
   const promoParam = (searchParams.get('promo') || '').trim().toUpperCase()
 
@@ -77,7 +79,16 @@ function HomeContent() {
   const [modalAuthLoading, setModalAuthLoading] = useState(false)
 
   const switchView = useCallback((viewId: string) => {
-    router.push(`?view=${viewId}`, { scroll: false })
+    viewRef.current = viewId
+    setCurrentView(viewId)
+    startTransition(() => {
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+      if (viewId === 'home') params.delete('view')
+      else params.set('view', viewId)
+      const qs = params.toString()
+      router.push(qs ? `/?${qs}` : '/', { scroll: false })
+    })
+    if (typeof window !== 'undefined') window.scrollTo(0, 0)
   }, [router])
  
 
@@ -766,7 +777,7 @@ function HomeContent() {
     if (billingHandledRef.current) return
 
     const clearBillingQuery = () => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString())
       params.delete('billing')
       const qs = params.toString()
       router.replace(qs ? `/?${qs}` : '/', { scroll: false })
@@ -822,11 +833,16 @@ function HomeContent() {
   }, [sessionChecked, user, switchView])
 
   useEffect(() => {
+    if (urlView === viewRef.current) return
+    viewRef.current = urlView
+    setCurrentView(urlView)
+  }, [urlView])
+
+  useEffect(() => {
     const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach', 'contact', 'account']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentView, router])
 
   const handleNextStep = async () => {
@@ -1041,12 +1057,13 @@ function HomeContent() {
           .font-buyer { font-family: 'Syne', sans-serif; }
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
-          .app-view.active { display: block; animation: fadeIn 0.3s ease-out; }
+          .app-view.active { display: block; animation: fadeIn 0.15s ease-out; }
           #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
           @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0.7; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
           }
+          .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1058,18 +1075,18 @@ function HomeContent() {
           </div>
           <div className="flex items-center gap-3">
             {currentView !== 'home' && (
-              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">
+              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
                 {currentView === 'seller' || currentView === 'openhouse' ? '← Back' : '← Back to Menu'}
               </button>
             )}
             {currentView !== 'seller' && currentView !== 'openhouse' && (
               <>
                 {user ? (
-                  <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
+                  <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
                     Sign Out
                   </button>
                 ) : (
-                  <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
+                  <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
                     Sign In
                   </button>
                 )}

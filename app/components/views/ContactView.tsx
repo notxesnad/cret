@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/utils/supabase'
 import { submitContact, type ContactCategory } from '@/app/actions/contact'
+import { ToolTile } from '@/app/components/ToolTile'
 
 const SUBJECTS: Record<ContactCategory, string> = {
   help: 'Help me',
@@ -112,27 +113,24 @@ export function ContactView({
 
       {step === 'pick' && (
         <div className="space-y-4">
-          <button
-            type="button"
+          <ToolTile
             onClick={() => openCompose('help')}
-            className="w-full text-left group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end"
+            className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end"
           >
             <h2 className="text-2xl md:text-3xl tracking-wide font-black">Help me</h2>
-          </button>
-          <button
-            type="button"
+          </ToolTile>
+          <ToolTile
             onClick={() => setStep('idea')}
-            className="w-full text-left group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-sky-300"
+            className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-sky-300"
           >
             <h2 className="text-2xl md:text-3xl tracking-wide font-black">Have a tool idea</h2>
-          </button>
-          <button
-            type="button"
+          </ToolTile>
+          <ToolTile
             onClick={() => openCompose('other')}
-            className="w-full text-left group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-slate-700"
+            className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end border-2 border-slate-700"
           >
             <h2 className="text-2xl md:text-3xl tracking-wide font-black">My request is different</h2>
-          </button>
+          </ToolTile>
         </div>
       )}
 
@@ -145,20 +143,18 @@ export function ContactView({
           >
             ← Back
           </button>
-          <button
-            type="button"
+          <ToolTile
             onClick={() => openCompose('idea-better')}
-            className="w-full text-left group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end"
+            className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end"
           >
             <h2 className="text-2xl md:text-3xl tracking-wide font-black">I want to make a current tool better</h2>
-          </button>
-          <button
-            type="button"
+          </ToolTile>
+          <ToolTile
             onClick={() => openCompose('idea-new')}
-            className="w-full text-left group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-amber-300"
+            className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-amber-300"
           >
             <h2 className="text-2xl md:text-3xl tracking-wide font-black">I would like a new tool</h2>
-          </button>
+          </ToolTile>
         </div>
       )}
 

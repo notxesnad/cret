@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
+import { ToolTile } from '@/app/components/ToolTile'
 
 export function HomeView({
   switchView,
@@ -68,69 +69,72 @@ export function HomeView({
     <div id="view-home" className="app-view active space-y-4">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black tracking-tight">Tap a Tool. Get to Work.</h1>
-        <p className="text-base text-slate-400 mt-1">$29 a month. All tools included. If you hate it, cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a>.</p>
+        <p className="text-base text-slate-400 mt-1">
+          $29 a month. All tools included.{' '}
+          <span className="block sm:inline whitespace-nowrap">If you hate it, cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a>.</span>
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 pb-20">
-        <div onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
+        <ToolTile onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Brand your tools &amp; PDF styles</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Make My Profile</h2>
-        </div>
+        </ToolTile>
 
-        <div onClick={() => switchView('seller')} className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
+        <ToolTile onClick={() => switchView('seller')} className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">✨</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Net Sheets & Instant Reports</span>
           <h2 className="font-seller text-3xl md:text-4xl mt-1">Make My Seller Happy</h2>
-        </div>
+        </ToolTile>
 
-        <div onClick={() => switchView('driving')} className="group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
+        <ToolTile onClick={() => switchView('driving')} className="group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:translate-x-2">🚗</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Tour Itineraries & Routing</span>
           <h2 className="font-driving text-xl md:text-2xl mt-1">Driving to a Million Places</h2>
-        </div>
+        </ToolTile>
 
-        <div onClick={() => switchView('openhouse')} className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
+        <ToolTile onClick={() => switchView('openhouse')} className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏡</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">iPad Sign-In & Text-Back</span>
           <h2 className="font-openhouse text-2xl md:text-3xl tracking-wide mt-1">Open House Tools</h2>
-        </div>
+        </ToolTile>
 
-        <div onClick={() => switchView('outreach')} className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-transparent hover:border-sky-300">
+        <ToolTile onClick={() => switchView('outreach')} className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-sky-300">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🤝</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Collect Advice & Feedback</span>
-          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Re-engage your clients</h2>
-        </div>
+          <h2 className="text-lg sm:text-2xl md:text-3xl tracking-normal sm:tracking-wide font-black mt-1 whitespace-nowrap">Re-engage your clients</h2>
+        </ToolTile>
 
-        <div onClick={() => switchView('money')} className="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer">
+        <ToolTile onClick={() => switchView('money')} className="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:rotate-12">💵</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller net sheets</span>
           <h2 className="font-money text-3xl md:text-4xl tracking-wide uppercase mt-1">Money Stuff</h2>
-        </div>
+        </ToolTile>
 
-        <div onClick={handleInstallClick} className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-slate-700 hover:border-slate-600">
+        <ToolTile onClick={handleInstallClick} className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-slate-700 hover:border-slate-600">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">📱</div>
           <span className="text-xs font-bold tracking-wider text-emerald-400 uppercase opacity-90">Progressive Web App</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Install to Phone</h2>
-        </div>
+        </ToolTile>
 
-        <div
+        <ToolTile
           onClick={onContact}
-          className="group relative bg-slate-900 hover:bg-slate-800 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-slate-700 hover:border-fuchsia-400"
+          className="group relative bg-slate-900 hover:bg-slate-800 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-slate-700 hover:border-fuchsia-400"
         >
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">💡</div>
           <span className="text-xs font-bold tracking-wider uppercase text-fuchsia-400 opacity-90">Support</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Got a Tool Idea or Need Help</h2>
-        </div>
+        </ToolTile>
 
-        <div
+        <ToolTile
           onClick={onAccount}
-          className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-slate-700 hover:border-emerald-400"
+          className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-slate-700 hover:border-emerald-400"
         >
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">⚙️</div>
           <span className="text-xs font-bold tracking-wider uppercase text-emerald-400 opacity-90">Account</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Your Account</h2>
-        </div>
+        </ToolTile>
       </div>
       
       {/* Pricing Section */}
@@ -157,17 +161,19 @@ export function HomeView({
           </li>
           <li className="flex items-center text-slate-300 font-medium text-sm">
             <svg className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-            Pretty good{' '}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onContact()
-              }}
-              className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
-            >
-              support
-            </button>
+            <span>
+              Pretty good{' '}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onContact()
+                }}
+                className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+              >
+                support
+              </button>
+            </span>
           </li>
           <li className="flex items-center text-slate-300 font-medium text-sm">
             <svg className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
