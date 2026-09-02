@@ -10,6 +10,7 @@ export function HomeView({
   onStartTrial,
   onSubscribe,
   onManageBilling,
+  onContact,
 }: {
   switchView: (view: string) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
@@ -19,6 +20,7 @@ export function HomeView({
   onStartTrial: () => void
   onSubscribe: () => void
   onManageBilling: () => void
+  onContact: () => void
 }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const paid = isPaid(billing.status)
@@ -122,14 +124,14 @@ export function HomeView({
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Install to Phone</h2>
         </div>
 
-        <a
-          href="mailto:hello@coolrealestatetools.com?subject=Tool%20Idea%20or%20Help"
+        <div
+          onClick={onContact}
           className="group relative bg-slate-900 hover:bg-slate-800 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-slate-700 hover:border-fuchsia-400"
         >
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">💡</div>
           <span className="text-xs font-bold tracking-wider uppercase text-fuchsia-400 opacity-90">Support</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Got a Tool Idea or Need Help</h2>
-        </a>
+        </div>
 
         <div onClick={() => switchView('neighborhoods')} className="group relative bg-fuchsia-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-transparent hover:border-fuchsia-300">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏡</div>

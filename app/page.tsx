@@ -26,7 +26,8 @@ import {
   SellerCallView,
   ProfileBuilderView,
   NeighborhoodExpertView,
-  OutreachView
+  OutreachView,
+  ContactView
 } from './components/views'
 
 function extraHomesFrom(source: { homes?: TourHome[] } | null | undefined): TourHome[] {
@@ -611,6 +612,15 @@ function HomeContent() {
 
   const showAuthModal = () => showCustomModal('', true)
 
+  const openContact = () => {
+    if (!user) {
+      if (typeof window !== 'undefined') sessionStorage.setItem('crt_contact_intent', '1')
+      showAuthModal()
+      return
+    }
+    switchView('contact')
+  }
+
   const goToCheckout = async (promo?: string) => {
     if (billingBusy) return
     const code = (promo || (typeof window !== 'undefined' ? sessionStorage.getItem('crt_promo') : null) || promoParam || '').trim()
@@ -714,10 +724,16 @@ function HomeContent() {
         setModalAuthSent(true)
         return
       }
-      const intent = typeof window !== 'undefined' ? sessionStorage.getItem('crt_billing_intent') : null
+      const intent = sessionStorage.getItem('crt_billing_intent')
       if (intent === 'checkout' || intent === 'portal') {
         closeCustomModal()
         await resumeBilling()
+        return
+      }
+      if (typeof window !== 'undefined' && sessionStorage.getItem('crt_contact_intent') === '1') {
+        sessionStorage.removeItem('crt_contact_intent')
+        closeCustomModal()
+        switchView('contact')
         return
       }
       showWelcomeModal()
@@ -776,14 +792,16 @@ function HomeContent() {
   }, [sessionChecked, billingParam])
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach']
+    if (!sessionChecked || !user) return
+    if (sessionStorage.getItem('crt_contact_intent') !== '1') return
+    sessionStorage.removeItem('crt_contact_intent')
+    switchView('contact')
+  }, [sessionChecked, user, switchView])
+
+  useEffect(() => {
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach', 'contact']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
-    }
-    
-    const navAction = document.getElementById('nav-action')
-    if(navAction) {
-      navAction.style.display = currentView === 'home' ? 'none' : 'block'
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentView, router])
@@ -1010,31 +1028,37 @@ function HomeContent() {
             Cool<span className="text-emerald-400">RealEstate</span>Tools.com
           </div>
           <div className="flex items-center gap-3">
-            <div id="nav-action" style={{ display: 'none' }}>
-              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">← Back to Menu</button>
-            </div>
-            {user && billingLabel(billing) && (
-              <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                {billingLabel(billing)}
-              </span>
-            )}
-            {user && (
-              <button
-                onClick={() => isPaid(billing.status) ? goToPortal() : goToCheckout()}
-                disabled={billingBusy}
-                className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700 transition disabled:opacity-60"
-              >
-                Billing
+            {currentView !== 'home' && (
+              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700 transition">
+                {currentView === 'seller' || currentView === 'openhouse' ? '← Back' : '← Back to Menu'}
               </button>
             )}
-            {user ? (
-              <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
-                Sign Out
-              </button>
-            ) : (
-              <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
-                Sign In
-              </button>
+            {currentView !== 'seller' && currentView !== 'openhouse' && (
+              <>
+                {user && billingLabel(billing) && (
+                  <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                    {billingLabel(billing)}
+                  </span>
+                )}
+                {user && (
+                  <button
+                    onClick={() => isPaid(billing.status) ? goToPortal() : goToCheckout()}
+                    disabled={billingBusy}
+                    className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700 transition disabled:opacity-60"
+                  >
+                    Billing
+                  </button>
+                )}
+                {user ? (
+                  <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
+                    Sign Out
+                  </button>
+                ) : (
+                  <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 px-3 py-1.5 rounded-full transition">
+                    Sign In
+                  </button>
+                )}
+              </>
             )}
           </div>
         </header>
@@ -1050,6 +1074,7 @@ function HomeContent() {
               onStartTrial={showAuthModal}
               onSubscribe={goToCheckout}
               onManageBilling={goToPortal}
+              onContact={openContact}
               signedIn={!!user}
             />
           )}
@@ -1167,6 +1192,16 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               userId={user?.id}
               persistWorkspace={persistIfSharingAllowed}
+            />
+          )}
+          {currentView === 'contact' && (
+            <ContactView
+              switchView={switchView}
+              signedIn={!!user}
+              onNeedAuth={() => {
+                if (typeof window !== 'undefined') sessionStorage.setItem('crt_contact_intent', '1')
+                showAuthModal()
+              }}
             />
           )}
         </main>
