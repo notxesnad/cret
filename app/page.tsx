@@ -1076,21 +1076,13 @@ function HomeContent() {
           <div className="flex items-center gap-3">
             {currentView !== 'home' && (
               <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
-                {currentView === 'seller' || currentView === 'openhouse' ? '← Back' : '← Back to Menu'}
+                ← Back
               </button>
             )}
-            {currentView !== 'seller' && currentView !== 'openhouse' && currentView !== 'account' && (
-              <>
-                {user ? (
-                  <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
-                    Sign Out
-                  </button>
-                ) : (
-                  <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
-                    Sign In
-                  </button>
-                )}
-              </>
+            {!user && (
+              <button onClick={showAuthModal} className="text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
+                Sign In
+              </button>
             )}
           </div>
         </header>

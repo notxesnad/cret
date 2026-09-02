@@ -123,7 +123,7 @@ export function ContactView({
             onClick={() => setStep('idea')}
             className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-sky-300"
           >
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black">Have a tool idea</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">I have a tool idea</h2>
           </ToolTile>
           <ToolTile
             onClick={() => openCompose('other')}
