@@ -69,10 +69,12 @@ export function HomeView({
     <div id="view-home" className="app-view active space-y-4">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black tracking-tight">Tap a Tool. Get to Work.</h1>
-        <p className="text-base text-slate-400 mt-1">
-          $29 a month. All tools included.{' '}
-          <span className="block sm:inline whitespace-nowrap">If you hate it, cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a>.</span>
-        </p>
+        {!paid && (
+          <p className="text-base text-slate-400 mt-1">
+            $29 a month. All tools included.{' '}
+            <span className="block sm:inline whitespace-nowrap">If you hate it, cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a>.</span>
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 pb-20">
@@ -104,7 +106,7 @@ export function HomeView({
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🤝</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Collect Advice & Feedback</span>
           <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">
-            <span className="whitespace-nowrap">Re-engage</span> your clients
+            <span className="whitespace-nowrap">Re-engage</span> Your Clients
           </h2>
         </ToolTile>
 

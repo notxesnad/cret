@@ -1079,7 +1079,7 @@ function HomeContent() {
                 {currentView === 'seller' || currentView === 'openhouse' ? '← Back' : '← Back to Menu'}
               </button>
             )}
-            {currentView !== 'seller' && currentView !== 'openhouse' && (
+            {currentView !== 'seller' && currentView !== 'openhouse' && currentView !== 'account' && (
               <>
                 {user ? (
                   <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 active:scale-[0.97] px-3 py-1.5 rounded-full transition">
@@ -1241,6 +1241,7 @@ function HomeContent() {
           {currentView === 'account' && (
             <AccountView
               signedIn={!!user}
+              firstName={(profile.full_name || '').trim().split(/\s+/)[0] || ''}
               billing={billing}
               billingBusy={billingBusy}
               onNeedAuth={openAccount}

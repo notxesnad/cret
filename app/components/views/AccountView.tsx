@@ -5,6 +5,7 @@ import { ToolTile } from '@/app/components/ToolTile'
 
 export function AccountView({
   signedIn,
+  firstName,
   billing,
   billingBusy,
   onNeedAuth,
@@ -14,6 +15,7 @@ export function AccountView({
   onContact,
 }: {
   signedIn: boolean
+  firstName?: string
   billing: BillingState
   billingBusy?: boolean
   onNeedAuth: () => void
@@ -32,7 +34,7 @@ export function AccountView({
       <div id="view-account" className="app-view active space-y-6">
         <div className="text-center">
           <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Account</span>
-          <h1 className="text-2xl font-black mt-1">Your stuff</h1>
+          <h1 className="text-2xl font-black mt-1">Your Stuff</h1>
           <p className="text-base text-slate-400 mt-2">Sign in to manage billing and the rest of your account.</p>
         </div>
         <button
@@ -50,7 +52,7 @@ export function AccountView({
     <div id="view-account" className="app-view active space-y-4">
       <div className="text-center mb-2">
         <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Account</span>
-        <h1 className="text-2xl font-black mt-1">Your stuff</h1>
+        <h1 className="text-2xl font-black mt-1">{firstName ? `Hi ${firstName} - Your Stuff` : 'Your Stuff'}</h1>
         <p className="text-base text-slate-400 mt-1">
           {status === 'Subscribed'
             ? 'You are subscribed. Billing lives here now.'

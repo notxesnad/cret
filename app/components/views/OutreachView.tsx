@@ -162,7 +162,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-sky-400 uppercase block mb-2">Client Outreach</span>
-                <h1 className="text-3xl font-black text-white">Re-engage your clients</h1>
+                <h1 className="text-3xl font-black text-white">Re-engage Your Clients</h1>
                 <p className="text-base text-slate-400 mt-2">People love giving advice. Send a 25-second quiz to engage your network without being salesy.</p>
               </div>
 
