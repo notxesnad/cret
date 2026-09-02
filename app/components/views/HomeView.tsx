@@ -103,7 +103,9 @@ export function HomeView({
         <ToolTile onClick={() => switchView('outreach')} className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-sky-300">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🤝</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Collect Advice & Feedback</span>
-          <h2 className="text-lg sm:text-2xl md:text-3xl tracking-normal sm:tracking-wide font-black mt-1 whitespace-nowrap">Re-engage your clients</h2>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">
+            <span className="whitespace-nowrap">Re-engage</span> your clients
+          </h2>
         </ToolTile>
 
         <ToolTile onClick={() => switchView('money')} className="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
