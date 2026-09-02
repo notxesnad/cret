@@ -11,7 +11,7 @@ import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspac
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import { startCheckout, startPortal } from '@/app/actions/billing'
-import { appTrialFields, billingFromProfile, billingLabel, emptyBilling, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
+import { appTrialFields, billingFromProfile, emptyBilling, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
 import {
   HomeView,
   SignInView,
@@ -27,7 +27,8 @@ import {
   ProfileBuilderView,
   NeighborhoodExpertView,
   OutreachView,
-  ContactView
+  ContactView,
+  AccountView
 } from './components/views'
 
 function extraHomesFrom(source: { homes?: TourHome[] } | null | undefined): TourHome[] {
@@ -135,6 +136,7 @@ function HomeContent() {
   const [tourHomes, setTourHomes] = useState<TourHome[]>([])
   const [billing, setBilling] = useState<BillingState>(emptyBilling())
   const [billingBusy, setBillingBusy] = useState(false)
+  const [profileNextBusy, setProfileNextBusy] = useState(false)
   const listingsRef = useRef(listings)
   const neighborhoodsRef = useRef(neighborhoods)
   const campaignsRef = useRef(outreachCampaigns)
@@ -621,6 +623,15 @@ function HomeContent() {
     switchView('contact')
   }
 
+  const openAccount = () => {
+    if (!user) {
+      if (typeof window !== 'undefined') sessionStorage.setItem('crt_account_intent', '1')
+      showAuthModal()
+      return
+    }
+    switchView('account')
+  }
+
   const goToCheckout = async (promo?: string) => {
     if (billingBusy) return
     const code = (promo || (typeof window !== 'undefined' ? sessionStorage.getItem('crt_promo') : null) || promoParam || '').trim()
@@ -736,6 +747,12 @@ function HomeContent() {
         switchView('contact')
         return
       }
+      if (typeof window !== 'undefined' && sessionStorage.getItem('crt_account_intent') === '1') {
+        sessionStorage.removeItem('crt_account_intent')
+        closeCustomModal()
+        switchView('account')
+        return
+      }
       showWelcomeModal()
     } finally {
       setModalAuthLoading(false)
@@ -759,7 +776,7 @@ function HomeContent() {
       billingHandledRef.current = true
       sessionStorage.setItem(handledKey, '1')
       setBilling((prev) => ({ ...prev, status: 'active' }))
-      showCustomModal('You are subscribed. Cancel anytime from Billing.')
+      showCustomModal("You're in. The whole toolbox is yours. Go look like a genius.")
       clearBillingQuery()
       return
     }
@@ -793,13 +810,19 @@ function HomeContent() {
 
   useEffect(() => {
     if (!sessionChecked || !user) return
-    if (sessionStorage.getItem('crt_contact_intent') !== '1') return
-    sessionStorage.removeItem('crt_contact_intent')
-    switchView('contact')
+    if (sessionStorage.getItem('crt_contact_intent') === '1') {
+      sessionStorage.removeItem('crt_contact_intent')
+      switchView('contact')
+      return
+    }
+    if (sessionStorage.getItem('crt_account_intent') === '1') {
+      sessionStorage.removeItem('crt_account_intent')
+      switchView('account')
+    }
   }, [sessionChecked, user, switchView])
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach', 'contact']
+    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach', 'contact', 'account']
     if (!validViews.includes(currentView)) {
       router.replace('?view=home', { scroll: false })
     }
@@ -807,6 +830,7 @@ function HomeContent() {
   }, [currentView, router])
 
   const handleNextStep = async () => {
+    if (profileNextBusy) return
     if (profileStep === 1) {
       if (!profile.full_name?.trim()) {
         showCustomModal('Please enter your full name to continue.')
@@ -822,6 +846,8 @@ function HomeContent() {
     localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
     localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
+    setProfileNextBusy(true)
+    try {
     if (!user) {
       const result = await completeEmailAuth(profile.email)
       if (result.status === 'error') {
@@ -869,6 +895,9 @@ function HomeContent() {
       }
     }
     setProfileStep(2)
+    } finally {
+      setProfileNextBusy(false)
+    }
     } else if (profileStep === 2) {
       setProfileStep(3)
     } else if (profileStep === 3) {
@@ -1035,20 +1064,6 @@ function HomeContent() {
             )}
             {currentView !== 'seller' && currentView !== 'openhouse' && (
               <>
-                {user && billingLabel(billing) && (
-                  <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                    {billingLabel(billing)}
-                  </span>
-                )}
-                {user && (
-                  <button
-                    onClick={() => isPaid(billing.status) ? goToPortal() : goToCheckout()}
-                    disabled={billingBusy}
-                    className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full border border-slate-700 transition disabled:opacity-60"
-                  >
-                    Billing
-                  </button>
-                )}
                 {user ? (
                   <button onClick={handleLogout} className="text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 px-3 py-1.5 rounded-full transition">
                     Sign Out
@@ -1075,6 +1090,7 @@ function HomeContent() {
               onSubscribe={goToCheckout}
               onManageBilling={goToPortal}
               onContact={openContact}
+              onAccount={openAccount}
               signedIn={!!user}
             />
           )}
@@ -1173,6 +1189,7 @@ function HomeContent() {
               handleNextStep={handleNextStep}
               handleFinalSave={handleFinalSave}
               switchView={switchView}
+              nextStepBusy={profileNextBusy}
             />
           )}
           {currentView === 'neighborhoods' && (
@@ -1202,6 +1219,18 @@ function HomeContent() {
                 if (typeof window !== 'undefined') sessionStorage.setItem('crt_contact_intent', '1')
                 showAuthModal()
               }}
+            />
+          )}
+          {currentView === 'account' && (
+            <AccountView
+              signedIn={!!user}
+              billing={billing}
+              billingBusy={billingBusy}
+              onNeedAuth={openAccount}
+              onSubscribe={goToCheckout}
+              onManageBilling={goToPortal}
+              onSignOut={handleLogout}
+              onContact={openContact}
             />
           )}
         </main>
@@ -1299,7 +1328,7 @@ function HomeContent() {
                       <div className="space-y-2">
                         <p className="text-base text-slate-300">Click the link we sent to {modalEmail || 'your email'}.</p>
                         <p className="text-base text-slate-300">You&apos;ll stay logged in on this device.</p>
-                        <p className="font-seller text-lg text-slate-400">(We know it&apos;s a pain in the butt, but it&apos;s easier than remembering a password)</p>
+                        <p className="text-sm font-normal text-slate-500">(We know it&apos;s a pain in the butt, but it&apos;s easier than remembering a password)</p>
                       </div>
                     </div>
       )}

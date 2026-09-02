@@ -115,26 +115,23 @@ export function ContactView({
           <button
             type="button"
             onClick={() => openCompose('help')}
-            className="w-full text-left group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px]"
+            className="w-full text-left group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end"
           >
-            <span className="text-xs font-bold tracking-wider uppercase opacity-70">A</span>
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Help me</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">Help me</h2>
           </button>
           <button
             type="button"
             onClick={() => setStep('idea')}
-            className="w-full text-left group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px]"
+            className="w-full text-left group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-sky-300"
           >
-            <span className="text-xs font-bold tracking-wider uppercase opacity-70">B</span>
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">Have a tool idea</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">Have a tool idea</h2>
           </button>
           <button
             type="button"
             onClick={() => openCompose('other')}
-            className="w-full text-left group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] border-2 border-slate-700"
+            className="w-full text-left group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-slate-700"
           >
-            <span className="text-xs font-bold tracking-wider uppercase opacity-70">C</span>
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">My request is different</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">My request is different</h2>
           </button>
         </div>
       )}
@@ -151,18 +148,16 @@ export function ContactView({
           <button
             type="button"
             onClick={() => openCompose('idea-better')}
-            className="w-full text-left group relative bg-sky-500 hover:bg-sky-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px]"
+            className="w-full text-left group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end"
           >
-            <span className="text-xs font-bold tracking-wider uppercase opacity-70">I</span>
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">I want to make a current tool better</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">I want to make a current tool better</h2>
           </button>
           <button
             type="button"
             onClick={() => openCompose('idea-new')}
-            className="w-full text-left group relative bg-amber-400 hover:bg-amber-300 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px]"
+            className="w-full text-left group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl min-h-[120px] flex items-end border-2 border-transparent hover:border-amber-300"
           >
-            <span className="text-xs font-bold tracking-wider uppercase opacity-70">II</span>
-            <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">I would like a new tool</h2>
+            <h2 className="text-2xl md:text-3xl tracking-wide font-black">I would like a new tool</h2>
           </button>
         </div>
       )}

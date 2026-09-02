@@ -8,21 +8,21 @@ export function SellerMenuView({ switchView }: { switchView: (view: string) => v
       </div>
 
       <div 
-        onClick={() => switchView('netsheet')} 
-        className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-transparent hover:border-amber-300"
-      >
-        <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💰</div>
-        <span className="text-xs font-bold tracking-wider uppercase opacity-70">Step-by-step seller estimate</span>
-        <h2 className="font-seller text-2xl md:text-3xl mt-1 font-black">Seller Net Sheet</h2>
-      </div>
-
-      <div 
         onClick={() => switchView('sellertracker')} 
         className="group relative bg-amber-500 hover:bg-amber-400 text-slate-950 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer"
       >
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">📋</div>
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Keep them in the loop</span>
         <h2 className="font-seller text-2xl md:text-3xl mt-1 font-black">Seller Tracking Report</h2>
+      </div>
+
+      <div 
+        onClick={() => switchView('netsheet')} 
+        className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl transition-all duration-300 hover:scale-[1.01] shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden cursor-pointer border-2 border-transparent hover:border-amber-300"
+      >
+        <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💰</div>
+        <span className="text-xs font-bold tracking-wider uppercase opacity-70">Step-by-step seller estimate</span>
+        <h2 className="font-seller text-2xl md:text-3xl mt-1 font-black">Seller Net Sheet</h2>
       </div>
       
     </div>

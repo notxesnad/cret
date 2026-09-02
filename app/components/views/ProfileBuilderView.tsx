@@ -15,6 +15,7 @@ interface ProfileBuilderViewProps {
   handleNextStep: () => void;
   handleFinalSave: () => void;
   switchView: (view: string) => void;
+  nextStepBusy?: boolean;
 }
 
 export function ProfileBuilderView({
@@ -28,7 +29,8 @@ export function ProfileBuilderView({
   renderAgentHeader,
   handleNextStep,
   handleFinalSave,
-  switchView
+  switchView,
+  nextStepBusy
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [lastLook, setLastLook] = useState(
@@ -296,10 +298,19 @@ export function ProfileBuilderView({
         {profileStep === 1 && (
           <button 
             onClick={handleNextStep} 
-            disabled={!profile.full_name?.trim() || !profile.email?.trim()}
-            className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${!profile.full_name?.trim() || !profile.email?.trim() ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-white hover:bg-slate-100 text-slate-900'}`}
+            disabled={nextStepBusy || !profile.full_name?.trim() || !profile.email?.trim()}
+            aria-busy={nextStepBusy}
+            className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${!profile.full_name?.trim() || !profile.email?.trim() ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : nextStepBusy ? 'bg-fuchsia-500 text-white cursor-wait scale-[0.98] brightness-95' : 'bg-fuchsia-500 hover:bg-fuchsia-400 text-white'}`}
           >
-            Choose Header Designs
+            {nextStepBusy ? (
+              <>
+                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                One sec...
+              </>
+            ) : 'Choose Header Designs'}
           </button>
         )}
 

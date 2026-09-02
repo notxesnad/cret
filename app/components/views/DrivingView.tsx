@@ -66,14 +66,25 @@ function StopPreview({
   home: ClientHome
   index: number
 }) {
+  const missing = [
+    !home.photo_url && 'Add a Photo',
+    !home.mls_pdf_url && 'Add a PDF',
+    !home.notes?.trim() && 'Add Notes',
+  ].filter(Boolean) as string[]
+
   return (
     <>
-      <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
-      {stop.time ? (
-        <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded ml-1">{formatTimeDisplay(stop.time)}</span>
-      ) : (
-        <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded ml-1">Add a time</span>
-      )}
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="text-base font-black bg-rose-500/20 text-rose-400 px-2.5 py-1 rounded">Stop {index + 1}</span>
+        {stop.time ? (
+          <span className="text-base font-black text-slate-300 bg-slate-900 px-2.5 py-1 rounded">{formatTimeDisplay(stop.time)}</span>
+        ) : (
+          <span className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded">Add a time</span>
+        )}
+        {missing.map(label => (
+          <span key={label} className="text-sm font-bold text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded">{label}</span>
+        ))}
+      </div>
       <h4 className="font-bold text-white text-lg mt-1">{home.address}</h4>
       {formatCityState(home.city, home.state) && (
         <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5">{formatCityState(home.city, home.state)}</p>
@@ -133,6 +144,7 @@ export function DrivingView({
   const pendingDragRef = useRef<{ index: number; x: number; y: number } | null>(null)
   const dragActivatedRef = useRef(false)
   const snappingRef = useRef(false)
+  const skipClickRef = useRef(false)
   const moveDragRef = useRef<(e: globalThis.PointerEvent) => void>(() => {})
   const endDragRef = useRef<() => void>(() => {})
   const onWinMove = useRef((e: globalThis.PointerEvent) => {
@@ -389,7 +401,7 @@ export function DrivingView({
 
   const startStopDrag = (e: PointerEvent<HTMLDivElement>, index: number) => {
     if (e.button !== 0 || snappingRef.current) return
-    const card = e.currentTarget
+    const card = (e.currentTarget.closest('[data-stop-index]') as HTMLElement | null) || e.currentTarget
     const rect = card.getBoundingClientRect()
     cardRectRef.current = rect
     dragPointerOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }
@@ -434,20 +446,16 @@ export function DrivingView({
     const wasDrag = dragActivatedRef.current
     const from = dragFromRef.current
     const to = dragOverRef.current
-    const pendingIndex = pendingDragRef.current?.index
     pendingDragRef.current = null
     dragActivatedRef.current = false
     if (!wasDrag) {
       dragFromRef.current = null
       dragOverRef.current = null
       clearDragVisual()
-      if (pendingIndex != null) {
-        const home = tourHomes[pendingIndex]?.home
-        if (home) openHome(home.id)
-      }
       return
     }
     const dest = to ?? from ?? 0
+    skipClickRef.current = true
     snappingRef.current = true
     snapGhostThen(dest, () => {
       snappingRef.current = false
@@ -877,22 +885,36 @@ export function DrivingView({
                     <p className="text-base text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No homes on this tour yet.</p>
                   ) : (
                     <>
-                      <p className="text-base text-slate-500">Drag a home to change the order. Tap to edit.</p>
+                      <p className="text-base text-slate-500">Drag the handle to reorder. Tap a home to edit.</p>
                       {tourHomes.map(({ stop, home }, index) => {
                         const shift = stopShift(index)
                         return (
                         <div
                           key={home.id}
                           data-stop-index={index}
-                          onPointerDown={e => startStopDrag(e, index)}
-                          className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group touch-none cursor-grab active:cursor-grabbing select-none ${
+                          onClick={() => {
+                            if (skipClickRef.current) {
+                              skipClickRef.current = false
+                              return
+                            }
+                            openHome(home.id)
+                          }}
+                          className={`bg-slate-800 border rounded-xl p-4 flex gap-3 group cursor-pointer select-none ${
                             dragIndex === index
                               ? 'border-dashed border-rose-400/50 bg-slate-900/40'
                               : 'border-slate-700 hover:border-rose-400'
                           } ${dragIndex === null ? '' : 'transition-transform duration-200 ease-out'}`}
                           style={{ transform: shift ? `translateY(${shift}px)` : undefined }}
                         >
-                          <div className={`self-center text-slate-500 p-1 ${dragIndex === index ? 'invisible' : ''}`} aria-hidden="true">
+                          <div
+                            className={`self-center text-slate-500 p-1 -ml-1 touch-none cursor-grab active:cursor-grabbing ${dragIndex === index ? 'invisible' : ''}`}
+                            aria-label="Drag to reorder"
+                            onPointerDown={e => {
+                              e.stopPropagation()
+                              startStopDrag(e, index)
+                            }}
+                            onClick={e => e.stopPropagation()}
+                          >
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM8 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm8 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
                             </svg>
