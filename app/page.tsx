@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, Suspense, useCallback, useRef, startTransition, type ChangeEvent } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense, useCallback, useRef, type ChangeEvent } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
@@ -43,12 +43,49 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
   return [...newItems, ...dbArr]
 }
 
+const VALID_VIEWS = [
+  'home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet',
+  'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
+  'contact', 'account',
+] as const
+
+const VIEW_PARENT: Record<string, string> = {
+  sellertracker: 'seller',
+  netsheet: 'seller',
+  ohfeedback: 'openhouse',
+  ohsignin: 'openhouse',
+}
+
+function parentOf(view: string) {
+  if (view === 'home') return null
+  return VIEW_PARENT[view] || 'home'
+}
+
+function viewFromLocation(pathname: string, search: string | URLSearchParams) {
+  const params = typeof search === 'string' ? new URLSearchParams(search.startsWith('?') ? search.slice(1) : search) : search
+  const pathView = pathname.match(/^\/t\/([^/]+)/)?.[1]
+  if (pathView && (VALID_VIEWS as readonly string[]).includes(pathView)) return pathView
+  const queryView = params.get('view')
+  if (queryView && (VALID_VIEWS as readonly string[]).includes(queryView)) return queryView
+  return 'home'
+}
+
+function hrefForView(viewId: string, search = '') {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
+  params.delete('view')
+  const qs = params.toString()
+  const path = viewId === 'home' ? '/' : `/t/${viewId}`
+  return qs ? `${path}?${qs}` : path
+}
+
 function HomeContent() {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const urlView = searchParams.get('view') || 'home'
+  const urlView = viewFromLocation(pathname, searchParams)
   const [currentView, setCurrentView] = useState(urlView)
   const viewRef = useRef(urlView)
+  const viewStackRef = useRef<string[]>([urlView])
   const billingParam = searchParams.get('billing')
   const promoParam = (searchParams.get('promo') || '').trim().toUpperCase()
 
@@ -80,17 +117,34 @@ function HomeContent() {
   const [modalAuthLoading, setModalAuthLoading] = useState(false)
 
   const switchView = useCallback((viewId: string) => {
-    viewRef.current = viewId
-    setCurrentView(viewId)
-    startTransition(() => {
-      const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-      if (viewId === 'home') params.delete('view')
-      else params.set('view', viewId)
-      const qs = params.toString()
-      router.push(qs ? `/?${qs}` : '/', { scroll: false })
-    })
+    const next = (VALID_VIEWS as readonly string[]).includes(viewId) ? viewId : 'home'
+    const current = viewRef.current
+    if (next === current) return
+
+    const stack = viewStackRef.current
+    const goingUp = next === parentOf(current) || (next === 'home' && current !== 'home')
+    const fromMenuToChild = parentOf(next) === current && current !== 'home'
+    const href = hrefForView(next, typeof window !== 'undefined' ? window.location.search : searchParams.toString())
+
+    viewRef.current = next
+    setCurrentView(next)
     if (typeof window !== 'undefined') window.scrollTo(0, 0)
-  }, [router])
+
+    if (goingUp && stack.length > 1 && stack[stack.length - 2] === next) {
+      viewStackRef.current = stack.slice(0, -1)
+      router.back()
+      return
+    }
+
+    if (goingUp || fromMenuToChild) {
+      viewStackRef.current = [...stack.slice(0, -1), next]
+      router.replace(href, { scroll: false })
+      return
+    }
+
+    viewStackRef.current = [...stack, next]
+    router.push(href, { scroll: false })
+  }, [router, searchParams])
  
 
   const [activeFields, setActiveFields] = useState<any>({
@@ -436,7 +490,7 @@ function HomeContent() {
               if (tableError) console.error("Error saving workspace tables:", tableError)
             }
           }
-          if (pendingData?.view && !new URLSearchParams(window.location.search).has('view')) {
+          if (pendingData?.view && urlView === 'home') {
             switchView(pendingData.view)
           }
 
@@ -500,7 +554,7 @@ function HomeContent() {
 
           applyWorkspace(nextWorkspace)
 
-          if (pendingData?.view && !new URLSearchParams(window.location.search).has('view')) {
+          if (pendingData?.view && urlView === 'home') {
             switchView(pendingData.view)
           }
 
@@ -609,9 +663,11 @@ function HomeContent() {
       markAuthPersistPending()
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
       const intent = typeof window !== 'undefined' ? sessionStorage.getItem('crt_billing_intent') : null
-      const billingQuery = intent === 'portal' ? '&billing=portal' : intent === 'checkout' ? '&billing=checkout' : ''
-      const promoQuery = promoParam ? `&promo=${encodeURIComponent(promoParam)}` : ''
-      const redirectUrl = origin ? `${origin}/?view=${currentView}${billingQuery}${promoQuery}` : ''
+      const extra = new URLSearchParams()
+      if (intent === 'portal') extra.set('billing', 'portal')
+      if (intent === 'checkout') extra.set('billing', 'checkout')
+      if (promoParam) extra.set('promo', promoParam)
+      const redirectUrl = origin ? `${origin}${hrefForView(currentView, extra.toString())}` : ''
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: { shouldCreateUser: false, emailRedirectTo: redirectUrl }
@@ -812,8 +868,9 @@ function HomeContent() {
     const clearBillingQuery = () => {
       const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString())
       params.delete('billing')
+      const path = typeof window !== 'undefined' ? window.location.pathname : pathname
       const qs = params.toString()
-      router.replace(qs ? `/?${qs}` : '/', { scroll: false })
+      router.replace(qs ? `${path}?${qs}` : path || '/', { scroll: false })
     }
 
     if (billingParam === 'success') {
@@ -844,7 +901,7 @@ function HomeContent() {
       void goToCheckout(promoParam)
       return
     }
-  }, [sessionChecked, billingParam])
+  }, [sessionChecked, billingParam, pathname, searchParams, router])
 
   useEffect(() => {
     if (!sessionChecked || !user) return
@@ -860,15 +917,37 @@ function HomeContent() {
   }, [sessionChecked, user, switchView])
 
   useEffect(() => {
+    const onPop = () => {
+      const view = viewFromLocation(window.location.pathname, window.location.search)
+      viewRef.current = view
+      setCurrentView(view)
+      const stack = viewStackRef.current
+      if (stack[stack.length - 1] === view) return
+      const idx = stack.lastIndexOf(view)
+      viewStackRef.current = idx >= 0 ? stack.slice(0, idx + 1) : (view === 'home' ? ['home'] : ['home', view])
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  useEffect(() => {
+    const queryView = searchParams.get('view')
+    if (pathname === '/' && queryView && (VALID_VIEWS as readonly string[]).includes(queryView) && queryView !== 'home') {
+      router.replace(hrefForView(queryView, searchParams.toString()), { scroll: false })
+    }
+  }, [pathname, searchParams, router])
+
+  useEffect(() => {
     if (urlView === viewRef.current) return
     viewRef.current = urlView
     setCurrentView(urlView)
   }, [urlView])
 
   useEffect(() => {
-    const validViews = ['home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet', 'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach', 'contact', 'account']
-    if (!validViews.includes(currentView)) {
-      router.replace('?view=home', { scroll: false })
+    if (!(VALID_VIEWS as readonly string[]).includes(currentView)) {
+      viewRef.current = 'home'
+      setCurrentView('home')
+      router.replace('/', { scroll: false })
     }
   }, [currentView, router])
 
