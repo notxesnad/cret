@@ -6,6 +6,7 @@ import QRCode from 'qrcode'
 import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import { ToolTile } from '@/app/components/ToolTile'
 import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { normalizeOpenHouseTheme, type QuizTheme } from '@/app/lib/quizTheme'
@@ -131,6 +132,11 @@ export function OpenHouseFeedbackView({
   const selectedListing = listings.find(l => l.id === selectedListingId)
   const quizUrl = userId && activeId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/${userId}/${activeId}` : ''
   const printUrl = quizUrl ? `${quizUrl}/print` : ''
+  const reportUrl = quizUrl ? `${quizUrl}/report` : ''
+  const fileSlug = (activeCampaign?.listingAddress || activeCampaign?.title || 'open-house')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase() || 'open-house'
 
   const newCampaignId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 10)
 
@@ -243,6 +249,42 @@ export function OpenHouseFeedbackView({
     openCampaign(newId)
   }
 
+  const requireSignedIn = () => {
+    if (!userId) {
+      showCustomModal('', true)
+      return false
+    }
+    return true
+  }
+
+  const persistThen = async (action: () => void) => {
+    if (!requireSignedIn()) return
+    if (persistWorkspace) {
+      const ok = await persistWorkspace()
+      if (ok === false) return
+    }
+    action()
+  }
+
+  const downloadQrPng = async () => {
+    if (!requireSignedIn() || !userId || !activeId) return
+    const url = `${window.location.origin}/feedback/${userId}/${activeId}`
+    try {
+      const data = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 1,
+        errorCorrectionLevel: 'L',
+        color: { dark: '#0f172a', light: '#ffffff' },
+      })
+      const link = document.createElement('a')
+      link.href = data
+      link.download = `${fileSlug}-qr.png`
+      link.click()
+    } catch {
+      showCustomModal('Could not download the QR code. Please try again.')
+    }
+  }
+
   const handleShare = () => {
     if (!userId) {
       showCustomModal('', true)
@@ -309,20 +351,37 @@ export function OpenHouseFeedbackView({
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-2">Open House Tools</span>
-                <h1 className="text-3xl font-black text-white">Collect Anonymous Open House Feedback</h1>
+                <h1 className="font-openhouse text-3xl md:text-4xl text-white">Collect Anonymous Open House Feedback</h1>
                 <p className="text-lg text-slate-300 mt-4 leading-relaxed">Visitors share honest thoughts without leaving a name.</p>
               </div>
 
-              <div className="space-y-3">
-                <button type="button" onClick={() => setStep('how')} className={secondaryBtn}>
-                  What does this thing do
-                </button>
-                <button type="button" onClick={startCreate} className={primaryBtn}>
-                  Make a Questionnaire
-                </button>
-                <button type="button" onClick={() => setStep('list')} className={secondaryBtn}>
-                  See the ones I&apos;ve built already
-                </button>
+              <div className="space-y-4">
+                <ToolTile
+                  onClick={() => setStep('how')}
+                  className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
+                >
+                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
+                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
+                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
+                </ToolTile>
+                <ToolTile
+                  onClick={startCreate}
+                  className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+                >
+                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">✏️</div>
+                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">Start here</span>
+                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Make a Questionnaire</h2>
+                </ToolTile>
+                <ToolTile
+                  onClick={() => setStep('list')}
+                  className="group relative bg-white hover:bg-indigo-50 text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
+                >
+                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition">📋</div>
+                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">
+                    {campaigns.length === 1 ? '1 saved' : `${campaigns.length} saved`}
+                  </span>
+                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">See the ones I&apos;ve built already</h2>
+                </ToolTile>
               </div>
             </div>
           )}
@@ -546,8 +605,10 @@ export function OpenHouseFeedbackView({
           {step === 'detail' && activeCampaign && (
             <div className="animate-fade-in-up pb-8">
               <div className="mb-8">
-                <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-1">{activeCampaign.listingAddress || 'Questionnaire'}</span>
-                <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">{activeCampaign.title}</h2>
+                <h2 className="font-openhouse text-3xl md:text-5xl text-indigo-400 leading-tight">
+                  {activeCampaign.listingAddress || 'Questionnaire'}
+                </h2>
+                <p className="text-xl font-black text-white mt-3 leading-tight">{activeCampaign.title}</p>
                 <p className="text-slate-400 mt-2">{activeCampaign.description}</p>
               </div>
 
@@ -566,9 +627,26 @@ export function OpenHouseFeedbackView({
                 </div>
                 <h3 className="text-white font-bold mb-4">Anonymous Responses</h3>
                 {qrDataUrl && (
-                  <img src={qrDataUrl} alt="Feedback QR code" className="w-24 h-24 bg-white rounded-lg mb-2" />
+                  <img src={qrDataUrl} alt="Feedback QR code" className="w-28 h-28 bg-white rounded-lg mb-4" />
                 )}
-                <p className="text-base text-slate-500">Print the QR sign from the footer.</p>
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={() => void persistThen(() => {
+                      if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
+                    })}
+                    className="bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 px-2 rounded-xl transition text-sm leading-tight"
+                  >
+                    Print my QR Sign
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void downloadQrPng()}
+                    className="bg-white hover:bg-slate-100 text-slate-900 font-black py-4 px-2 rounded-xl transition text-sm leading-tight"
+                  >
+                    Download QR code
+                  </button>
+                </div>
               </div>
 
               {activeCampaign.responses && activeCampaign.responses.length > 0 ? (
@@ -625,20 +703,12 @@ export function OpenHouseFeedbackView({
             extra={
               <button
                 type="button"
-                onClick={async () => {
-                  if (!userId) {
-                    showCustomModal('', true)
-                    return
-                  }
-                  if (persistWorkspace) {
-                    const ok = await persistWorkspace()
-                    if (ok === false) return
-                  }
-                  if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
-                }}
+                onClick={() => void persistThen(() => {
+                  if (reportUrl) window.open(reportUrl, '_blank', 'noopener,noreferrer')
+                })}
                 className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center"
               >
-                Print QR Sign
+                Download all responses
               </button>
             }
           />
