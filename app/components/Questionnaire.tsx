@@ -210,15 +210,24 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       )}
 
       {currentQ.type === 'rating' && footer(
-        <div className="flex justify-between gap-2">
+        <div className={`flex justify-center items-center ${(currentQ.maxRating || 5) > 5 ? 'flex-wrap gap-1' : 'gap-1'}`}>
           {Array.from({ length: currentQ.maxRating || 5 }).map((_, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => handleAnswer(i + 1)}
               disabled={isSubmitting}
-              className={`flex-1 aspect-square max-h-16 rounded-xl border-2 transition-all font-black text-xl active:scale-95 flex items-center justify-center ${choiceBtnClasses} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label={`Rate ${i + 1} out of ${currentQ.maxRating || 5}`}
+              className={`p-1.5 rounded-xl transition-transform active:scale-90 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {i + 1}
+              <svg
+                viewBox="0 0 24 24"
+                className={`${(currentQ.maxRating || 5) > 5 ? 'w-8 h-8' : 'w-11 h-11'} text-amber-400 drop-shadow-sm`}
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
             </button>
           ))}
         </div>

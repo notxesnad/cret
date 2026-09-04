@@ -5,13 +5,15 @@ import type { QuizTheme } from '@/app/lib/quizTheme'
 export function ClientThemeToggle({
   value,
   onChange,
+  label = 'Client view',
 }: {
   value: QuizTheme
   onChange: (theme: QuizTheme) => void
+  label?: string
 }) {
   return (
     <div className="bg-slate-800 rounded-xl p-4">
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Client view</p>
+      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">{label}</p>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"

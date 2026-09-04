@@ -627,6 +627,7 @@ export function OpenHouseFeedbackView({
 
               <div className="mb-6">
                 <ClientThemeToggle
+                  label="Visitor view"
                   value={normalizeOpenHouseTheme(activeCampaign.theme)}
                   onChange={(theme) => {
                     updateCampaigns(prev => prev.map(c => c.id === activeCampaign.id ? { ...c, theme } : c))
@@ -635,10 +636,17 @@ export function OpenHouseFeedbackView({
               </div>
 
               <div className="bg-slate-800 rounded-xl p-5 mb-6 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-indigo-500 text-white rounded-full flex items-center justify-center mb-3 shadow-lg text-2xl font-black">
-                  {activeCampaign.responses?.length || 0}
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 self-start">Visitor links</p>
+                <div className="w-full mb-4">
+                  <SharePreviewButtons
+                    url={quizUrl}
+                    copyLabel="Copy Link"
+                    accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
+                    onCopy={handleShare}
+                    onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+                    beforeShare={persistWorkspace}
+                  />
                 </div>
-                <h3 className="text-white font-bold mb-4">Anonymous Responses</h3>
                 {qrDataUrl && (
                   <img src={qrDataUrl} alt="Feedback QR code" className="w-28 h-28 bg-white rounded-lg mb-4" />
                 )}
@@ -660,6 +668,20 @@ export function OpenHouseFeedbackView({
                     Download QR code
                   </button>
                 </div>
+              </div>
+
+              <div className="bg-slate-800 rounded-xl p-5 mb-6 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-indigo-500 text-white rounded-full flex items-center justify-center mb-3 shadow-lg text-2xl font-black">
+                  {activeCampaign.responses?.length || 0}
+                </div>
+                <h3 className="text-white font-bold mb-4">Anonymous Responses</h3>
+                <button
+                  type="button"
+                  onClick={() => setStep('responses')}
+                  className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-xl transition shadow"
+                >
+                  See Responses
+                </button>
               </div>
 
             </div>
@@ -717,28 +739,6 @@ export function OpenHouseFeedbackView({
           >
             Save Questionnaire
           </button>
-        </div>
-      )}
-
-      {step === 'detail' && (
-        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
-          <SharePreviewButtons
-            url={quizUrl}
-            copyLabel="Copy Link"
-            accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
-            onCopy={handleShare}
-            onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
-            beforeShare={persistWorkspace}
-            extra={
-              <button
-                type="button"
-                onClick={() => setStep('responses')}
-                className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center"
-              >
-                See Responses
-              </button>
-            }
-          />
         </div>
       )}
 
