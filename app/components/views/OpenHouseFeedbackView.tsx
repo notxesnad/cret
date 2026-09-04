@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
+import QRCode from 'qrcode'
 import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
 import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
+import { OpenHouseFeedbackSigns } from '@/app/components/OpenHouseFeedbackSigns'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { normalizeOpenHouseTheme, type QuizTheme } from '@/app/lib/quizTheme'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
@@ -36,7 +38,7 @@ interface OpenHouseFeedbackViewProps {
   agentHeader?: ReactNode
 }
 
-type OhStep = 'home' | 'how' | 'list' | 'listing' | 'template' | 'custom' | 'detail' | 'responses'
+type OhStep = 'home' | 'how' | 'list' | 'listing' | 'template' | 'custom' | 'detail' | 'responses' | 'signs'
 
 const OH_RANK: Record<OhStep, number> = {
   home: 1,
@@ -47,6 +49,7 @@ const OH_RANK: Record<OhStep, number> = {
   custom: 4,
   detail: 5,
   responses: 6,
+  signs: 6,
 }
 
 const templates: { title: string; description: string; questions: Question[] }[] = [
@@ -103,6 +106,7 @@ export function OpenHouseFeedbackView({
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [preview, setPreview] = useState<{ title: string; description: string; questions: Question[] } | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState('')
 
   const stepRank = OH_RANK[step] + (preview ? 1 : 0)
   useInnerSwipeBack(stepRank, 1, () => {
@@ -112,7 +116,7 @@ export function OpenHouseFeedbackView({
     }
     if (step === 'custom') setStep('template')
     else if (step === 'template') setStep('listing')
-    else if (step === 'responses') setStep('detail')
+    else if (step === 'responses' || step === 'signs') setStep('detail')
     else if (step === 'detail') setStep('list')
     else setStep('home')
   })
@@ -124,7 +128,7 @@ export function OpenHouseFeedbackView({
     }
     if (step === 'custom') setStep('template')
     else if (step === 'template') setStep('listing')
-    else if (step === 'responses') setStep('detail')
+    else if (step === 'responses' || step === 'signs') setStep('detail')
     else if (step === 'detail') setStep('list')
     else setStep('home')
   }
@@ -132,8 +136,26 @@ export function OpenHouseFeedbackView({
   const activeCampaign = campaigns.find(c => c.id === activeId)
   const selectedListing = listings.find(l => l.id === selectedListingId)
   const quizUrl = userId && activeId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/${userId}/${activeId}` : ''
-  const printUrl = quizUrl ? `${quizUrl}/print` : ''
   const reportUrl = quizUrl ? `${quizUrl}/report` : ''
+
+  useEffect(() => {
+    if (step !== 'signs' || !userId || !activeId) return
+    let cancelled = false
+    const url = `${window.location.origin}/feedback/${userId}/${activeId}`
+    void QRCode.toDataURL(url, {
+      width: 1024,
+      margin: 1,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#1a1612', light: '#ffffff' },
+    }).then((data) => {
+      if (!cancelled) setQrDataUrl(data)
+    }).catch(() => {
+      if (!cancelled) setQrDataUrl('')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [step, userId, activeId])
 
   const newCampaignId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 10)
 
@@ -610,9 +632,7 @@ export function OpenHouseFeedbackView({
                 <p className="text-sm text-slate-400 mt-1 mb-4 leading-relaxed">Print signs for your open house.</p>
                 <button
                   type="button"
-                  onClick={() => void persistThen(() => {
-                    if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
-                  })}
+                  onClick={() => void persistThen(() => setStep('signs'))}
                   className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-xl transition shadow"
                 >
                   Print My Signs
@@ -634,6 +654,15 @@ export function OpenHouseFeedbackView({
               </div>
 
             </div>
+          )}
+
+          {step === 'signs' && activeCampaign && (
+            <OpenHouseFeedbackSigns
+              variant="app"
+              address={activeCampaign.listingAddress}
+              title={activeCampaign.title}
+              qrDataUrl={qrDataUrl}
+            />
           )}
 
           {step === 'responses' && activeCampaign && (
