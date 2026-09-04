@@ -223,13 +223,6 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
               onChange={e => setTextInput(e.target.value)}
               placeholder={currentQ.placeholder || 'Type your answer here...'}
               rows={4}
-              enterKeyHint="done"
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  submitText()
-                }
-              }}
               className={`w-full rounded-xl p-4 mt-8 focus:outline-none resize-none ${textAreaClasses}`}
             ></textarea>
           )}

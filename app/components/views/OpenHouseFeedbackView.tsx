@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
-import QRCode from 'qrcode'
 import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
@@ -103,7 +102,6 @@ export function OpenHouseFeedbackView({
   const [customTitle, setCustomTitle] = useState('')
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
-  const [qrDataUrl, setQrDataUrl] = useState('')
   const [preview, setPreview] = useState<{ title: string; description: string; questions: Question[] } | null>(null)
 
   const stepRank = OH_RANK[step] + (preview ? 1 : 0)
@@ -136,10 +134,6 @@ export function OpenHouseFeedbackView({
   const quizUrl = userId && activeId ? `${typeof window !== 'undefined' ? window.location.origin : ''}/feedback/${userId}/${activeId}` : ''
   const printUrl = quizUrl ? `${quizUrl}/print` : ''
   const reportUrl = quizUrl ? `${quizUrl}/report` : ''
-  const fileSlug = (activeCampaign?.listingAddress || activeCampaign?.title || 'open-house')
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase() || 'open-house'
 
   const newCampaignId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 10)
 
@@ -150,29 +144,9 @@ export function OpenHouseFeedbackView({
     setStep('listing')
   }
 
-  const loadQr = async (id: string) => {
-    if (!userId) {
-      setQrDataUrl('')
-      return
-    }
-    const url = `${window.location.origin}/feedback/${userId}/${id}`
-    try {
-      const data = await QRCode.toDataURL(url, {
-        width: 256,
-        margin: 1,
-        errorCorrectionLevel: 'L',
-        color: { dark: '#0f172a', light: '#ffffff' },
-      })
-      setQrDataUrl(data)
-    } catch {
-      setQrDataUrl('')
-    }
-  }
-
   const openCampaign = (id: string) => {
     setActiveId(id)
     setStep('detail')
-    void loadQr(id)
   }
 
   const confirmAddListing = () => {
@@ -267,25 +241,6 @@ export function OpenHouseFeedbackView({
       if (ok === false) return
     }
     action()
-  }
-
-  const downloadQrPng = async () => {
-    if (!requireSignedIn() || !userId || !activeId) return
-    const url = `${window.location.origin}/feedback/${userId}/${activeId}`
-    try {
-      const data = await QRCode.toDataURL(url, {
-        width: 1024,
-        margin: 1,
-        errorCorrectionLevel: 'L',
-        color: { dark: '#0f172a', light: '#ffffff' },
-      })
-      const link = document.createElement('a')
-      link.href = data
-      link.download = `${fileSlug}-qr.png`
-      link.click()
-    } catch {
-      showCustomModal('Could not download the QR code. Please try again.')
-    }
   }
 
   const handleShare = () => {
@@ -635,39 +590,33 @@ export function OpenHouseFeedbackView({
                 />
               </div>
 
-              <div className="bg-slate-800 rounded-xl p-5 mb-6 flex flex-col items-center text-center">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 self-start">Visitor links</p>
-                <div className="w-full mb-4">
-                  <SharePreviewButtons
-                    url={quizUrl}
-                    copyLabel="Copy Link"
-                    accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
-                    onCopy={handleShare}
-                    onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
-                    beforeShare={persistWorkspace}
-                  />
-                </div>
-                {qrDataUrl && (
-                  <img src={qrDataUrl} alt="Feedback QR code" className="w-28 h-28 bg-white rounded-lg mb-4" />
-                )}
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <button
-                    type="button"
-                    onClick={() => void persistThen(() => {
-                      if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
-                    })}
-                    className="bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 px-2 rounded-xl transition text-sm leading-tight"
-                  >
-                    Print my QR Sign
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void downloadQrPng()}
-                    className="bg-white hover:bg-slate-100 text-slate-900 font-black py-4 px-2 rounded-xl transition text-sm leading-tight"
-                  >
-                    Download QR code
-                  </button>
-                </div>
+              <div className="bg-slate-800 rounded-xl p-5 mb-6">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Visitor links</p>
+                <p className="text-sm text-slate-400 mt-1 mb-4 leading-relaxed">
+                  Preview what your visitor will see, or copy a link to send.
+                </p>
+                <SharePreviewButtons
+                  url={quizUrl}
+                  copyLabel="Copy Link"
+                  accentClass="bg-indigo-500 hover:bg-indigo-400 text-white"
+                  onCopy={handleShare}
+                  onNeedAuth={!userId ? () => showCustomModal('', true) : undefined}
+                  beforeShare={persistWorkspace}
+                />
+              </div>
+
+              <div className="bg-slate-800 rounded-xl p-5 mb-6">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">QR code signage</p>
+                <p className="text-sm text-slate-400 mt-1 mb-4 leading-relaxed">Print signs for your open house.</p>
+                <button
+                  type="button"
+                  onClick={() => void persistThen(() => {
+                    if (printUrl) window.open(printUrl, '_blank', 'noopener,noreferrer')
+                  })}
+                  className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-xl transition shadow"
+                >
+                  Print My Signs
+                </button>
               </div>
 
               <div className="bg-slate-800 rounded-xl p-5 mb-6 flex flex-col items-center text-center">
