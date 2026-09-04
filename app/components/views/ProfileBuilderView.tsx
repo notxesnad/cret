@@ -175,11 +175,11 @@ export function ProfileBuilderView({
             </div>
           </div>
 
-            <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
-            <div className="w-full pt-4 [&>*]:mb-0 [&>*]:overflow-visible">
+            <div className="w-[33.333333%] flex-shrink-0 h-full min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-none w-full pt-4 bg-slate-900 border-b border-slate-800 [&>*]:mb-0 [&>*]:overflow-visible">
               {renderAgentHeader(null)}
             </div>
-            <div className="px-6 py-6">
+            <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-6 py-6">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Header</h3>
 
             <div className="space-y-4">
