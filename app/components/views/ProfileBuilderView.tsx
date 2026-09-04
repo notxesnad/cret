@@ -185,7 +185,7 @@ export function ProfileBuilderView({
                   className={`p-1 rounded-xl border cursor-pointer transition ${customOn ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
                 >
                   <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
-                    Custom Canva Header
+                    Custom Header
                   </div>
                   <img
                     src={profile.custom_header_url}
@@ -231,17 +231,10 @@ export function ProfileBuilderView({
                     <div className="w-10 h-10 bg-fuchsia-500 text-white rounded-full flex items-center justify-center mb-2 shadow-lg">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
                     </div>
-                    <h3 className="text-lg font-bold text-fuchsia-400">Custom Canva Header</h3>
+                    <h3 className="text-lg font-bold text-fuchsia-400">Add Custom Header</h3>
+                    <p className="text-sm text-fuchsia-300/70 mt-1">(only if you want to)</p>
                     <p className="text-sm text-fuchsia-300/70 mt-1">Perfect size is 2550x555px.</p>
                   </div>
-                  <a
-                    href="https://canva.link/6qinzbo6tjfwx10"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative z-20 mt-2 text-sm text-fuchsia-400 hover:text-fuchsia-300 underline underline-offset-2 font-bold"
-                  >
-                    Open Canva template
-                  </a>
                 </div>
               )}
 
