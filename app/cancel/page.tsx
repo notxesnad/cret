@@ -46,7 +46,7 @@ export default function CancelPage() {
         <h1 className="text-2xl font-black">Wait a second</h1>
         <p className="text-sm text-slate-300 leading-relaxed">
           We think you&apos;re nuts, but that&apos;s okay.{' '}
-          <a href="/t/contact" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-bold">
+          <a href="/?view=contact" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-bold">
             Click here
           </a>
           {' '}if you just need our moral support or we can lend our best and brightest to help you create something great.

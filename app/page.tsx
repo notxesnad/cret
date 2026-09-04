@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, Suspense, useCallback, useRef, type ChangeEvent } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
@@ -61,10 +61,8 @@ function parentOf(view: string) {
   return VIEW_PARENT[view] || 'home'
 }
 
-function viewFromLocation(pathname: string, search: string | URLSearchParams) {
+function viewFromLocation(search: string | URLSearchParams) {
   const params = typeof search === 'string' ? new URLSearchParams(search.startsWith('?') ? search.slice(1) : search) : search
-  const pathView = pathname.match(/^\/t\/([^/]+)/)?.[1]
-  if (pathView && (VALID_VIEWS as readonly string[]).includes(pathView)) return pathView
   const queryView = params.get('view')
   if (queryView && (VALID_VIEWS as readonly string[]).includes(queryView)) return queryView
   return 'home'
@@ -72,17 +70,16 @@ function viewFromLocation(pathname: string, search: string | URLSearchParams) {
 
 function hrefForView(viewId: string, search = '') {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
-  params.delete('view')
+  if (viewId === 'home') params.delete('view')
+  else params.set('view', viewId)
   const qs = params.toString()
-  const path = viewId === 'home' ? '/' : `/t/${viewId}`
-  return qs ? `${path}?${qs}` : path
+  return qs ? `/?${qs}` : '/'
 }
 
 function HomeContent() {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const urlView = viewFromLocation(pathname, searchParams)
+  const urlView = viewFromLocation(searchParams)
   const [currentView, setCurrentView] = useState(urlView)
   const viewRef = useRef(urlView)
   const viewStackRef = useRef<string[]>([urlView])
@@ -124,7 +121,7 @@ function HomeContent() {
     const stack = viewStackRef.current
     const goingUp = next === parentOf(current) || (next === 'home' && current !== 'home')
     const fromMenuToChild = parentOf(next) === current && current !== 'home'
-    const href = hrefForView(next, typeof window !== 'undefined' ? window.location.search : searchParams.toString())
+    const href = hrefForView(next, typeof window !== 'undefined' ? window.location.search : '')
 
     viewRef.current = next
     setCurrentView(next)
@@ -144,7 +141,7 @@ function HomeContent() {
 
     viewStackRef.current = [...stack, next]
     router.push(href, { scroll: false })
-  }, [router, searchParams])
+  }, [router])
  
 
   const [activeFields, setActiveFields] = useState<any>({
@@ -868,9 +865,8 @@ function HomeContent() {
     const clearBillingQuery = () => {
       const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString())
       params.delete('billing')
-      const path = typeof window !== 'undefined' ? window.location.pathname : pathname
       const qs = params.toString()
-      router.replace(qs ? `${path}?${qs}` : path || '/', { scroll: false })
+      router.replace(qs ? `/?${qs}` : '/', { scroll: false })
     }
 
     if (billingParam === 'success') {
@@ -901,7 +897,7 @@ function HomeContent() {
       void goToCheckout(promoParam)
       return
     }
-  }, [sessionChecked, billingParam, pathname, searchParams, router])
+  }, [sessionChecked, billingParam])
 
   useEffect(() => {
     if (!sessionChecked || !user) return
@@ -918,7 +914,7 @@ function HomeContent() {
 
   useEffect(() => {
     const onPop = () => {
-      const view = viewFromLocation(window.location.pathname, window.location.search)
+      const view = viewFromLocation(window.location.search)
       viewRef.current = view
       setCurrentView(view)
       const stack = viewStackRef.current
@@ -929,13 +925,6 @@ function HomeContent() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
-
-  useEffect(() => {
-    const queryView = searchParams.get('view')
-    if (pathname === '/' && queryView && (VALID_VIEWS as readonly string[]).includes(queryView) && queryView !== 'home') {
-      router.replace(hrefForView(queryView, searchParams.toString()), { scroll: false })
-    }
-  }, [pathname, searchParams, router])
 
   useEffect(() => {
     if (urlView === viewRef.current) return
@@ -1192,12 +1181,8 @@ function HomeContent() {
           .font-buyer { font-family: 'Syne', sans-serif; }
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
-          .app-view.active { display: block; animation: fadeIn 0.15s ease-out; }
+          .app-view.active { display: block; }
           #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
-          @keyframes fadeIn {
-            from { opacity: 0.7; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
           .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
