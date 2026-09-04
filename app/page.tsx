@@ -120,7 +120,6 @@ function HomeContent() {
 
     const stack = viewStackRef.current
     const goingUp = next === parentOf(current) || (next === 'home' && current !== 'home')
-    const fromMenuToChild = parentOf(next) === current && current !== 'home'
     const href = hrefForView(next, typeof window !== 'undefined' ? window.location.search : '')
 
     viewRef.current = next
@@ -133,7 +132,7 @@ function HomeContent() {
       return
     }
 
-    if (goingUp || fromMenuToChild) {
+    if (goingUp) {
       viewStackRef.current = [...stack.slice(0, -1), next]
       router.replace(href, { scroll: false })
       return
@@ -142,6 +141,14 @@ function HomeContent() {
     viewStackRef.current = [...stack, next]
     router.push(href, { scroll: false })
   }, [router])
+
+  const closeView = useCallback(() => {
+    if (viewStackRef.current.length > 1) {
+      router.back()
+      return
+    }
+    switchView(parentOf(viewRef.current) || 'home')
+  }, [router, switchView])
  
 
   const [activeFields, setActiveFields] = useState<any>({
@@ -1193,7 +1200,7 @@ function HomeContent() {
           {['seller', 'openhouse', 'account', 'contact'].includes(currentView) ? (
             <button
               type="button"
-              onClick={() => switchView('home')}
+              onClick={closeView}
               className="text-slate-400 hover:text-white transition"
               aria-label="Close"
             >
@@ -1206,7 +1213,7 @@ function HomeContent() {
           )}
           <div className="flex items-center gap-3">
             {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact'].includes(currentView) && (
-              <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
+              <button onClick={closeView} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
                 ← Back
               </button>
             )}
