@@ -922,6 +922,10 @@ function HomeContent() {
   useEffect(() => {
     const onPop = () => {
       const view = viewFromLocation(window.location.search)
+      if (view === viewRef.current) {
+        window.dispatchEvent(new Event('crt-inner-back'))
+        return
+      }
       viewRef.current = view
       setCurrentView(view)
       const stack = viewStackRef.current
@@ -1201,10 +1205,11 @@ function HomeContent() {
             <button
               type="button"
               onClick={closeView}
-              className="text-slate-400 hover:text-white transition"
+              className="text-slate-400 hover:text-white transition flex items-center"
               aria-label="Close"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <span className="text-xs font-bold uppercase tracking-wider">Close</span>
             </button>
           ) : (
             <div onClick={() => switchView('home')} className="text-xs font-bold tracking-widest text-slate-400 uppercase cursor-pointer hover:text-slate-300 transition">

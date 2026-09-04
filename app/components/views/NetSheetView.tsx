@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import {
   EXTRA_FIELDS,
@@ -288,7 +289,12 @@ export function NetSheetView({
 
   const back = () => {
     if (step === 1) switchView(exitView)
-    else if (step === REVIEW) {
+    else window.history.back()
+  }
+
+  const goInnerBack = () => {
+    if (step <= 1) return
+    if (step === REVIEW) {
       setEditing(false)
       setStep(1)
     }
@@ -296,6 +302,8 @@ export function NetSheetView({
     else if (step === PLACE) setStep(1)
     else setStep(step - 1)
   }
+
+  useInnerSwipeBack(step, 1, goInnerBack)
 
   const progress = step === 1 ? 0 : (step / LAST) * 100
   const questionStep = step >= PLACE && step <= CLOSING
@@ -341,7 +349,7 @@ export function NetSheetView({
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         <button onClick={back} className="text-slate-400 hover:text-white transition flex items-center">
           <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-          <span className="text-sm font-bold uppercase tracking-wider hidden sm:inline-block">{step === 1 ? 'Close' : 'Back'}</span>
+          <span className="text-sm font-bold uppercase tracking-wider">{step === 1 ? 'Close' : 'Back'}</span>
         </button>
         <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
           <div className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>

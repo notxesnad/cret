@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import QRCode from 'qrcode'
 import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
@@ -76,6 +77,12 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [qrDataUrl, setQrDataUrl] = useState('')
+  useInnerSwipeBack(step, 1, () => {
+    if (step <= 1) return
+    if (step === 3) setStep(2)
+    else if (step === 4) setStep(3)
+    else setStep(1)
+  })
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
   const selectedListing = listings.find(l => l.id === selectedListingId)
@@ -204,18 +211,14 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
     <div id="view-ohfeedback" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => {
-            if (step === 3) setStep(2)
-            else if (step === 4) setStep(3)
-            else setStep(1)
-          }} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => window.history.back()} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
           </button>
         ) : (
           <button onClick={() => switchView('openhouse')} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Open House</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Open House</span>
           </button>
         )}
       </div>

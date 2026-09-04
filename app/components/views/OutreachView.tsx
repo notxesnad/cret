@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
@@ -29,6 +30,11 @@ interface OutreachViewProps {
 export function OutreachView({ campaigns, updateCampaigns, switchView, showCustomModal, userId, persistWorkspace }: OutreachViewProps) {
   const [step, setStep] = useState(1) // 1: list, 2: template select, 3: view campaign details, 4: custom builder
   const [activeId, setActiveId] = useState<string | null>(null)
+  useInnerSwipeBack(step, 1, () => {
+    if (step <= 1) return
+    if (step === 4) setStep(2)
+    else setStep(1)
+  })
 
   // Custom Builder State
   const [customTitle, setCustomTitle] = useState('')
@@ -135,20 +141,14 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       {/* HEADER */}
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => {
-            if (step === 4) {
-              setStep(2)
-            } else {
-              setStep(1)
-            }
-          }} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => window.history.back()} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
           </button>
         ) : (
           <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Close</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Close</span>
           </button>
         )}
       </div>

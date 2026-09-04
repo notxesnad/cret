@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { supabase } from '@/utils/supabase'
 import { submitContact, type ContactCategory } from '@/app/actions/contact'
 import { ToolTile } from '@/app/components/ToolTile'
@@ -28,6 +29,11 @@ export function ContactView({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const innerRank = step === 'compose' ? 3 : step === 'idea' ? 2 : 1
+  useInnerSwipeBack(innerRank, 1, () => {
+    if (step === 'compose') setStep(category?.startsWith('idea') ? 'idea' : 'pick')
+    else if (step === 'idea') setStep('pick')
+  })
 
   const openCompose = (next: ContactCategory) => {
     setCategory(next)
@@ -59,6 +65,7 @@ export function ContactView({
         return
       }
       setSent(true)
+      setStep('pick')
     } catch (err) {
       console.error(err)
       setError('Could not send that just now. Try again in a minute.')
@@ -138,7 +145,7 @@ export function ContactView({
         <div className="space-y-4">
           <button
             type="button"
-            onClick={() => setStep('pick')}
+            onClick={() => window.history.back()}
             className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider"
           >
             ← Back
@@ -162,7 +169,7 @@ export function ContactView({
         <form onSubmit={handleSubmit} className="space-y-4">
           <button
             type="button"
-            onClick={() => setStep(category.startsWith('idea') ? 'idea' : 'pick')}
+            onClick={() => window.history.back()}
             className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider"
           >
             ← Back

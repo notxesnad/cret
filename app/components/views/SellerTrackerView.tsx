@@ -1,4 +1,7 @@
+'use client'
+
 import { useState, useRef } from 'react'
+import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { DateField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
@@ -82,6 +85,7 @@ export function SellerTrackerView({
 
   const activityLogRef = useRef<HTMLDivElement>(null)
   const activityLogHeaderRef = useRef<HTMLHeadingElement>(null)
+  useInnerSwipeBack(step, 1, () => setStep(s => Math.max(1, s - 1)))
 
   const activeListing = listings.find(l => l.id === activeListingId)
   const activeActivity = activeListing?.activities.find(a => a.id === activeActivityId)
@@ -223,14 +227,14 @@ export function SellerTrackerView({
       {/* Header */}
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => window.history.back()} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Back</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
           </button>
         ) : (
           <button onClick={() => switchView('seller')} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline-block">Close</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Close</span>
           </button>
         )}
         

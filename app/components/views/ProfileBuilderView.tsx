@@ -107,10 +107,11 @@ export function ProfileBuilderView({
         <button
           type="button"
           onClick={() => handleFinalSave({ silent: true })}
-          className="text-slate-400 hover:text-white transition"
+          className="text-slate-400 hover:text-white transition flex items-center"
           aria-label="Close"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <span className="text-xs font-bold uppercase tracking-wider">Close</span>
         </button>
         
         <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
