@@ -49,6 +49,10 @@ export function ProfileBuilderView({
     setProfile({ ...profile, show_headshot: !profile.show_headshot })
   }
 
+  const toggleLogo = () => {
+    setProfile({ ...profile, show_logo: !profile.show_logo })
+  }
+
   const toggleCustomHeader = () => {
     if (customOn) {
       setProfile({
