@@ -3,7 +3,8 @@
 -- After this is live, drop leftover JSON blobs with cleanup-profile-json.sql.
 
 alter table public.profiles
-  add column if not exists workspace_version integer default 1;
+  add column if not exists workspace_version integer default 1,
+  add column if not exists show_custom_header boolean not null default false;
 
 create table if not exists public.listings (
   id text primary key,

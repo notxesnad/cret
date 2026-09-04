@@ -105,6 +105,7 @@ function createAuthStorage() {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: supabaseAnonKey ? { headers: { apikey: supabaseAnonKey } } : undefined,
   auth: {
     persistSession: true,
     detectSessionInUrl: true,

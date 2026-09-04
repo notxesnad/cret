@@ -559,6 +559,7 @@ function HomeContent() {
     const tableError = await saveWorkspaceTables(supabase, user.id, currentWorkspace())
     tablesReadyRef.current = !tableError
     if (tableError) {
+      console.error('Could not save workspace:', tableError)
       showCustomModal('Could not save your work yet. Tap Preview again.')
       return false
     }

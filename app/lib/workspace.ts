@@ -55,6 +55,7 @@ export function isMissingRelation(error: { code?: string; message?: string } | n
   const message = error.message || ''
   return (
     error.code === '42P01' ||
+    error.code === 'PGRST204' ||
     error.code === 'PGRST205' ||
     /does not exist/i.test(message) ||
     /schema cache/i.test(message) ||
