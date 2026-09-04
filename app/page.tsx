@@ -1071,6 +1071,35 @@ function HomeContent() {
     }))
   }
 
+  const clearCustomHeader = async () => {
+    const nextLook = profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
+    setProfile((prev: any) => ({
+      ...prev,
+      custom_header_url: '',
+      show_custom_header: false,
+      pdf_look: nextLook,
+    }))
+    if (!user) return
+    const payload: Record<string, unknown> = {
+      id: user.id,
+      full_name: profile.full_name,
+      email: profile.email || user.email,
+      phone: profile.phone,
+      brokerage: profile.brokerage,
+      custom_header_url: '',
+      show_custom_header: false,
+      pdf_look: nextLook,
+      updated_at: new Date(),
+    }
+    let { error } = await supabase.from('profiles').upsert(payload)
+    if (error) {
+      const { show_custom_header: _custom, ...withoutExtras } = payload
+      const retry = await supabase.from('profiles').upsert(withoutExtras)
+      error = retry.error
+    }
+    if (error) showCustomModal('Could not remove that image: ' + error.message)
+  }
+
   return (
     <>
       <div className="min-h-screen flex flex-col justify-between p-4 md:p-8 bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif]">
@@ -1244,6 +1273,7 @@ function HomeContent() {
               uploading={uploading}
               handleImageUpload={handleImageUpload}
               savePdfLookSelection={savePdfLookSelection}
+              clearCustomHeader={clearCustomHeader}
               renderAgentHeader={(theme: string | null) => renderAgentHeader(profile, theme)}
               handleNextStep={handleNextStep}
               handleFinalSave={handleFinalSave}

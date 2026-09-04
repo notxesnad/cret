@@ -226,9 +226,9 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
                 </div>
 
                 <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-800"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase tracking-widest">Or choose template</span>
-                  <div className="flex-grow border-t border-slate-800"></div>
+                  <div className="flex-grow border-t border-slate-400"></div>
+                  <span className="flex-shrink-0 mx-4 text-white text-xs font-bold uppercase tracking-widest">Or choose template</span>
+                  <div className="flex-grow border-t border-slate-400"></div>
                 </div>
 
                 {templates.map((tpl, i) => (

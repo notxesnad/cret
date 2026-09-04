@@ -11,6 +11,7 @@ interface ProfileBuilderViewProps {
   uploading: boolean;
   handleImageUpload: (source: File | React.ChangeEvent<HTMLInputElement>, fieldName: string, extra?: { headshot_shape?: 'square' | 'circle' }) => void;
   savePdfLookSelection: (lookKey: string) => void;
+  clearCustomHeader: () => void;
   renderAgentHeader: (themeOverride: string | null) => React.ReactNode;
   handleNextStep: (nextStep?: 2 | 3) => void;
   handleFinalSave: (opts?: { silent?: boolean }) => void;
@@ -26,6 +27,7 @@ export function ProfileBuilderView({
   uploading,
   handleImageUpload,
   savePdfLookSelection,
+  clearCustomHeader,
   renderAgentHeader,
   handleNextStep,
   handleFinalSave,
@@ -190,18 +192,30 @@ export function ProfileBuilderView({
                     alt="Custom Header"
                     className="w-full h-auto object-contain bg-white rounded-md"
                   />
-                  <label
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-2 cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition block text-sm"
-                  >
-                    <span>{uploading ? 'Uploading...' : 'Change Canva Image'}</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => handleImageUpload(e, 'custom_header_url')}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="mt-2 flex gap-2">
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition text-sm"
+                    >
+                      <span>{uploading ? 'Uploading...' : 'Change Canva Image'}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleImageUpload(e, 'custom_header_url')}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearCustomHeader()
+                      }}
+                      className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition border border-slate-700 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="relative bg-fuchsia-500/10 border-2 border-dashed border-fuchsia-500/50 rounded-xl p-5 hover:bg-fuchsia-500/20 hover:border-fuchsia-500 transition min-h-[140px] flex flex-col items-center justify-center text-center">
@@ -232,9 +246,9 @@ export function ProfileBuilderView({
               )}
 
               <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-800"></div>
-                <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase tracking-widest">Or Choose One of These</span>
-                <div className="flex-grow border-t border-slate-800"></div>
+                <div className="flex-grow border-t border-slate-400"></div>
+                <span className="flex-shrink-0 mx-4 text-white text-xs font-bold uppercase tracking-widest">Or Choose One of These</span>
+                <div className="flex-grow border-t border-slate-400"></div>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
