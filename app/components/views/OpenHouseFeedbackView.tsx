@@ -336,7 +336,7 @@ export function OpenHouseFeedbackView({
         </div>
       ) : (
         <>
-      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden hide-scrollbar bg-slate-900">
         <div className="p-6">
           {step === 'home' && (
             <div className="animate-fade-in-up">

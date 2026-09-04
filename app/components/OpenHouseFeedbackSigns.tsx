@@ -88,7 +88,7 @@ export function OpenHouseFeedbackSigns({
   }
 
   return (
-    <div className={isApp ? 'text-white pb-8' : 'min-h-screen bg-slate-100 text-slate-900 font-sans pb-20'}>
+    <div className={`max-w-full overflow-x-hidden ${isApp ? 'text-white pb-8' : 'min-h-screen bg-slate-100 text-slate-900 font-sans pb-20'}`}>
       <style>{`
         @page { size: letter; margin: 0; }
         @media print {
@@ -105,6 +105,7 @@ export function OpenHouseFeedbackSigns({
             position: static !important;
             left: auto !important;
             top: auto !important;
+            width: auto !important;
           }
           html.print-one-sign .sign-sheet { display: none !important; }
           html.print-one-sign .sign-sheet.is-print-target {
@@ -192,7 +193,7 @@ export function OpenHouseFeedbackSigns({
         </div>
       </div>
 
-      <div className="sign-print-stack absolute left-[-120vw] top-0">
+      <div className="sign-print-stack fixed top-0 pointer-events-none" style={{ left: '-20in', width: '8.5in' }} aria-hidden="true">
         {DESIGNS.map((design) => (
           <div key={design.id}>
             <LetterSheet dataSheet={`${design.id}-full`} className={sheetClass(design.id)}>
@@ -235,8 +236,11 @@ function foldTone(id: string): FoldTone {
 
 function SignPreview({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-64 overflow-hidden bg-slate-200">
-      <div className="absolute left-1/2 top-2 origin-top -translate-x-1/2 scale-[0.26] pointer-events-none">
+    <div className="relative w-full overflow-hidden bg-slate-200 aspect-[8.5/11] [container-type:inline-size]">
+      <div
+        className="absolute top-0 left-0 origin-top-left pointer-events-none"
+        style={{ width: 816, height: 1056, transform: 'scale(calc(100cqw / 816px))' }}
+      >
         {children}
       </div>
     </div>

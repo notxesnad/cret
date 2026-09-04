@@ -97,10 +97,50 @@ export function QuizBuilder({
     }))
   }
 
+  const addButtons = bankOpen ? (
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 animate-fade-in-up">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-white font-bold">Select from Question Bank</h3>
+        <button onClick={() => setBankOpen(false)} className="text-slate-400 hover:text-white">Cancel</button>
+      </div>
+      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+        {questionBank.map((bankQ, i) => (
+          <button
+            key={i}
+            onClick={() => addBankQuestion(bankQ)}
+            className="w-full text-left bg-slate-900 hover:bg-slate-700 border border-slate-700 p-3 rounded-lg transition"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold uppercase text-sky-400">{bankQ.type}</span>
+            </div>
+            <p className="text-sm font-bold text-slate-200">{bankQ.text}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="space-y-2">
+      <button onClick={() => setBankOpen(true)} className="w-full bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-sm font-bold py-3 px-4 rounded-xl transition">
+        Question Bank
+      </button>
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={() => addEmptyQuestion('choice')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-3 rounded-xl transition">
+          + Choice Q
+        </button>
+        <button onClick={() => addEmptyQuestion('rating')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-3 rounded-xl transition">
+          + Rating Q
+        </button>
+        <button onClick={() => addEmptyQuestion('text')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-3 rounded-xl transition">
+          + Text Q
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
-      
-      {/* Existing Questions List */}
+      {addButtons}
+
       <div className="space-y-4">
         {questions.map((q, i) => (
           <div key={q.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4 relative animate-fade-in-up">
@@ -167,51 +207,10 @@ export function QuizBuilder({
         
         {questions.length === 0 && (
           <div className="text-center p-8 bg-slate-800/50 rounded-xl border border-slate-700/50 border-dashed">
-            <p className="text-slate-400 text-base">No questions added yet. Start building your quiz below.</p>
+            <p className="text-slate-400 text-base">No questions added yet. Start building your quiz above.</p>
           </div>
         )}
       </div>
-
-      {/* Add Controls */}
-      {bankOpen ? (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 animate-fade-in-up">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-white font-bold">Select from Question Bank</h3>
-            <button onClick={() => setBankOpen(false)} className="text-slate-400 hover:text-white">Cancel</button>
-          </div>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-            {questionBank.map((bankQ, i) => (
-              <button 
-                key={i}
-                onClick={() => addBankQuestion(bankQ)}
-                className="w-full text-left bg-slate-900 hover:bg-slate-700 border border-slate-700 p-3 rounded-lg transition"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold uppercase text-sky-400">{bankQ.type}</span>
-                </div>
-                <p className="text-sm font-bold text-slate-200">{bankQ.text}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1 grid grid-cols-3 gap-2">
-            <button onClick={() => addEmptyQuestion('choice')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-2 rounded-lg transition">
-              + Choice Q
-            </button>
-            <button onClick={() => addEmptyQuestion('rating')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-2 rounded-lg transition">
-              + Rating Q
-            </button>
-            <button onClick={() => addEmptyQuestion('text')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-2 rounded-lg transition">
-              + Text Q
-            </button>
-          </div>
-          <button onClick={() => setBankOpen(true)} className="bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-xs font-bold py-2 px-4 rounded-lg transition whitespace-nowrap">
-            📖 Question Bank
-          </button>
-        </div>
-      )}
 
       {pendingDeleteQuestionId && (
         <ConfirmDeleteDialog
