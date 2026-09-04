@@ -3,6 +3,7 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { createPortal } from 'react-dom'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { DateField, TimeField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { supabase } from '@/utils/supabase'
@@ -1137,15 +1138,12 @@ export function DrivingView({
       )}
 
       {confirmRemove && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
-            <p className="text-base font-bold text-white">Remove this home from the tour? It stays in your home list so you can add it to other clients.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmRemove(false)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Keep it</button>
-              <button onClick={handleRemoveFromTour} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition">Remove</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          message="Remove this home from the tour? It stays in your home list so you can add it to other clients."
+          confirmLabel="Remove"
+          onCancel={() => setConfirmRemove(false)}
+          onConfirm={handleRemoveFromTour}
+        />
       )}
 
       {dragGhost && dragIndex !== null && tourHomes[dragIndex] && createPortal(

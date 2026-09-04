@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import {
@@ -141,6 +142,8 @@ export function NetSheetView({
   const [aiNote, setAiNote] = useState('')
   const [copied, setCopied] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [pendingDeleteSheetId, setPendingDeleteSheetId] = useState<string | null>(null)
+  const [pendingDeleteCostId, setPendingDeleteCostId] = useState<string | null>(null)
 
   const sheet = asNetSheet(sheets.find(s => s.id === activeId) || null)
 
@@ -391,7 +394,7 @@ export function NetSheetView({
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeSheet(item.id)}
+                        onClick={() => setPendingDeleteSheetId(item.id)}
                         aria-label={`Remove ${sheetTitle(item)}`}
                         className="w-12 bg-slate-800 border border-slate-700 hover:border-rose-400/60 rounded-xl text-slate-500 hover:text-rose-400"
                       >
@@ -705,7 +708,7 @@ export function NetSheetView({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setCustomCost(item.id, null)}
+                        onClick={() => setPendingDeleteCostId(item.id)}
                         className="px-3 text-slate-500 hover:text-rose-400 font-bold"
                         aria-label="Remove custom cost"
                       >
@@ -776,6 +779,27 @@ export function NetSheetView({
             Done, show my sheet
           </button>
         </div>
+      )}
+      {pendingDeleteSheetId && (
+        <ConfirmDeleteDialog
+          message="Delete this net sheet? This can't be undone."
+          onCancel={() => setPendingDeleteSheetId(null)}
+          onConfirm={() => {
+            removeSheet(pendingDeleteSheetId)
+            setPendingDeleteSheetId(null)
+          }}
+        />
+      )}
+      {pendingDeleteCostId && (
+        <ConfirmDeleteDialog
+          message="Remove this custom cost?"
+          confirmLabel="Remove"
+          onCancel={() => setPendingDeleteCostId(null)}
+          onConfirm={() => {
+            setCustomCost(pendingDeleteCostId, null)
+            setPendingDeleteCostId(null)
+          }}
+        />
       )}
     </div>
   )

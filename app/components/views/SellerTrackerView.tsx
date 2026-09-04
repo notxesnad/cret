@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { DateField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
@@ -517,26 +518,11 @@ export function SellerTrackerView({
       )}
 
       {confirmDelete && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
-            <div className="text-3xl">🗑️</div>
-            <p className="text-sm font-bold text-white">Delete this activity? This can&apos;t be undone.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition"
-              >
-                Keep it
-              </button>
-              <button
-                onClick={handleRemoveActivity}
-                className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDeleteDialog
+          message="Delete this activity? This can't be undone."
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={handleRemoveActivity}
+        />
       )}
 
     </div>

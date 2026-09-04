@@ -1,6 +1,7 @@
 'use client'
 
 import { Dispatch, SetStateAction, useState } from 'react'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { HeadshotCropper } from '@/app/components/HeadshotCropper'
 
 interface ProfileBuilderViewProps {
@@ -35,6 +36,7 @@ export function ProfileBuilderView({
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [confirmDeleteHeader, setConfirmDeleteHeader] = useState(false)
   const customOn = profile.show_custom_header === true || profile.pdf_look === 'custom'
 
   const toggleHeadshot = () => {
@@ -214,7 +216,7 @@ export function ProfileBuilderView({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        clearCustomHeader()
+                        setConfirmDeleteHeader(true)
                       }}
                       className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition border border-slate-700 text-sm"
                     >
@@ -439,6 +441,16 @@ export function ProfileBuilderView({
           </div>
         )}
       </div>
+      {confirmDeleteHeader && (
+        <ConfirmDeleteDialog
+          message="Delete this custom header? This can't be undone."
+          onCancel={() => setConfirmDeleteHeader(false)}
+          onConfirm={() => {
+            setConfirmDeleteHeader(false)
+            clearCustomHeader()
+          }}
+        />
+      )}
     </div>
   )
 }

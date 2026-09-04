@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { Question, QuestionType } from './Questionnaire'
 
 const ADVICE_QUESTION_BANK: Omit<Question, 'id'>[] = [
@@ -40,6 +41,8 @@ export function QuizBuilder({
   bank?: 'advice' | 'openhouse'
 }) {
   const [bankOpen, setBankOpen] = useState(false)
+  const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<string | null>(null)
+  const [pendingDeleteOption, setPendingDeleteOption] = useState<{ qId: string; optIndex: number } | null>(null)
   const questionBank = bank === 'openhouse' ? OPENHOUSE_QUESTION_BANK : ADVICE_QUESTION_BANK
 
   const addBankQuestion = (q: Omit<Question, 'id'>) => {
@@ -102,7 +105,7 @@ export function QuizBuilder({
         {questions.map((q, i) => (
           <div key={q.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4 relative animate-fade-in-up">
             <button 
-              onClick={() => removeQuestion(q.id)}
+              onClick={() => setPendingDeleteQuestionId(q.id)}
               className="absolute top-4 right-4 text-slate-500 hover:text-rose-400 transition"
               title="Remove Question"
             >
@@ -132,7 +135,7 @@ export function QuizBuilder({
                       placeholder={`Option ${optIndex + 1}`} 
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-sky-500"
                     />
-                    <button onClick={() => removeOption(q.id, optIndex)} className="text-slate-500 hover:text-rose-400" disabled={q.options && q.options.length <= 2}>
+                    <button onClick={() => setPendingDeleteOption({ qId: q.id, optIndex })} className="text-slate-500 hover:text-rose-400" disabled={q.options && q.options.length <= 2}>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                   </div>
@@ -208,6 +211,28 @@ export function QuizBuilder({
             📖 Question Bank
           </button>
         </div>
+      )}
+
+      {pendingDeleteQuestionId && (
+        <ConfirmDeleteDialog
+          message="Delete this question? This can't be undone."
+          onCancel={() => setPendingDeleteQuestionId(null)}
+          onConfirm={() => {
+            removeQuestion(pendingDeleteQuestionId)
+            setPendingDeleteQuestionId(null)
+          }}
+        />
+      )}
+      {pendingDeleteOption && (
+        <ConfirmDeleteDialog
+          message="Remove this option?"
+          confirmLabel="Remove"
+          onCancel={() => setPendingDeleteOption(null)}
+          onConfirm={() => {
+            removeOption(pendingDeleteOption.qId, pendingDeleteOption.optIndex)
+            setPendingDeleteOption(null)
+          }}
+        />
       )}
 
     </div>
