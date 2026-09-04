@@ -1039,7 +1039,7 @@ function HomeContent() {
       : fieldName === 'logo_url'
         ? { show_logo: true }
         : fieldName === 'custom_header_url'
-          ? { show_custom_header: true, pdf_look: 'custom' }
+          ? { show_custom_header: true }
           : {}
 
     setProfile((prev: any) => ({ ...prev, [fieldName]: publicUrl, ...extras }))

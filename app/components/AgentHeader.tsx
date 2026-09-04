@@ -1,6 +1,15 @@
 export function renderAgentHeader(profile: any, themeOverride: string | null = null) {
   if (!profile) return null;
-  const look = themeOverride || profile.pdf_look || 'look1'
+  const useCustomHeader = !themeOverride && (profile.show_custom_header === true || profile.pdf_look === 'custom') && !!profile.custom_header_url
+  if (useCustomHeader) {
+    return (
+      <div className="mb-5 w-full">
+        <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-contain" />
+      </div>
+    )
+  }
+
+  const look = themeOverride || (profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1')
   const name = profile.full_name || 'Jane Doe'
   const brokerage = profile.brokerage || 'Luxury Real Estate'
   const phone = profile.phone || '(555) 123-4567'

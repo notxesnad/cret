@@ -49,8 +49,16 @@ export function ProfileBuilderView({
     setProfile({ ...profile, show_headshot: !profile.show_headshot })
   }
 
-  const toggleLogo = () => {
-    setProfile({ ...profile, show_logo: !profile.show_logo })
+  const toggleCustomHeader = () => {
+    if (customOn) {
+      setProfile({
+        ...profile,
+        show_custom_header: false,
+        pdf_look: profile.pdf_look === 'custom' ? lastLook : profile.pdf_look,
+      })
+      return
+    }
+    setProfile({ ...profile, show_custom_header: true })
   }
 
   const pickLook = (lookId: string) => {
@@ -130,7 +138,7 @@ export function ProfileBuilderView({
             
             <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
             <div className="w-full pt-4 [&>*]:mb-0 [&>*]:overflow-visible">
-              {renderAgentHeader(!profile.pdf_look || profile.pdf_look === 'custom' ? 'look1' : null)}
+              {renderAgentHeader(null)}
             </div>
             <div className="px-6 py-6">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Design your custom header</h3>
@@ -305,11 +313,35 @@ export function ProfileBuilderView({
                 </div>
 
                 <div className="border-t border-slate-700/50 pt-6">
-                  <label className="text-sm font-bold text-slate-400 uppercase block mb-1 tracking-wider"><span className="text-fuchsia-400">OPTIONAL:</span> Custom Canva Header</label>
-                  <p className="text-base text-slate-400 mb-3">Perfect size is 2550x600px. This custom design will only be used on printed PDFs, not the mobile link views.</p>
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Custom Canva Header</label>
+                    <button
+                      type="button"
+                      onClick={toggleCustomHeader}
+                      disabled={!profile.custom_header_url}
+                      className="flex items-center gap-3 text-left disabled:opacity-40"
+                    >
+                      <span className="text-sm font-bold text-white">Use this</span>
+                      <div className="relative flex-shrink-0">
+                        <div className={`block w-14 h-8 rounded-full transition-colors ${customOn ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${customOn ? 'translate-x-6' : ''}`}></div>
+                      </div>
+                    </button>
+                  </div>
+                  <p className="text-base text-slate-400 mb-4">
+                    Perfect size is 2550x555px.{' '}
+                    <a
+                      href="https://canva.link/6qinzbo6tjfwx10"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-fuchsia-400 hover:text-fuchsia-300 underline underline-offset-2 font-bold"
+                    >
+                      Open Canva template
+                    </a>
+                  </p>
                   <div className="flex flex-col gap-4">
                     {profile.custom_header_url && (
-                      <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-cover bg-slate-900 border border-slate-700 rounded-md" />
+                      <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-contain bg-slate-900 border border-slate-700 rounded-md" />
                     )}
                     <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
                       <span>{profile.custom_header_url ? 'Change Canva Image' : 'Upload Canva Image'}</span>
