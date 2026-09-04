@@ -3,7 +3,7 @@
 import { Questionnaire, type Question } from '@/app/components/Questionnaire'
 import { submitOutreachResponse } from '@/app/actions/outreach'
 import { saveProspect } from '@/app/actions/prospects'
-import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
+import { normalizeOpenHouseTheme, type QuizTheme } from '@/app/lib/quizTheme'
 
 export function FeedbackClient({ profileId, campaignId, campaign }: {
   profileId: string
@@ -30,7 +30,7 @@ export function FeedbackClient({ profileId, campaignId, campaign }: {
       questions={campaign.questions}
       onSubmit={handleSubmit}
       accentColor="indigo"
-      theme={normalizeQuizTheme(campaign.theme)}
+      theme={normalizeOpenHouseTheme(campaign.theme)}
       captureLead={{
         title: 'Want a free monthly neighborhood snapshot?',
         body: `I'll send a short recap of prices, inventory, and what actually sold in ${area}. No listing pitches — just useful local numbers.`,

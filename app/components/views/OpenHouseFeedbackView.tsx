@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import QRCode from 'qrcode'
-import { Question } from '@/app/components/Questionnaire'
+import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
-import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
+import { normalizeOpenHouseTheme, type QuizTheme } from '@/app/lib/quizTheme'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export interface FeedbackCampaign {
@@ -33,6 +33,19 @@ interface OpenHouseFeedbackViewProps {
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId: string | undefined
   persistWorkspace?: () => Promise<boolean>
+  agentHeader?: ReactNode
+}
+
+type OhStep = 'home' | 'how' | 'list' | 'listing' | 'template' | 'custom' | 'detail'
+
+const OH_RANK: Record<OhStep, number> = {
+  home: 1,
+  how: 2,
+  list: 2,
+  listing: 2,
+  template: 3,
+  custom: 4,
+  detail: 5,
 }
 
 const templates: { title: string; description: string; questions: Question[] }[] = [
@@ -67,8 +80,20 @@ const templates: { title: string; description: string; questions: Question[] }[]
   }
 ]
 
-export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, updateListings, switchView, showCustomModal, userId, persistWorkspace }: OpenHouseFeedbackViewProps) {
-  const [step, setStep] = useState(1)
+const DEMO_PREVIEW = templates[0]
+
+export function OpenHouseFeedbackView({
+  campaigns,
+  updateCampaigns,
+  listings,
+  updateListings,
+  switchView,
+  showCustomModal,
+  userId,
+  persistWorkspace,
+  agentHeader,
+}: OpenHouseFeedbackViewProps) {
+  const [step, setStep] = useState<OhStep>('home')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null)
   const [isAddingListing, setIsAddingListing] = useState(false)
@@ -77,12 +102,30 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [qrDataUrl, setQrDataUrl] = useState('')
-  useInnerSwipeBack(step, 1, () => {
-    if (step <= 1) return
-    if (step === 3) setStep(2)
-    else if (step === 4) setStep(3)
-    else setStep(1)
+  const [preview, setPreview] = useState<{ title: string; description: string; questions: Question[] } | null>(null)
+
+  const stepRank = OH_RANK[step] + (preview ? 1 : 0)
+  useInnerSwipeBack(stepRank, 1, () => {
+    if (preview) {
+      setPreview(null)
+      return
+    }
+    if (step === 'custom') setStep('template')
+    else if (step === 'template') setStep('listing')
+    else if (step === 'detail') setStep('list')
+    else setStep('home')
   })
+
+  const goBack = () => {
+    if (preview) {
+      setPreview(null)
+      return
+    }
+    if (step === 'custom') setStep('template')
+    else if (step === 'template') setStep('listing')
+    else if (step === 'detail') setStep('list')
+    else setStep('home')
+  }
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
   const selectedListing = listings.find(l => l.id === selectedListingId)
@@ -90,6 +133,13 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
   const printUrl = quizUrl ? `${quizUrl}/print` : ''
 
   const newCampaignId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 10)
+
+  const startCreate = () => {
+    setSelectedListingId(null)
+    setIsAddingListing(false)
+    setNewListingAddress('')
+    setStep('listing')
+  }
 
   const loadQr = async (id: string) => {
     if (!userId) {
@@ -112,7 +162,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
 
   const openCampaign = (id: string) => {
     setActiveId(id)
-    setStep(5)
+    setStep('detail')
     void loadQr(id)
   }
 
@@ -128,12 +178,12 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
     setSelectedListingId(listing.id)
     setNewListingAddress('')
     setIsAddingListing(false)
-    setStep(3)
+    setStep('template')
   }
 
   const chooseListing = (id: string) => {
     setSelectedListingId(id)
-    setStep(3)
+    setStep('template')
   }
 
   const handleCreate = (template: (typeof templates)[number]) => {
@@ -151,7 +201,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         questions: template.questions,
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
-        theme: 'dark',
+        theme: 'light',
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -184,7 +234,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         questions: customQuestions,
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
-        theme: 'dark',
+        theme: 'light',
         responses: [],
         createdAt: new Date().toISOString()
       },
@@ -207,15 +257,23 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
     })
   }
 
+  const previewLead = {
+    title: 'Want a free monthly neighborhood snapshot?',
+    body: selectedListing
+      ? `I'll send a short recap of prices, inventory, and what actually sold in the ${selectedListing.address} area. No listing pitches — just useful local numbers.`
+      : "I'll send a short recap of prices, inventory, and what actually sold nearby. No listing pitches — just useful local numbers.",
+    cta: 'Send me the monthly snapshot',
+    onSubmit: async () => {},
+  }
+
+  const secondaryBtn = 'w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-black py-4 rounded-xl transition shadow'
+  const primaryBtn = 'w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-xl transition shadow'
+
   return (
     <div id="view-ohfeedback" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step > 1 ? (
-          <button onClick={() => {
-            if (step === 3) setStep(2)
-            else if (step === 4) setStep(3)
-            else setStep(1)
-          }} className="text-slate-400 hover:text-white transition flex items-center">
+        {step !== 'home' || preview ? (
+          <button onClick={goBack} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
             <span className="text-xs font-bold uppercase tracking-wider">Back</span>
           </button>
@@ -227,32 +285,103 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         )}
       </div>
 
+      {preview ? (
+        <div className="flex-1 min-h-0 flex flex-col bg-slate-50">
+          {agentHeader ? <div className="flex-none [&>*]:mb-0">{agentHeader}</div> : null}
+          <div className="flex-1 min-h-0">
+            <Questionnaire
+              key={`${preview.title}-${preview.questions.length}`}
+              title={preview.title}
+              description={preview.description}
+              questions={preview.questions}
+              onSubmit={async () => {}}
+              accentColor="indigo"
+              theme="light"
+              captureLead={previewLead}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
         <div className="p-6">
-          {step === 1 && (
+          {step === 'home' && (
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-2">Open House Tools</span>
                 <h1 className="text-3xl font-black text-white">Collect Anonymous Open House Feedback</h1>
-                <p className="text-base text-slate-400 mt-2">Print a QR sign. Visitors share honest thoughts without leaving a name.</p>
+                <p className="text-lg text-slate-300 mt-4 leading-relaxed">Visitors share honest thoughts without leaving a name.</p>
+              </div>
+
+              <div className="space-y-3">
+                <button type="button" onClick={() => setStep('how')} className={secondaryBtn}>
+                  What does this thing do
+                </button>
+                <button type="button" onClick={startCreate} className={primaryBtn}>
+                  Make a Questionnaire
+                </button>
+                <button type="button" onClick={() => setStep('list')} className={secondaryBtn}>
+                  See the ones I&apos;ve built already
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'how' && (
+            <div className="animate-fade-in-up space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-black text-white">What this does</h2>
+                <p className="text-base text-slate-300 mt-3 leading-relaxed">
+                  Visitors scan a QR code on their phone and answer a few quick questions. No name required, so you actually hear what they think.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { n: '1', t: 'You make a short questionnaire', d: 'Pick a listing and a template. Takes a minute.' },
+                  { n: '2', t: 'Print a QR sign', d: 'Leave copies on the kitchen counter, the flyer table, or the front door.' },
+                  { n: '3', t: 'They tap through on their phone', d: 'Price, staging, first impression — honest answers while you host.' },
+                  { n: '4', t: 'You read the notes later', d: 'Sellers get real feedback they would never say to your face.' },
+                ].map(item => (
+                  <div key={item.n} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex gap-4">
+                    <div className="flex-none w-9 h-9 rounded-full bg-indigo-500 text-white font-black flex items-center justify-center">{item.n}</div>
+                    <div>
+                      <p className="font-black text-white">{item.t}</p>
+                      <p className="text-sm text-slate-400 mt-1">{item.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 space-y-2">
+                <p className="font-black text-indigo-200">Why sellers like it</p>
+                <p className="text-sm text-slate-300 leading-relaxed">No clipboard staring at them. No pressure. You still catch people who are willing to talk — after they submit, we ask if they want a free monthly neighborhood snapshot. They can skip it. The quiz itself stays anonymous.</p>
               </div>
 
               <button
-                onClick={() => {
-                  setSelectedListingId(null)
-                  setIsAddingListing(false)
-                  setNewListingAddress('')
-                  setStep(2)
-                }}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
+                type="button"
+                onClick={() => setPreview(DEMO_PREVIEW)}
+                className={primaryBtn}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                Create a Questionnaire
+                Preview what visitors see
               </button>
+            </div>
+          )}
 
+          {step === 'list' && (
+            <div className="animate-fade-in-up">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-black text-white">Your questionnaires</h2>
+                <p className="text-base text-slate-400 mt-2">Tap one to share, print a QR sign, or read responses.</p>
+              </div>
               <div className="space-y-3">
                 {campaigns.length === 0 ? (
-                  <p className="text-slate-500 text-center italic py-4">No questionnaires yet.</p>
+                  <div className="text-center space-y-4 py-6">
+                    <p className="text-slate-400">None yet. Make one and it will show up here.</p>
+                    <button type="button" onClick={startCreate} className={primaryBtn}>
+                      Make a Questionnaire
+                    </button>
+                  </div>
                 ) : (
                   campaigns.map(c => (
                     <div
@@ -274,7 +403,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             </div>
           )}
 
-          {step === 2 && (
+          {step === 'listing' && (
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-white">Which listing?</h2>
@@ -329,7 +458,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             </div>
           )}
 
-          {step === 3 && (
+          {step === 'template' && (
             <div className="animate-fade-in-up">
               <h2 className="text-2xl font-black text-white mb-2">Select a Template</h2>
               {selectedListing && (
@@ -342,7 +471,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
                     setCustomTitle(selectedListing?.address || '')
                     setCustomDesc('')
                     setCustomQuestions([])
-                    setStep(4)
+                    setStep('custom')
                   }}
                 >
                   <div className="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center mb-2 shadow-lg">
@@ -362,7 +491,17 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
                   <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500 transition cursor-pointer" onClick={() => handleCreate(tpl)}>
                     <h3 className="text-lg font-bold text-white mb-2">{tpl.title}</h3>
                     <p className="text-sm text-slate-400 mb-4">{tpl.description}</p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation()
+                          setPreview(tpl)
+                        }}
+                        className="text-xs font-bold bg-white text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100"
+                      >
+                        Preview
+                      </button>
                       <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">{tpl.questions.length} Questions</span>
                       <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Anonymous</span>
                     </div>
@@ -372,7 +511,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             </div>
           )}
 
-          {step === 4 && (
+          {step === 'custom' && (
             <div className="animate-fade-in-up">
               <h2 className="text-2xl font-black text-white mb-6">Build Custom Quiz</h2>
               <div className="space-y-4 mb-8">
@@ -404,7 +543,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             </div>
           )}
 
-          {step === 5 && activeCampaign && (
+          {step === 'detail' && activeCampaign && (
             <div className="animate-fade-in-up pb-8">
               <div className="mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-1">{activeCampaign.listingAddress || 'Questionnaire'}</span>
@@ -414,7 +553,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
 
               <div className="mb-6">
                 <ClientThemeToggle
-                  value={normalizeQuizTheme(activeCampaign.theme)}
+                  value={normalizeOpenHouseTheme(activeCampaign.theme)}
                   onChange={(theme) => {
                     updateCampaigns(prev => prev.map(c => c.id === activeCampaign.id ? { ...c, theme } : c))
                   }}
@@ -459,7 +598,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         </div>
       </div>
 
-      {step === 4 && (
+      {step === 'custom' && (
         <div className="flex-none border-t border-slate-800 bg-slate-900 p-4 pb-safe w-full z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
           <button
             onClick={handleCreateCustom}
@@ -474,7 +613,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
         </div>
       )}
 
-      {step === 5 && (
+      {step === 'detail' && (
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <SharePreviewButtons
             url={quizUrl}
@@ -504,6 +643,8 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             }
           />
         </div>
+      )}
+        </>
       )}
     </div>
   )

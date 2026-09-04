@@ -1,6 +1,6 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { FeedbackClient } from './FeedbackClient'
-import { normalizeQuizTheme } from '@/app/lib/quizTheme'
+import { normalizeOpenHouseTheme } from '@/app/lib/quizTheme'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
@@ -24,7 +24,7 @@ export default async function OpenHouseFeedbackPage({ params }: { params: Promis
     return <ShareUnavailable profile={profile} />
   }
 
-  const theme = normalizeQuizTheme(campaign.theme)
+  const theme = normalizeOpenHouseTheme(campaign.theme)
   const isDark = theme === 'dark'
 
   return (

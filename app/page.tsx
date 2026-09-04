@@ -1319,6 +1319,7 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               userId={user?.id}
               persistWorkspace={persistIfSharingAllowed}
+              agentHeader={renderAgentHeader(profile)}
             />
           )}
           {showSeller && (
