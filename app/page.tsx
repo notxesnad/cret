@@ -7,7 +7,6 @@ import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
-import { freezeSwipeAnimations, isEdgeSwipeBack, unfreezeSwipeAnimations } from '@/app/lib/swipeNav'
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { isSellerDemoListing, withSellerDemoListing } from '@/app/lib/sellerDemo'
@@ -932,10 +931,6 @@ function HomeContent() {
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
-      if (isEdgeSwipeBack()) {
-        freezeSwipeAnimations()
-        unfreezeSwipeAnimations()
-      }
       const view = viewFromLocation(window.location.search)
       if (view === viewRef.current) {
         event.stopImmediatePropagation()
@@ -1219,7 +1214,7 @@ function HomeContent() {
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-          html.crt-swipe-nav .app-view .animate-fade-in-up { animation: none !important; }
+          html.crt-swipe-nav .app-view .animate-fade-in-up { animation: none !important; opacity: 1 !important; transform: none !important; }
           html.crt-swipe-nav .app-view .transition-transform,
           html.crt-swipe-nav .app-view .transition-all { transition: none !important; }
         `}</style>

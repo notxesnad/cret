@@ -289,7 +289,7 @@ export function NetSheetView({
 
   const back = () => {
     if (step === 1) switchView(exitView)
-    else window.history.back()
+    else goInnerBack()
   }
 
   const goInnerBack = () => {

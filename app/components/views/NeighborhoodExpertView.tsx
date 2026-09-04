@@ -222,7 +222,17 @@ Rules:
       {/* HEADER */}
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
         {step > 1 ? (
-          <button onClick={() => window.history.back()} className="text-slate-400 hover:text-white transition flex items-center">
+          <button onClick={() => {
+            if (step === 4) {
+              setStep(3)
+              setQuizIndex(0)
+              setQuizScore(0)
+              setSelectedAnswer(null)
+              setQuizStatus('answering')
+            } else if (step === 3 || step === 2) {
+              setStep(1)
+            }
+          }} className="text-slate-400 hover:text-white transition flex items-center">
             <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
             <span className="text-xs font-bold uppercase tracking-wider">Back</span>
           </button>

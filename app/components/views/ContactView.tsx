@@ -145,7 +145,7 @@ export function ContactView({
         <div className="space-y-4">
           <button
             type="button"
-            onClick={() => window.history.back()}
+            onClick={() => setStep('pick')}
             className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider"
           >
             ← Back
@@ -169,7 +169,7 @@ export function ContactView({
         <form onSubmit={handleSubmit} className="space-y-4">
           <button
             type="button"
-            onClick={() => window.history.back()}
+            onClick={() => setStep(category.startsWith('idea') ? 'idea' : 'pick')}
             className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-wider"
           >
             ← Back
