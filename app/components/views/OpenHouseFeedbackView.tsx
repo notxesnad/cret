@@ -37,7 +37,7 @@ interface OpenHouseFeedbackViewProps {
   agentHeader?: ReactNode
 }
 
-type OhStep = 'home' | 'how' | 'list' | 'listing' | 'template' | 'custom' | 'detail'
+type OhStep = 'home' | 'how' | 'list' | 'listing' | 'template' | 'custom' | 'detail' | 'responses'
 
 const OH_RANK: Record<OhStep, number> = {
   home: 1,
@@ -47,6 +47,7 @@ const OH_RANK: Record<OhStep, number> = {
   template: 3,
   custom: 4,
   detail: 5,
+  responses: 6,
 }
 
 const templates: { title: string; description: string; questions: Question[] }[] = [
@@ -113,6 +114,7 @@ export function OpenHouseFeedbackView({
     }
     if (step === 'custom') setStep('template')
     else if (step === 'template') setStep('listing')
+    else if (step === 'responses') setStep('detail')
     else if (step === 'detail') setStep('list')
     else setStep('home')
   })
@@ -124,6 +126,7 @@ export function OpenHouseFeedbackView({
     }
     if (step === 'custom') setStep('template')
     else if (step === 'template') setStep('listing')
+    else if (step === 'responses') setStep('detail')
     else if (step === 'detail') setStep('list')
     else setStep('home')
   }
@@ -296,6 +299,17 @@ export function OpenHouseFeedbackView({
     }
     navigator.clipboard.writeText(quizUrl).then(() => {
       showCustomModal(`Link copied! Visitors stay anonymous.\n\n${quizUrl}`)
+    })
+  }
+
+  const handleCopyClientLink = () => {
+    if (!requireSignedIn()) return
+    if (!reportUrl) {
+      showCustomModal('You must select a questionnaire first.')
+      return
+    }
+    navigator.clipboard.writeText(reportUrl).then(() => {
+      showCustomModal(`Client link copied. Send this to your seller.\n\n${reportUrl}`)
     })
   }
 
@@ -609,7 +623,6 @@ export function OpenHouseFeedbackView({
                   {activeCampaign.listingAddress || 'Questionnaire'}
                 </h2>
                 <p className="text-xl font-black text-white mt-3 leading-tight">{activeCampaign.title}</p>
-                <p className="text-slate-400 mt-2">{activeCampaign.description}</p>
               </div>
 
               <div className="mb-6">
@@ -649,9 +662,24 @@ export function OpenHouseFeedbackView({
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {step === 'responses' && activeCampaign && (
+            <div className="animate-fade-in-up pb-8">
+              <div className="mb-8">
+                <h2 className="font-openhouse text-3xl md:text-5xl text-indigo-400 leading-tight">
+                  {activeCampaign.listingAddress || 'Questionnaire'}
+                </h2>
+                <p className="text-xl font-black text-white mt-3 leading-tight">What visitors said</p>
+              </div>
+
+              <div className="w-16 h-16 bg-indigo-500 text-white rounded-full flex items-center justify-center mb-6 shadow-lg text-2xl font-black mx-auto">
+                {activeCampaign.responses?.length || 0}
+              </div>
+
               {activeCampaign.responses && activeCampaign.responses.length > 0 ? (
                 <div className="space-y-4">
-                  <h3 className="text-white font-bold mb-4 border-b border-slate-800 pb-2">Recent Responses</h3>
                   {activeCampaign.responses.slice().reverse().map((resp, i) => (
                     <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                       <p className="text-xs text-slate-400 mb-3">{new Date((resp as { date?: string }).date || '').toLocaleDateString()} at {new Date((resp as { date?: string }).date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -668,7 +696,8 @@ export function OpenHouseFeedbackView({
                 </div>
               ) : (
                 <div className="text-center bg-slate-800/50 rounded-xl border border-slate-700/50 p-6">
-                  <p className="text-slate-400 text-sm">No responses yet. Print the QR sign or share the link.</p>
+                  <p className="text-lg font-black text-white">Nobody has answered yet</p>
+                  <p className="text-slate-400 text-sm mt-2">Print the QR sign or share the quiz link, then check back after the open house.</p>
                 </div>
               )}
             </div>
@@ -703,15 +732,36 @@ export function OpenHouseFeedbackView({
             extra={
               <button
                 type="button"
-                onClick={() => void persistThen(() => {
-                  if (reportUrl) window.open(reportUrl, '_blank', 'noopener,noreferrer')
-                })}
+                onClick={() => setStep('responses')}
                 className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-4 rounded-xl transition text-sm text-center"
               >
-                Download all responses
+                See Responses
               </button>
             }
           />
+        </div>
+      )}
+
+      {step === 'responses' && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => void persistThen(() => {
+                if (reportUrl) window.open(reportUrl, '_blank', 'noopener,noreferrer')
+              })}
+              className="flex-1 bg-white hover:bg-slate-100 text-slate-900 font-black py-4 rounded-xl transition shadow text-base"
+            >
+              Client PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => void persistThen(handleCopyClientLink)}
+              className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-xl transition shadow text-base"
+            >
+              Copy Client Link
+            </button>
+          </div>
         </div>
       )}
         </>
