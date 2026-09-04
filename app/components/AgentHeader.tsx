@@ -359,8 +359,8 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
 
     case 'look19':
       return (
-        <div className="w-full border-b-2 border-slate-900 px-5 py-4 mb-5 bg-white relative">
-          <div className="absolute -top-3 left-4 bg-white px-2">
+        <div className="w-full border-b-2 border-slate-900 px-5 pt-5 pb-4 mb-5 bg-white relative">
+          <div className="absolute top-0 left-4 -translate-y-1/2 bg-white px-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">{brokerage}</span>
           </div>
           <div className="flex justify-between items-center mt-2">

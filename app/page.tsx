@@ -444,9 +444,8 @@ function HomeContent() {
 
           // If they were in the middle of setup, we recovered their draft above.
           // We no longer force them into the profile view on load.
-          if (savedStep === '2') {
-            setProfileStep(2)
-            // clear it so it doesn't persist forever
+          if (savedStep === '2' || savedStep === '3') {
+            setProfileStep(Number(savedStep))
             localStorage.removeItem('crt_profile_step')
             localStorage.removeItem('crt_profile_draft')
           }
@@ -505,9 +504,8 @@ function HomeContent() {
             switchView(pendingData.view)
           }
 
-          if (savedStep === '2') {
-            setProfileStep(2)
-            // clear it so it doesn't persist forever
+          if (savedStep === '2' || savedStep === '3') {
+            setProfileStep(Number(savedStep))
             localStorage.removeItem('crt_profile_step')
             localStorage.removeItem('crt_profile_draft')
           }
@@ -879,20 +877,22 @@ function HomeContent() {
     }
   }, [currentView, router])
 
-  const handleNextStep = async () => {
+  const handleNextStep = async (nextStep: 2 | 3 = 2) => {
     if (profileNextBusy) return
-    if (profileStep === 1) {
-      if (!profile.full_name?.trim()) {
-        showCustomModal('Please enter your full name to continue.')
-        return
-      }
-      if (!profile.email?.trim()) {
-        showCustomModal('Please enter your email address to continue.')
-        return
-      }
+    if (profileStep !== 1) {
+      setProfileStep(nextStep)
+      return
+    }
+    if (!profile.full_name?.trim()) {
+      showCustomModal('Please enter your full name to continue.')
+      return
+    }
+    if (!profile.email?.trim()) {
+      showCustomModal('Please enter your email address to continue.')
+      return
+    }
 
-    // Save draft state to localStorage so we recover it after magic link verification
-    localStorage.setItem('crt_profile_step', '2')
+    localStorage.setItem('crt_profile_step', String(nextStep))
     localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
     localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
@@ -914,12 +914,11 @@ function HomeContent() {
       setModalAuthError('')
       return
     }
-      setProfileStep(2)
+      setProfileStep(nextStep)
       showWelcomeModal()
       return
     }
 
-    // If user is already logged in, save data immediately
     const updates = {
       id: user.id,
       full_name: profile.full_name,
@@ -944,19 +943,18 @@ function HomeContent() {
         return
       }
     }
-    setProfileStep(2)
+    setProfileStep(nextStep)
     } finally {
       setProfileNextBusy(false)
     }
-    } else if (profileStep === 2) {
-      setProfileStep(3)
-    } else if (profileStep === 3) {
-      handleFinalSave()
-    }
   }
 
-  const handleFinalSave = async () => {
+  const handleFinalSave = async (opts?: { silent?: boolean }) => {
     if (!user) {
+      if (opts?.silent) {
+        switchView('home')
+        return
+      }
       showAuthModal()
       return
     }
@@ -982,14 +980,14 @@ function HomeContent() {
         const { show_custom_header: _custom, headshot_shape: _shape, ...withoutExtras } = finalPayload
         const retry = await supabase.from('profiles').upsert(withoutExtras)
         if (retry.error) {
-          showCustomModal('Error saving profile: ' + retry.error.message)
+          if (!opts?.silent) showCustomModal('Error saving profile: ' + retry.error.message)
           return
         }
       }
 
     localStorage.removeItem('crt_profile_step')
     localStorage.removeItem('crt_profile_draft')
-    showCustomModal('Profile fully updated!')
+    if (!opts?.silent) showCustomModal('Profile fully updated!')
     switchView('home')
   }
 
@@ -1104,11 +1102,22 @@ function HomeContent() {
         `}</style>
 
         <header className="max-w-xl mx-auto w-full flex justify-between items-center mb-6">
-          <div onClick={() => switchView('home')} className="text-xs font-bold tracking-widest text-slate-400 uppercase cursor-pointer hover:text-slate-300 transition">
-            Cool<span className="text-emerald-400">RealEstate</span>Tools.com
-          </div>
+          {['seller', 'openhouse', 'account', 'contact'].includes(currentView) ? (
+            <button
+              type="button"
+              onClick={() => switchView('home')}
+              className="text-slate-400 hover:text-white transition"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          ) : (
+            <div onClick={() => switchView('home')} className="text-xs font-bold tracking-widest text-slate-400 uppercase cursor-pointer hover:text-slate-300 transition">
+              Cool<span className="text-emerald-400">RealEstate</span>Tools.com
+            </div>
+          )}
           <div className="flex items-center gap-3">
-            {currentView !== 'home' && (
+            {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact'].includes(currentView) && (
               <button onClick={() => switchView('home')} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
                 ← Back
               </button>

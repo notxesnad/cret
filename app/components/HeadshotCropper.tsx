@@ -7,27 +7,40 @@ const OUTPUT = 512
 
 export function HeadshotCropper({
   file,
+  src: srcProp,
+  initialShape = 'square',
   onCancel,
   onConfirm,
 }: {
-  file: File
+  file?: File | null
+  src?: string
+  initialShape?: 'square' | 'circle'
   onCancel: () => void
   onConfirm: (blob: Blob, shape: 'square' | 'circle') => void
 }) {
   const imgRef = useRef<HTMLImageElement | null>(null)
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
   const [src, setSrc] = useState('')
-  const [shape, setShape] = useState<'square' | 'circle'>('square')
+  const [shape, setShape] = useState<'square' | 'circle'>(initialShape)
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [natural, setNatural] = useState({ w: 0, h: 0 })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    const url = URL.createObjectURL(file)
-    setSrc(url)
-    return () => URL.revokeObjectURL(url)
-  }, [file])
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setSrc(url)
+      setZoom(1)
+      setOffset({ x: 0, y: 0 })
+      return () => URL.revokeObjectURL(url)
+    }
+    if (srcProp) {
+      setSrc(srcProp)
+      setZoom(1)
+      setOffset({ x: 0, y: 0 })
+    }
+  }, [file, srcProp])
 
   const minScale = natural.w && natural.h ? Math.max(VIEW / natural.w, VIEW / natural.h) : 1
   const scale = minScale * zoom
@@ -91,11 +104,15 @@ export function HeadshotCropper({
     const sourceSize = VIEW / scale
     const sx = -offset.x / scale
     const sy = -offset.y / scale
-    ctx.drawImage(img, sx, sy, sourceSize, sourceSize, 0, 0, OUTPUT, OUTPUT)
-    canvas.toBlob((blob) => {
-      if (blob) onConfirm(blob, shape)
-      else setSaving(false)
-    }, 'image/jpeg', 0.92)
+    try {
+      ctx.drawImage(img, sx, sy, sourceSize, sourceSize, 0, 0, OUTPUT, OUTPUT)
+      canvas.toBlob((blob) => {
+        if (blob) onConfirm(blob, shape)
+        else setSaving(false)
+      }, 'image/jpeg', 0.92)
+    } catch {
+      setSaving(false)
+    }
   }
 
   return (
@@ -103,7 +120,7 @@ export function HeadshotCropper({
       <div className="bg-slate-900 border border-slate-800 w-full max-w-sm shadow-2xl">
         <div className="px-5 py-4 border-b border-slate-800">
           <h3 className="text-white font-black">Crop your headshot</h3>
-          <p className="text-base text-slate-400 mt-1">Drag to position. Pinch-free zoom with the slider.</p>
+          <p className="text-base text-slate-400 mt-1">Drag to position. Zoom with the slider.</p>
         </div>
 
         <div className="p-5 space-y-4">
@@ -138,6 +155,7 @@ export function HeadshotCropper({
                 src={src}
                 alt="Crop preview"
                 draggable={false}
+                crossOrigin={file ? undefined : 'anonymous'}
                 onLoad={onImageLoad}
                 className="absolute max-w-none select-none pointer-events-none"
                 style={{

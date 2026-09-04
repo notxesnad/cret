@@ -12,8 +12,8 @@ interface ProfileBuilderViewProps {
   handleImageUpload: (source: File | React.ChangeEvent<HTMLInputElement>, fieldName: string, extra?: { headshot_shape?: 'square' | 'circle' }) => void;
   savePdfLookSelection: (lookKey: string) => void;
   renderAgentHeader: (themeOverride: string | null) => React.ReactNode;
-  handleNextStep: () => void;
-  handleFinalSave: () => void;
+  handleNextStep: (nextStep?: 2 | 3) => void;
+  handleFinalSave: (opts?: { silent?: boolean }) => void;
   switchView: (view: string) => void;
   nextStepBusy?: boolean;
 }
@@ -29,10 +29,10 @@ export function ProfileBuilderView({
   renderAgentHeader,
   handleNextStep,
   handleFinalSave,
-  switchView,
   nextStepBusy
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [lastLook, setLastLook] = useState(
     profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
   )
@@ -61,33 +61,61 @@ export function ProfileBuilderView({
   const onHeadshotFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
-    if (file) setCropFile(file)
+    if (file) {
+      setCropSrc(null)
+      setCropFile(file)
+    }
   }
 
+  const recropHeadshot = async () => {
+    if (!profile.headshot_url) return
+    try {
+      const res = await fetch(profile.headshot_url)
+      const blob = await res.blob()
+      setCropSrc(null)
+      setCropFile(new File([blob], 'headshot.jpg', { type: blob.type || 'image/jpeg' }))
+    } catch {
+      setCropFile(null)
+      setCropSrc(profile.headshot_url)
+    }
+  }
+
+  const closeCropper = () => {
+    setCropFile(null)
+    setCropSrc(null)
+  }
+
+  const picLabel = profile.headshot_url ? 'Change my Pic' : 'Add my Pic'
+  const footerBtn = 'flex-1 font-black py-4 px-2 rounded-xl transition shadow-lg text-sm sm:text-base leading-tight'
+  const footerSecondary = `${footerBtn} bg-white hover:bg-slate-100 text-slate-900`
+  const footerPrimary = `${footerBtn} bg-fuchsia-500 hover:bg-fuchsia-400 text-white`
+
   return (
-    <div id="view-profile" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
-      {cropFile && (
+    <div id="view-profile" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl md:max-w-3xl h-[100dvh] z-50 flex flex-col">
+      {(cropFile || cropSrc) && (
         <HeadshotCropper
+          key={cropFile ? `file-${cropFile.name}-${cropFile.size}` : cropSrc || 'crop'}
           file={cropFile}
-          onCancel={() => setCropFile(null)}
+          src={cropSrc || undefined}
+          initialShape={profile.headshot_shape === 'circle' ? 'circle' : 'square'}
+          onCancel={closeCropper}
           onConfirm={(blob, shape) => {
             const cropped = new File([blob], 'headshot.jpg', { type: 'image/jpeg' })
-            setCropFile(null)
+            closeCropper()
             handleImageUpload(cropped, 'headshot_url', { headshot_shape: shape })
           }}
         />
       )}
 
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {profileStep > 1 ? (
-          <button onClick={() => setProfileStep(profileStep - 1)} className="text-slate-400 hover:text-white transition">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-          </button>
-        ) : (
-          <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => handleFinalSave({ silent: true })}
+          className="text-slate-400 hover:text-white transition"
+          aria-label="Close"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
         
         <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
           <div 
@@ -101,7 +129,7 @@ export function ProfileBuilderView({
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: profileStep === 1 ? 'translateX(0%)' : profileStep === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
             <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
-            <div className="w-full [&>*]:mb-0">
+            <div className="w-full pt-4 [&>*]:mb-0 [&>*]:overflow-visible">
               {renderAgentHeader(!profile.pdf_look || profile.pdf_look === 'custom' ? 'look1' : null)}
             </div>
             <div className="px-6 py-6">
@@ -188,7 +216,7 @@ export function ProfileBuilderView({
                       <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
                         {look.title}
                       </div>
-                      <div className="pointer-events-none transform scale-[0.95] origin-top">
+                      <div className="pointer-events-none overflow-visible">
                         {renderAgentHeader(look.id)}
                       </div>
                     </div>
@@ -200,7 +228,7 @@ export function ProfileBuilderView({
           </div>
 
             <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
-            <div className="w-full [&>*]:mb-0">
+            <div className="w-full pt-4 [&>*]:mb-0 [&>*]:overflow-visible">
               {renderAgentHeader(null)}
             </div>
             <div className="px-6 py-6">
@@ -221,11 +249,21 @@ export function ProfileBuilderView({
                   </div>
                   <div className="flex flex-col gap-4">
                     {profile.headshot_url && (
-                      <img
-                        src={profile.headshot_url}
-                        alt="Headshot"
-                        className={`w-20 h-20 object-cover border-2 border-slate-600 self-center ${profile.headshot_shape === 'circle' ? 'rounded-full' : 'rounded-none'}`}
-                      />
+                      <button
+                        type="button"
+                        onClick={recropHeadshot}
+                        className={`relative w-20 h-20 self-center overflow-hidden cursor-pointer ${profile.headshot_shape === 'circle' ? 'rounded-full' : 'rounded-none'}`}
+                        aria-label="Recrop photo"
+                      >
+                        <img
+                          src={profile.headshot_url}
+                          alt="Headshot"
+                          className="w-20 h-20 object-cover border-2 border-slate-600"
+                        />
+                        <span className="absolute inset-x-0 bottom-0 bg-slate-950/70 text-[9px] font-black uppercase tracking-wider text-white py-0.5">
+                          Recrop
+                        </span>
+                      </button>
                     )}
                     <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
                       <span>{profile.headshot_url ? 'Change File' : 'Choose File'}</span>
@@ -296,39 +334,43 @@ export function ProfileBuilderView({
 
       <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
         {profileStep === 1 && (
-          <button 
-            onClick={handleNextStep} 
-            disabled={nextStepBusy || !profile.full_name?.trim() || !profile.email?.trim()}
-            aria-busy={nextStepBusy}
-            className={`w-full font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${!profile.full_name?.trim() || !profile.email?.trim() ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : nextStepBusy ? 'bg-fuchsia-500 text-white cursor-wait scale-[0.98] brightness-95' : 'bg-fuchsia-500 hover:bg-fuchsia-400 text-white'}`}
-          >
-            {nextStepBusy ? (
-              <>
-                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-                One sec...
-              </>
-            ) : 'Choose Header Designs'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => handleNextStep(2)}
+              disabled={nextStepBusy || !profile.full_name?.trim() || !profile.email?.trim()}
+              aria-busy={nextStepBusy}
+              className={`disabled:opacity-50 disabled:cursor-not-allowed ${footerSecondary}`}
+            >
+              {nextStepBusy ? 'One sec...' : 'Choose Header'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNextStep(3)}
+              disabled={nextStepBusy || !profile.full_name?.trim() || !profile.email?.trim()}
+              aria-busy={nextStepBusy}
+              className={`disabled:opacity-50 disabled:cursor-not-allowed ${footerPrimary}`}
+            >
+              {nextStepBusy ? 'One sec...' : picLabel}
+            </button>
+          </div>
         )}
 
         {profileStep === 2 && (
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setProfileStep(3)}
-              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-white hover:bg-slate-100 text-slate-900"
+              onClick={() => setProfileStep(1)}
+              className={footerSecondary}
             >
-              Add my Pic
+              Edit Profile
             </button>
             <button
               type="button"
-              onClick={handleFinalSave}
-              className="flex-1 font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
+              onClick={() => setProfileStep(3)}
+              className={footerPrimary}
             >
-              Save
+              {picLabel}
             </button>
           </div>
         )}
@@ -337,11 +379,17 @@ export function ProfileBuilderView({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleFinalSave}
-              className="w-full font-black py-4 rounded-xl transition shadow-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white flex items-center justify-center gap-2"
+              onClick={() => setProfileStep(1)}
+              className={footerSecondary}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-              Save
+              Edit Profile
+            </button>
+            <button
+              type="button"
+              onClick={() => setProfileStep(2)}
+              className={footerPrimary}
+            >
+              Choose Header
             </button>
           </div>
         )}
