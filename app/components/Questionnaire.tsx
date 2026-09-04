@@ -40,6 +40,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [leadEmail, setLeadEmail] = useState('')
   const [leadPhone, setLeadPhone] = useState('')
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
+  const [ratingPick, setRatingPick] = useState<number | null>(null)
 
   const currentQ = questions[currentIndex]
   const progress = (currentIndex / questions.length) * 100
@@ -82,6 +83,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1)
       setTextInput('')
+      setRatingPick(null)
     } else {
       setIsSubmitting(true)
       await onSubmit(newAnswers)
@@ -171,7 +173,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
-        <div className="p-6 md:p-10">
+        <div className="p-6 md:p-10 min-h-full flex flex-col">
           {currentIndex === 0 && description && (
             <p className={`text-xs font-bold tracking-widest uppercase mb-4 ${descClasses}`}>{title}</p>
           )}
@@ -180,6 +182,17 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           </h2>
           {currentIndex === 0 && description && (
             <p className={`mt-4 leading-relaxed ${descClasses}`}>{description}</p>
+          )}
+
+          {currentQ.type === 'rating' && (
+            <div className="flex-1 flex items-center justify-center py-8">
+              <StarPicker
+                max={currentQ.maxRating || 5}
+                value={ratingPick}
+                onChange={setRatingPick}
+                disabled={isSubmitting}
+              />
+            </div>
           )}
 
           {currentQ.type === 'text' && (
@@ -210,27 +223,14 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       )}
 
       {currentQ.type === 'rating' && footer(
-        <div className={`flex justify-center items-center ${(currentQ.maxRating || 5) > 5 ? 'flex-wrap gap-1' : 'gap-1'}`}>
-          {Array.from({ length: currentQ.maxRating || 5 }).map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => handleAnswer(i + 1)}
-              disabled={isSubmitting}
-              aria-label={`Rate ${i + 1} out of ${currentQ.maxRating || 5}`}
-              className={`p-1.5 rounded-xl transition-transform active:scale-90 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className={`${(currentQ.maxRating || 5) > 5 ? 'w-8 h-8' : 'w-11 h-11'} text-amber-400 drop-shadow-sm`}
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-              </svg>
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => ratingPick !== null && handleAnswer(ratingPick)}
+          disabled={ratingPick === null || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${ratingPick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Next'}
+        </button>
       )}
 
       {currentQ.type === 'text' && footer(
@@ -242,6 +242,64 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>
       )}
+    </div>
+  )
+}
+
+const STAR_PATH = 'M12 2.4l2.85 6.42 7.03.66-5.31 4.64 1.56 6.88L12 17.86l-6.13 3.14 1.56-6.88-5.31-4.64 7.03-.66L12 2.4z'
+
+function StarPicker({
+  max,
+  value,
+  onChange,
+  disabled,
+}: {
+  max: number
+  value: number | null
+  onChange: (n: number) => void
+  disabled?: boolean
+}) {
+  const compact = max > 5
+  const sizeClass = compact
+    ? 'w-10 h-10'
+    : 'w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] md:w-20 md:h-20'
+
+  return (
+    <div className={`flex items-center justify-center ${compact ? 'flex-wrap gap-1' : 'gap-1 sm:gap-2'}`}>
+      {Array.from({ length: max }).map((_, i) => {
+        const n = i + 1
+        const filled = value !== null && n <= value
+        return (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            disabled={disabled}
+            aria-label={`Rate ${n} out of ${max}`}
+            aria-pressed={filled}
+            className={`relative ${sizeClass} shrink-0 rounded-xl transition-transform active:scale-90 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <svg viewBox="-1 -1 26 26" className="absolute inset-0 w-full h-full text-amber-400" aria-hidden="true">
+              <path
+                d={STAR_PATH}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </svg>
+            <svg
+              viewBox="-1 -1 26 26"
+              className={`absolute inset-0 w-full h-full text-amber-400 origin-center transition-all duration-300 ease-out ${filled ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`}
+              style={{ transitionDelay: filled ? `${i * 50}ms` : '0ms' }}
+              aria-hidden="true"
+            >
+              <path d={STAR_PATH} fill="currentColor" />
+            </svg>
+          </button>
+        )
+      })}
     </div>
   )
 }
