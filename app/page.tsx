@@ -436,7 +436,7 @@ function HomeContent() {
               if (tableError) console.error("Error saving workspace tables:", tableError)
             }
           }
-          if (pendingData?.view) {
+          if (pendingData?.view && !new URLSearchParams(window.location.search).has('view')) {
             switchView(pendingData.view)
           }
 
@@ -500,7 +500,7 @@ function HomeContent() {
 
           applyWorkspace(nextWorkspace)
 
-          if (pendingData?.view) {
+          if (pendingData?.view && !new URLSearchParams(window.location.search).has('view')) {
             switchView(pendingData.view)
           }
 
@@ -689,11 +689,11 @@ function HomeContent() {
     setBillingBusy(true)
     try {
       const result = await startCheckout({ accessToken: token, promoCode: code || undefined })
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('crt_billing_intent')
+        sessionStorage.removeItem('crt_promo')
+      }
       if ('url' in result && result.url) {
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('crt_billing_intent')
-          sessionStorage.removeItem('crt_promo')
-        }
         window.location.href = result.url
         return
       }
@@ -718,8 +718,8 @@ function HomeContent() {
     setBillingBusy(true)
     try {
       const result = await startPortal({ accessToken: token })
+      if (typeof window !== 'undefined') sessionStorage.removeItem('crt_billing_intent')
       if ('url' in result && result.url) {
-        if (typeof window !== 'undefined') sessionStorage.removeItem('crt_billing_intent')
         window.location.href = result.url
         return
       }
@@ -842,12 +842,6 @@ function HomeContent() {
       clearBillingQuery()
       void goToCheckout(promoParam)
       return
-    }
-
-    const intent = sessionStorage.getItem('crt_billing_intent')
-    if (intent === 'checkout' || intent === 'portal') {
-      billingHandledRef.current = true
-      void resumeBilling()
     }
   }, [sessionChecked, billingParam])
 
