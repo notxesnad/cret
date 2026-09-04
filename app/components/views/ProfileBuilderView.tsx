@@ -175,7 +175,11 @@ export function ProfileBuilderView({
             </div>
           </div>
 
-            <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-[33.333333%] flex-shrink-0 h-full overflow-y-auto hide-scrollbar">
+            <div className="w-full pt-4 [&>*]:mb-0 [&>*]:overflow-visible">
+              {renderAgentHeader(null)}
+            </div>
+            <div className="px-6 py-6">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Header</h3>
 
             <div className="space-y-4">
@@ -248,24 +252,24 @@ export function ProfileBuilderView({
                 {[
                     { id: 'look1', title: '1. Minimalist Core (Logo Hero)' },
                     { id: 'look5', title: '2. The Agency (Massive Center Logo)' },
-                    { id: 'look3', title: '3. Coastal Elegance' },
-                    { id: 'look9', title: '4. Warm Florida Sunset' },
-                    { id: 'look2', title: '5. Obsidian Luxury Split' },
-                    { id: 'look4', title: '6. Editorial Serif Arch' },
-                    { id: 'look6', title: '7. Classic Executive Framed' },
-                    { id: 'look7', title: '8. Vibrant Gradient Edge' },
-                    { id: 'look8', title: '9. Stark Monochrome' },
-                    { id: 'look10', title: '10. Glassmorphism Modern' },
-                    { id: 'look11', title: '11. Indigo Edge (No Curve)' },
-                    { id: 'look12', title: '12. Rose Pop Minimal' },
-                    { id: 'look13', title: '13. Deep Emerald Card' },
-                    { id: 'look14', title: '14. Architect Studio (Square Cut)' },
-                    { id: 'look15', title: '15. Neon Tech Hub (Soft Square)' },
-                    { id: 'look16', title: '16. Gold Standard Arch' },
-                    { id: 'look17', title: '17. Cyan Studio Split' },
-                    { id: 'look18', title: '18. Pastel Sunset Standard' },
-                    { id: 'look19', title: '19. Brutalist Grid' },
-                    { id: 'look20', title: '20. Dark Mode Spotlight' }
+                    { id: 'look8', title: '3. Stark Monochrome' },
+                    { id: 'look4', title: '4. Editorial Serif Arch' },
+                    { id: 'look14', title: '5. Architect Studio (Square Cut)' },
+                    { id: 'look7', title: '6. Vibrant Gradient Edge' },
+                    { id: 'look15', title: '7. Neon Tech Hub (Soft Square)' },
+                    { id: 'look17', title: '8. Cyan Studio Split' },
+                    { id: 'look6', title: '9. Classic Executive Framed' },
+                    { id: 'look9', title: '10. Warm Florida Sunset' },
+                    { id: 'look2', title: '11. Obsidian Luxury Split' },
+                    { id: 'look11', title: '12. Indigo Edge (No Curve)' },
+                    { id: 'look12', title: '13. Rose Pop Minimal' },
+                    { id: 'look13', title: '14. Deep Emerald Card' },
+                    { id: 'look16', title: '15. Gold Standard Arch' },
+                    { id: 'look18', title: '16. Pastel Sunset Standard' },
+                    { id: 'look19', title: '17. Brutalist Grid' },
+                    { id: 'look20', title: '18. Dark Mode Spotlight' },
+                    { id: 'look3', title: '19. Coastal Elegance' },
+                    { id: 'look10', title: '20. Glassmorphism Modern' }
                   ].map((look) => (
                     <div 
                       key={look.id}
@@ -282,6 +286,7 @@ export function ProfileBuilderView({
                   ))}
               </div>
               {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
+            </div>
             </div>
           </div>
 

@@ -88,8 +88,8 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
           <div className="flex-1">
             {logo && <img src={logo} alt="Logo" className="h-7 w-auto max-w-[150px] object-contain object-left mb-3 grayscale" />}
             <h3 className="font-serif text-2xl tracking-tight leading-none mb-1">{name}</h3>
-            <p className="text-[9px] font-mono tracking-widest uppercase text-slate-500 mt-1">{phone} &mdash; {brokerage}</p>
-            <p className="text-[9px] font-mono text-slate-500">{email}</p>
+            <p className="text-[9px] font-mono tracking-widest text-slate-500 mt-1">{phone} &mdash; {email}</p>
+            <p className="text-[9px] font-mono tracking-widest uppercase text-slate-500">{brokerage}</p>
           </div>
           {showHeadshot && <img src={headshot} alt="Agent" className={`w-16 h-16 object-cover grayscale contrast-125 ${shot}`} />}
         </div>
