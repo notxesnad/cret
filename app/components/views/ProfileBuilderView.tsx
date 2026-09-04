@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { HeadshotCropper } from '@/app/components/HeadshotCropper'
 
 interface ProfileBuilderViewProps {
@@ -33,16 +33,6 @@ export function ProfileBuilderView({
 }: ProfileBuilderViewProps) {
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const [lastLook, setLastLook] = useState(
-    profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
-  )
-
-  useEffect(() => {
-    if (profile.pdf_look && profile.pdf_look !== 'custom') {
-      setLastLook(profile.pdf_look)
-    }
-  }, [profile.pdf_look])
-
   const customOn = profile.show_custom_header === true || profile.pdf_look === 'custom'
 
   const toggleHeadshot = () => {
@@ -53,21 +43,13 @@ export function ProfileBuilderView({
     setProfile({ ...profile, show_logo: !profile.show_logo })
   }
 
-  const toggleCustomHeader = () => {
-    if (customOn) {
-      setProfile({
-        ...profile,
-        show_custom_header: false,
-        pdf_look: profile.pdf_look === 'custom' ? lastLook : profile.pdf_look,
-      })
-      return
-    }
-    setProfile({ ...profile, show_custom_header: true })
+  const pickLook = (lookId: string) => {
+    savePdfLookSelection(lookId)
   }
 
-  const pickLook = (lookId: string) => {
-    setLastLook(lookId)
-    savePdfLookSelection(lookId)
+  const pickCustom = () => {
+    if (!profile.custom_header_url) return
+    savePdfLookSelection('custom')
   }
 
   const onHeadshotFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,11 +176,69 @@ export function ProfileBuilderView({
             <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight">Choose Your Header</h3>
 
-            <div className="space-y-6">
-              <div>
-                <div className="grid grid-cols-1 gap-4">
-                  
-                  {[
+            <div className="space-y-4">
+              {profile.custom_header_url ? (
+                <div
+                  onClick={pickCustom}
+                  className={`p-1 rounded-xl border cursor-pointer transition ${customOn ? 'border-fuchsia-500 ring-2 ring-fuchsia-500/20' : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-700'}`}
+                >
+                  <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
+                    Custom Canva Header
+                  </div>
+                  <img
+                    src={profile.custom_header_url}
+                    alt="Custom Header"
+                    className="w-full h-auto object-contain bg-white rounded-md"
+                  />
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-2 cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition block text-sm"
+                  >
+                    <span>{uploading ? 'Uploading...' : 'Change Canva Image'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => handleImageUpload(e, 'custom_header_url')}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="relative bg-fuchsia-500/10 border-2 border-dashed border-fuchsia-500/50 rounded-xl p-5 hover:bg-fuchsia-500/20 hover:border-fuchsia-500 transition min-h-[140px] flex flex-col items-center justify-center text-center">
+                  <label className="absolute inset-0 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => handleImageUpload(e, 'custom_header_url')}
+                      className="hidden"
+                    />
+                  </label>
+                  <div className="relative z-10 pointer-events-none flex flex-col items-center">
+                    <div className="w-10 h-10 bg-fuchsia-500 text-white rounded-full flex items-center justify-center mb-2 shadow-lg">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4"></path></svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-fuchsia-400">Custom Canva Header</h3>
+                    <p className="text-sm text-fuchsia-300/70 mt-1">Perfect size is 2550x555px.</p>
+                  </div>
+                  <a
+                    href="https://canva.link/6qinzbo6tjfwx10"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative z-20 mt-2 text-sm text-fuchsia-400 hover:text-fuchsia-300 underline underline-offset-2 font-bold"
+                  >
+                    Open Canva template
+                  </a>
+                </div>
+              )}
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase tracking-widest">Or Choose One of These</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {[
                     { id: 'look1', title: '1. Minimalist Core (Logo Hero)' },
                     { id: 'look5', title: '2. The Agency (Massive Center Logo)' },
                     { id: 'look3', title: '3. Coastal Elegance' },
@@ -233,9 +273,8 @@ export function ProfileBuilderView({
                       </div>
                     </div>
                   ))}
-
-                </div>
               </div>
+              {uploading && <p className="text-sm text-fuchsia-400 font-bold animate-pulse text-center">Uploading asset...</p>}
             </div>
           </div>
 
@@ -310,49 +349,6 @@ export function ProfileBuilderView({
                         type="file" 
                         accept="image/jpeg,image/png,image/webp"
                         onChange={(e) => handleImageUpload(e, 'logo_url')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-700/50 pt-6">
-                  <div className="flex items-center justify-between gap-4 mb-3">
-                    <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Custom Canva Header</label>
-                    <button
-                      type="button"
-                      onClick={toggleCustomHeader}
-                      disabled={!profile.custom_header_url}
-                      className="flex items-center gap-3 text-left disabled:opacity-40"
-                    >
-                      <span className="text-sm font-bold text-white">Use this</span>
-                      <div className="relative flex-shrink-0">
-                        <div className={`block w-14 h-8 rounded-full transition-colors ${customOn ? 'bg-emerald-500' : 'bg-slate-900 border border-slate-600'}`}></div>
-                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${customOn ? 'translate-x-6' : ''}`}></div>
-                      </div>
-                    </button>
-                  </div>
-                  <p className="text-base text-slate-400 mb-4">
-                    Perfect size is 2550x555px.{' '}
-                    <a
-                      href="https://canva.link/6qinzbo6tjfwx10"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-fuchsia-400 hover:text-fuchsia-300 underline underline-offset-2 font-bold"
-                    >
-                      Open Canva template
-                    </a>
-                  </p>
-                  <div className="flex flex-col gap-4">
-                    {profile.custom_header_url && (
-                      <img src={profile.custom_header_url} alt="Custom Header" className="w-full h-auto object-contain bg-slate-900 border border-slate-700 rounded-md" />
-                    )}
-                    <label className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl text-center transition inline-block w-full">
-                      <span>{profile.custom_header_url ? 'Change Canva Image' : 'Upload Canva Image'}</span>
-                      <input 
-                        type="file" 
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => handleImageUpload(e, 'custom_header_url')}
                         className="hidden"
                       />
                     </label>
