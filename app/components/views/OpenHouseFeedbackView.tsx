@@ -7,10 +7,9 @@ import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
-import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
 import { OpenHouseFeedbackSigns } from '@/app/components/OpenHouseFeedbackSigns'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
-import { normalizeOpenHouseTheme, type QuizTheme } from '@/app/lib/quizTheme'
+import { type QuizTheme } from '@/app/lib/quizTheme'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export interface FeedbackCampaign {
@@ -600,16 +599,6 @@ export function OpenHouseFeedbackView({
                   {activeCampaign.listingAddress || 'Questionnaire'}
                 </h2>
                 <p className="text-xl font-black text-white mt-3 leading-tight">{activeCampaign.title}</p>
-              </div>
-
-              <div className="mb-6">
-                <ClientThemeToggle
-                  label="Visitor view"
-                  value={normalizeOpenHouseTheme(activeCampaign.theme)}
-                  onChange={(theme) => {
-                    updateCampaigns(prev => prev.map(c => c.id === activeCampaign.id ? { ...c, theme } : c))
-                  }}
-                />
               </div>
 
               <div className="bg-slate-800 rounded-xl p-5 mb-6">

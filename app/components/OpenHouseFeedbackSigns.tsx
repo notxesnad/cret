@@ -7,6 +7,8 @@ type SignLayout = 'full' | 'tent'
 
 const DESIGNS = [
   { id: 'classic', name: 'Classic', blurb: 'Clean, bright, and easy to read from across the kitchen.' },
+  { id: 'burst', name: 'Burst', blurb: 'A giant circle around the code. Fun on purpose.' },
+  { id: 'navy', name: 'Navy', blurb: 'Deep blue, crisp type, very listing-photo.' },
   { id: 'estate', name: 'Estate', blurb: 'Cream paper, gold frame, quiet luxury.' },
   { id: 'poster', name: 'Poster', blurb: 'Loud yellow. Impossible to walk past.' },
   { id: 'studio', name: 'Studio', blurb: 'Museum-label layout. Lots of white space.' },
@@ -14,8 +16,6 @@ const DESIGNS = [
   { id: 'coral', name: 'Coral', blurb: 'Warm and friendly. Hard to ignore on the counter.' },
   { id: 'news', name: 'News', blurb: 'Front-page energy. Extra, extra.' },
   { id: 'sage', name: 'Sage', blurb: 'Calm green. Soft, not shouty.' },
-  { id: 'navy', name: 'Navy', blurb: 'Deep blue, crisp type, very listing-photo.' },
-  { id: 'burst', name: 'Burst', blurb: 'A giant circle around the code. Fun on purpose.' },
 ] as const
 
 export function OpenHouseFeedbackSigns({
@@ -61,25 +61,29 @@ export function OpenHouseFeedbackSigns({
     window.print()
   }
 
-  const saveSheetPdf = async (id: string, label: string) => {
-    const sheet = document.querySelector(`[data-sheet="${id}"]`) as HTMLElement | null
-    if (!sheet) return
+  const saveDesignPdf = async (designId: string) => {
+    const pages = [`${designId}-full`, `${designId}-tent`]
     setStatusMsg('')
-    setBusyId(id)
+    setBusyId(designId)
     try {
       const html2canvas = (await import('html2canvas-pro')).default
       const { jsPDF } = await import('jspdf')
-      const canvas = await html2canvas(sheet, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: getComputedStyle(sheet).backgroundColor || '#ffffff',
-        logging: false,
-        width: sheet.scrollWidth,
-        windowWidth: sheet.scrollWidth,
-      })
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' })
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11)
-      pdf.save(`${slug}-${label}.pdf`)
+      for (let i = 0; i < pages.length; i++) {
+        const sheet = document.querySelector(`[data-sheet="${pages[i]}"]`) as HTMLElement | null
+        if (!sheet) throw new Error('Could not find that sign.')
+        const canvas = await html2canvas(sheet, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: getComputedStyle(sheet).backgroundColor || '#ffffff',
+          logging: false,
+          width: sheet.scrollWidth,
+          windowWidth: sheet.scrollWidth,
+        })
+        if (i > 0) pdf.addPage()
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 8.5, 11)
+      }
+      pdf.save(`${slug}-${designId}.pdf`)
     } catch (e) {
       setStatusMsg(e instanceof Error ? e.message : 'Could not save that PDF.')
     } finally {
@@ -180,11 +184,11 @@ export function OpenHouseFeedbackSigns({
                   </button>
                   <button
                     type="button"
-                    disabled={busyId === `${design.id}-full`}
-                    onClick={() => void saveSheetPdf(`${design.id}-full`, `${design.id}-full`)}
+                    disabled={busyId === design.id}
+                    onClick={() => void saveDesignPdf(design.id)}
                     className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 font-black py-3 rounded-xl text-sm"
                   >
-                    {busyId === `${design.id}-full` ? 'Saving...' : 'Save full PDF'}
+                    {busyId === design.id ? 'Saving...' : 'Save PDF'}
                   </button>
                 </div>
               </div>

@@ -336,11 +336,22 @@ export function SellerTrackerView({
 
                 {/* Add Activity Section */}
                 <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 mb-6">
-                  <h3 className="text-sm font-bold text-white mb-3">Add a New Activity</h3>
-                  
-                  {/* Custom Input */}
-                  <div className="flex gap-2 mb-4">
-                    <input 
+                  <h3 className="text-sm font-bold text-white mb-3">Activity Bank</h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-4">
+                    {PRESET_ACTIVITIES.map(preset => (
+                      <button
+                        key={preset}
+                        onClick={() => handleAddActivity(preset)}
+                        className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
+                      >
+                        <p className="text-sm font-bold text-slate-200">{preset}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="text-sm font-bold text-slate-400 text-center mb-3">Or add your own</p>
+                  <div className="flex gap-2">
+                    <input
                       type="text"
                       placeholder="Custom activity... (e.g. Sent Email to [ ])"
                       value={customActivity}
@@ -348,25 +359,12 @@ export function SellerTrackerView({
                       onKeyDown={(e) => e.key === 'Enter' && handleAddActivity(customActivity)}
                       className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
                     />
-          <button 
-            onClick={() => handleAddActivity(customActivity)}
-            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
-          >
+                    <button
+                      onClick={() => handleAddActivity(customActivity)}
+                      className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
+                    >
                       Add
                     </button>
-                  </div>
-
-                  {/* Quick Presets */}
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_ACTIVITIES.map(preset => (
-                      <button 
-                        key={preset}
-                        onClick={() => handleAddActivity(preset)}
-                        className="bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 active:scale-95 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold py-1.5 px-3 rounded-lg transition-all duration-150"
-                      >
-                        + {preset}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
