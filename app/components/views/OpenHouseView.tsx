@@ -14,8 +14,8 @@ export function OpenHouseView({ switchView }: { switchView: (view: string) => vo
         className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
       >
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">🗳️</div>
-        <span className="text-xs font-bold tracking-wider uppercase opacity-70">QR signs &amp; anonymous quizzes</span>
-        <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Anonymous Feedback</h2>
+        <span className="text-xs font-bold tracking-wider uppercase opacity-70">Anonymous quizzes &amp; QR signs</span>
+        <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Collect Anonymous Open House Feedback</h2>
       </ToolTile>
 
       <ToolTile

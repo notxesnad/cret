@@ -233,7 +233,7 @@ export function OpenHouseFeedbackView({ campaigns, updateCampaigns, listings, up
             <div className="animate-fade-in-up">
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-2">Open House Tools</span>
-                <h1 className="text-3xl font-black text-white">Anonymous Feedback</h1>
+                <h1 className="text-3xl font-black text-white">Collect Anonymous Open House Feedback</h1>
                 <p className="text-base text-slate-400 mt-2">Print a QR sign. Visitors share honest thoughts without leaving a name.</p>
               </div>
 
