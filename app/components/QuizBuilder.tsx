@@ -119,10 +119,11 @@ export function QuizBuilder({
       </div>
     </div>
   ) : (
-    <div className="space-y-2">
-      <button onClick={() => setBankOpen(true)} className="w-full bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-sm font-bold py-3 px-4 rounded-xl transition">
+    <div className="space-y-3">
+      <button onClick={() => setBankOpen(true)} className="w-full bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 text-base font-bold py-6 px-4 rounded-xl transition">
         Question Bank
       </button>
+      <p className="text-sm font-bold text-slate-400 text-center">Or make your own question</p>
       <div className="grid grid-cols-3 gap-2">
         <button onClick={() => addEmptyQuestion('choice')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 text-xs font-bold py-3 rounded-xl transition">
           + Choice Q

@@ -41,6 +41,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [leadPhone, setLeadPhone] = useState('')
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
   const [ratingPick, setRatingPick] = useState<number | null>(null)
+  const [choicePick, setChoicePick] = useState<string | null>(null)
   const keyboardInset = useKeyboardInset()
 
   const currentQ = questions[currentIndex]
@@ -85,6 +86,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       setCurrentIndex(currentIndex + 1)
       setTextInput('')
       setRatingPick(null)
+      setChoicePick(null)
     } else {
       setIsSubmitting(true)
       await onSubmit(newAnswers)
@@ -217,6 +219,31 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </div>
           )}
 
+          {currentQ.type === 'choice' && (
+            <div className="flex-1 flex items-center justify-center py-8">
+              <div className="w-full space-y-3">
+                {currentQ.options?.map((opt, i) => {
+                  const selected = choicePick === opt
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setChoicePick(opt)}
+                      disabled={isSubmitting}
+                      className={`w-full text-left p-4 rounded-xl border-2 transition-all font-bold active:scale-[0.98] ${
+                        selected
+                          ? `${bgClass} border-transparent text-white`
+                          : choiceBtnClasses
+                      } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {currentQ.type === 'text' && (
             <textarea
               value={textInput}
@@ -230,18 +257,14 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       </div>
 
       {currentQ.type === 'choice' && footer(
-        <div className="space-y-3">
-          {currentQ.options?.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => handleAnswer(opt)}
-              disabled={isSubmitting}
-              className={`w-full text-left p-4 rounded-xl border-2 transition-all font-bold active:scale-[0.98] ${choiceBtnClasses} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => choicePick !== null && handleAnswer(choicePick)}
+          disabled={choicePick === null || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${choicePick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Continue'}
+        </button>
       )}
 
       {currentQ.type === 'rating' && footer(
