@@ -12,7 +12,11 @@ export function useInnerSwipeBack(step: number, minStep: number, onInnerBack: ()
     const prev = prevStep.current
     if (step > prev && step > minStep) {
       depthRef.current += 1
-      window.history.pushState({ crtInner: true }, '', window.location.href)
+      // Keep Next.js history state so popstate does not reload the app.
+      window.history.pushState(
+        { ...(window.history.state ?? {}), crtInner: true },
+        ''
+      )
     } else if (step <= minStep && prev > minStep && depthRef.current > 0) {
       const leftover = depthRef.current
       depthRef.current = 0

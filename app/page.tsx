@@ -920,9 +920,10 @@ function HomeContent() {
   }, [sessionChecked, user, switchView])
 
   useEffect(() => {
-    const onPop = () => {
+    const onPop = (event: PopStateEvent) => {
       const view = viewFromLocation(window.location.search)
       if (view === viewRef.current) {
+        event.stopImmediatePropagation()
         window.dispatchEvent(new Event('crt-inner-back'))
         return
       }
@@ -933,8 +934,8 @@ function HomeContent() {
       const idx = stack.lastIndexOf(view)
       viewStackRef.current = idx >= 0 ? stack.slice(0, idx + 1) : (view === 'home' ? ['home'] : ['home', view])
     }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+    window.addEventListener('popstate', onPop, true)
+    return () => window.removeEventListener('popstate', onPop, true)
   }, [])
 
   useEffect(() => {
