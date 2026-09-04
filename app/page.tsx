@@ -7,6 +7,7 @@ import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
+import { freezeSwipeAnimations, isEdgeSwipeBack, unfreezeSwipeAnimations } from '@/app/lib/swipeNav'
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { isSellerDemoListing, withSellerDemoListing } from '@/app/lib/sellerDemo'
@@ -55,6 +56,11 @@ const VIEW_PARENT: Record<string, string> = {
   ohfeedback: 'openhouse',
   ohsignin: 'openhouse',
 }
+
+const OVERLAY_VIEWS = new Set([
+  'profile', 'sellertracker', 'netsheet', 'money', 'driving',
+  'neighborhoods', 'outreach', 'ohfeedback',
+])
 
 function parentOf(view: string) {
   if (view === 'home') return null
@@ -123,23 +129,28 @@ function HomeContent() {
     const href = hrefForView(next, typeof window !== 'undefined' ? window.location.search : '')
 
     viewRef.current = next
-    setCurrentView(next)
-    if (typeof window !== 'undefined') window.scrollTo(0, 0)
 
     if (goingUp && stack.length > 1 && stack[stack.length - 2] === next) {
       viewStackRef.current = stack.slice(0, -1)
+      setCurrentView(next)
       router.back()
       return
     }
 
     if (goingUp) {
       viewStackRef.current = [...stack.slice(0, -1), next]
+      setCurrentView(next)
       router.replace(href, { scroll: false })
       return
     }
 
     viewStackRef.current = [...stack, next]
-    router.push(href, { scroll: false })
+    // Push history while the current screen is still painted so iOS
+    // swipe-back snapshots the page underneath, not this next overlay.
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ crtView: true }, '', href)
+    }
+    setCurrentView(next)
   }, [router])
 
   const closeView = useCallback(() => {
@@ -921,6 +932,10 @@ function HomeContent() {
 
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
+      if (isEdgeSwipeBack()) {
+        freezeSwipeAnimations()
+        unfreezeSwipeAnimations()
+      }
       const view = viewFromLocation(window.location.search)
       if (view === viewRef.current) {
         event.stopImmediatePropagation()
@@ -1181,6 +1196,11 @@ function HomeContent() {
     if (error) showCustomModal('Could not remove that image: ' + error.message)
   }
 
+  const buriedParent = OVERLAY_VIEWS.has(currentView) ? parentOf(currentView) : null
+  const showHome = currentView === 'home' || buriedParent === 'home'
+  const showSeller = currentView === 'seller' || buriedParent === 'seller'
+  const showOpenhouse = currentView === 'openhouse' || buriedParent === 'openhouse'
+
   return (
     <>
       <div className="min-h-screen flex flex-col justify-between p-4 md:p-8 bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif]">
@@ -1199,6 +1219,9 @@ function HomeContent() {
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          html.crt-swipe-nav .app-view .animate-fade-in-up { animation: none !important; }
+          html.crt-swipe-nav .app-view .transition-transform,
+          html.crt-swipe-nav .app-view .transition-all { transition: none !important; }
         `}</style>
 
         <header className="max-w-xl mx-auto w-full flex justify-between items-center mb-6">
@@ -1233,7 +1256,8 @@ function HomeContent() {
 
         {/* Main Container */}
         <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
-          {currentView === 'home' && (
+          {showHome && (
+            <div className={currentView === 'home' ? '' : 'hidden'}>
             <HomeView
               switchView={switchView}
               showCustomModal={showCustomModal}
@@ -1246,6 +1270,7 @@ function HomeContent() {
               onAccount={openAccount}
               signedIn={!!user}
             />
+            </div>
           )}
           {currentView === 'signin' && (
             <SignInView
@@ -1271,7 +1296,11 @@ function HomeContent() {
               exitView="home"
             />
           )}
-          {currentView === 'openhouse' && <OpenHouseView switchView={switchView} />}
+          {showOpenhouse && (
+            <div className={currentView === 'openhouse' ? '' : 'hidden'}>
+              <OpenHouseView switchView={switchView} />
+            </div>
+          )}
           {currentView === 'ohsignin' && (
             <OpenHouseSignInView
               listings={workingListings}
@@ -1297,7 +1326,11 @@ function HomeContent() {
               persistWorkspace={persistIfSharingAllowed}
             />
           )}
-          {currentView === 'seller' && <SellerMenuView switchView={switchView} />}
+          {showSeller && (
+            <div className={currentView === 'seller' ? '' : 'hidden'}>
+              <SellerMenuView switchView={switchView} />
+            </div>
+          )}
           {currentView === 'netsheet' && (
             <NetSheetView
               listings={workingListings}
