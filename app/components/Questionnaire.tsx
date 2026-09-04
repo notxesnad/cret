@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { type QuizTheme } from '@/app/lib/quizTheme'
 
 export type { QuizTheme }
@@ -41,6 +41,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [leadPhone, setLeadPhone] = useState('')
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
   const [ratingPick, setRatingPick] = useState<number | null>(null)
+  const keyboardInset = useKeyboardInset()
 
   const currentQ = questions[currentIndex]
   const progress = (currentIndex / questions.length) * 100
@@ -99,6 +100,13 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     setLeadStatus('saved')
   }
 
+  const canContinueText = Boolean(textInput.trim()) || Boolean(currentQ?.optional)
+
+  const submitText = () => {
+    if (!canContinueText || isSubmitting) return
+    void handleAnswer(textInput)
+  }
+
   const footer = (content: ReactNode) => (
     <div className={`flex-none p-6 ${footerClasses} z-10 pb-safe`}>
       {content}
@@ -109,7 +117,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     const showLeadForm = captureLead && leadStatus !== 'saved' && leadStatus !== 'skipped'
 
     return (
-      <div className={`flex flex-col h-full min-h-0 ${shellClasses}`}>
+      <div className={`flex flex-col h-full min-h-0 ${shellClasses}`} style={{ paddingBottom: keyboardInset }}>
         <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
           <div className="p-6 md:p-10 text-center animate-fade-in-up">
             <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
@@ -127,6 +135,13 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
                   value={leadEmail}
                   onChange={e => setLeadEmail(e.target.value)}
                   placeholder="Email"
+                  enterKeyHint="done"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void handleLeadSubmit()
+                    }
+                  }}
                   className={inputClasses}
                 />
                 <input
@@ -134,6 +149,13 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
                   value={leadPhone}
                   onChange={e => setLeadPhone(e.target.value)}
                   placeholder="Cell (optional if you left email)"
+                  enterKeyHint="done"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void handleLeadSubmit()
+                    }
+                  }}
                   className={inputClasses}
                 />
               </div>
@@ -167,7 +189,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   }
 
   return (
-    <div className={`flex flex-col h-full min-h-0 ${shellClasses}`}>
+    <div className={`flex flex-col h-full min-h-0 ${shellClasses}`} style={{ paddingBottom: keyboardInset }}>
       <div className={`flex-none h-1.5 w-full relative ${progressBgClasses}`}>
         <div className={`absolute top-0 left-0 h-full ${bgClass} transition-all duration-500 ease-out`} style={{ width: `${progress}%` }}></div>
       </div>
@@ -200,7 +222,14 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
               value={textInput}
               onChange={e => setTextInput(e.target.value)}
               placeholder={currentQ.placeholder || 'Type your answer here...'}
-              rows={5}
+              rows={4}
+              enterKeyHint="done"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  submitText()
+                }
+              }}
               className={`w-full rounded-xl p-4 mt-8 focus:outline-none resize-none ${textAreaClasses}`}
             ></textarea>
           )}
@@ -235,15 +264,43 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
 
       {currentQ.type === 'text' && footer(
         <button
-          onClick={() => handleAnswer(textInput)}
-          disabled={(!textInput.trim() && !currentQ.optional) || isSubmitting}
-          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!textInput.trim() && !currentQ.optional ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onClick={submitText}
+          disabled={!canContinueText || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!canContinueText ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>
       )}
     </div>
   )
+}
+
+function useKeyboardInset() {
+  const [inset, setInset] = useState(0)
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const update = () => {
+      const covered = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      setInset(covered)
+    }
+
+    update()
+    viewport.addEventListener('resize', update)
+    viewport.addEventListener('scroll', update)
+    window.addEventListener('focusin', update)
+    window.addEventListener('focusout', update)
+    return () => {
+      viewport.removeEventListener('resize', update)
+      viewport.removeEventListener('scroll', update)
+      window.removeEventListener('focusin', update)
+      window.removeEventListener('focusout', update)
+    }
+  }, [])
+
+  return inset
 }
 
 const STAR_PATH = 'M12 2.4l2.85 6.42 7.03.66-5.31 4.64 1.56 6.88L12 17.86l-6.13 3.14 1.56-6.88-5.31-4.64 7.03-.66L12 2.4z'
