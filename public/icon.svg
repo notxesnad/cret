@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Cool Real Estate Tools">
-  <rect width="32" height="32" fill="#facc15"/>
-  <path fill="#0f172a" d="M17.6 6.4 29.5 16.8H26.4V26.6c0 1.3-1 2.3-2.3 2.3H10.3c-1.3 0-2.3-1-2.3-2.3V16.8H4.9l12.7-10.4z"/>
-  <path fill="#d946ef" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round" d="M16 4.4 28.2 15.2H25V25.2c0 1.2-1 2.2-2.2 2.2H9.2C8 27.4 7 26.4 7 25.2V15.2H3.8L16 4.4z"/>
-  <rect x="13.5" y="18.2" width="5" height="9.2" rx="0.8" fill="#facc15"/>
-</svg>
