@@ -263,20 +263,20 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
     case 'look14':
       return (
         <div className="w-full bg-stone-100 border-b border-stone-200 p-1 mb-5">
-          <div className="border border-stone-300 px-5 py-4 flex justify-between items-center bg-white">
-            <div className="flex items-center gap-4">
-              {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} shadow-sm`} />}
-              <div>
-                <h3 className="font-serif text-lg font-bold text-stone-900">{name}</h3>
-                <p className="text-[10px] text-stone-500">{phone}</p>
-                <p className="text-[10px] text-stone-500">{email}</p>
+          <div className="border border-stone-300 px-4 py-4 sm:px-5 flex justify-between items-center gap-6 bg-white">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              {showHeadshot && <img src={headshot} alt="Agent" className={`w-14 h-14 object-cover ${shot} shadow-sm flex-shrink-0`} />}
+              <div className="min-w-0 pr-1">
+                <h3 className="font-serif text-lg font-bold text-stone-900 break-words">{name}</h3>
+                <p className="text-[10px] text-stone-500 break-words">{phone}</p>
+                <p className="text-[10px] text-stone-500 break-all">{email}</p>
               </div>
             </div>
-            <div className="flex flex-col items-end border-l border-stone-200 pl-4">
+            <div className="flex flex-col items-end border-l border-stone-200 pl-5 sm:pl-6 flex-shrink-0 max-w-[38%]">
               {logo ? (
-                <img src={logo} alt="Logo" className="h-8 w-auto max-w-[120px] object-contain object-right sepia opacity-80" />
+                <img src={logo} alt="Logo" className="h-8 w-auto max-w-full object-contain object-right sepia opacity-80" />
               ) : (
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-700">{brokerage}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-700 text-right break-words">{brokerage}</span>
               )}
             </div>
           </div>
