@@ -30,7 +30,7 @@ export function RegistrationClient({
       width: 720,
       margin: 1,
       errorCorrectionLevel: 'M',
-      color: { dark: '#312e81', light: '#ffffff' },
+      color: { dark: '#1e3a8a', light: '#ffffff' },
     }).then(setQrDataUrl).catch(() => setQrDataUrl(''))
   }, [])
 

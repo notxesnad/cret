@@ -118,7 +118,7 @@ export function OpenHouseRegistrationView({
       width: 720,
       margin: 1,
       errorCorrectionLevel: 'M',
-      color: { dark: '#312e81', light: '#ffffff' },
+      color: { dark: '#1e3a8a', light: '#ffffff' },
     }).then((data) => {
       if (!cancelled) setQrDataUrl(data)
     }).catch(() => {
@@ -311,7 +311,7 @@ export function OpenHouseRegistrationView({
               <div className="space-y-3">
                 {[
                   { n: '1', t: 'Pick the listing', d: 'Use one you already have, or add a new address.' },
-                  { n: '2', t: 'Use the standard form — or add your own questions', d: 'Name, phone, and the two realtor questions are always included.' },
+                  { n: '2', t: 'Use the standard form — or add your own questions', d: 'Name, a phone or email, and the realtor question are always included.' },
                   { n: '3', t: 'Open the link on your iPad', d: 'Or print / show the QR so people can sign in on their phones.' },
                   { n: '4', t: 'Read who came by', d: 'Names, numbers, and whether they are a realtor or already have one.' },
                 ].map(item => (
@@ -464,8 +464,8 @@ export function OpenHouseRegistrationView({
                     >
                       Preview
                     </button>
-                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Name &amp; phone</span>
-                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Realtor questions</span>
+                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Name &amp; contact</span>
+                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Realtor question</span>
                   </div>
                 </div>
               </div>
@@ -499,7 +499,7 @@ export function OpenHouseRegistrationView({
               </div>
               <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
                 <p className="text-xs font-bold text-slate-400 uppercase mb-2">Always included</p>
-                <p className="text-sm text-slate-200 font-bold">Name, phone, email, and the two realtor questions.</p>
+                <p className="text-sm text-slate-200 font-bold">Name, phone or email, and the realtor question.</p>
               </div>
               <div className="mb-8 border-t border-slate-800 pt-6">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-4">Extra questions (optional)</label>
@@ -580,7 +580,7 @@ export function OpenHouseRegistrationView({
                         <p className="text-sm text-indigo-300 mt-1">{answers.phone || ''}{answers.email ? ` · ${answers.email}` : ''}</p>
                         <p className="text-xs text-slate-400 mt-2">{new Date((resp as { date?: string }).date || '').toLocaleDateString()} at {new Date((resp as { date?: string }).date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         <div className="space-y-3 mt-3">
-                          {activeCampaign.questions.filter(q => q.id !== 'name' && q.id !== 'phone' && q.id !== 'email').map((q) => (
+                          {activeCampaign.questions.filter(q => !['name', 'phone', 'email', 'contact'].includes(q.id)).map((q) => (
                             <div key={q.id}>
                               <p className="text-xs font-bold text-slate-300 mb-1">{q.text}</p>
                               <p className="text-sm text-indigo-300 bg-slate-900 p-2 rounded">{String(answers[q.id] || 'No answer')}</p>

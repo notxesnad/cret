@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { type QuizTheme } from '@/app/lib/quizTheme'
 
 export type { QuizTheme }
-export type QuestionType = 'choice' | 'rating' | 'text'
+export type QuestionType = 'choice' | 'rating' | 'text' | 'contact'
 
 export interface Question {
   id: string
@@ -23,7 +23,7 @@ interface QuestionnaireProps {
   description?: string
   questions: Question[]
   onSubmit: (answers: Record<string, string | number>) => Promise<void>
-  accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky'
+  accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky' | 'navy'
   theme?: QuizTheme
   captureLead?: {
     title: string
@@ -47,6 +47,8 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'skipped'>('idle')
   const [ratingPick, setRatingPick] = useState<number | null>(null)
   const [choicePick, setChoicePick] = useState<string | null>(null)
+  const [contactPhone, setContactPhone] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
   const keyboardInset = useKeyboardInset()
 
   const currentQ = questions[currentIndex]
@@ -64,6 +66,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     orange: 'bg-orange-500',
     blue: 'bg-blue-500',
     sky: 'bg-sky-500',
+    navy: 'bg-blue-900',
   }
   const bgClass = colorMap[accentColor]
   const isDark = theme === 'dark'
@@ -85,8 +88,8 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     ? 'w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-slate-600'
     : 'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-slate-400'
 
-  const handleAnswer = async (value: string | number) => {
-    const newAnswers = { ...answers, [currentQ.id]: value }
+  const commitAnswers = async (patch: Record<string, string | number>) => {
+    const newAnswers = { ...answers, ...patch }
     setAnswers(newAnswers)
 
     if (currentIndex < questions.length - 1) {
@@ -94,12 +97,18 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       setTextInput('')
       setRatingPick(null)
       setChoicePick(null)
+      setContactPhone('')
+      setContactEmail('')
     } else {
       setIsSubmitting(true)
       await onSubmit(newAnswers)
       setIsSubmitting(false)
       setIsDone(true)
     }
+  }
+
+  const handleAnswer = async (value: string | number) => {
+    await commitAnswers({ [currentQ.id]: value })
   }
 
   const handleLeadSubmit = async () => {
@@ -110,10 +119,19 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   }
 
   const canContinueText = Boolean(textInput.trim()) || Boolean(currentQ?.optional)
+  const canContinueContact = Boolean(contactPhone.trim() || contactEmail.trim())
 
   const submitText = () => {
     if (!canContinueText || isSubmitting) return
     void handleAnswer(textInput)
+  }
+
+  const submitContact = () => {
+    if (!canContinueContact || isSubmitting) return
+    void commitAnswers({
+      phone: contactPhone.trim(),
+      email: contactEmail.trim(),
+    })
   }
 
   const footer = (content: ReactNode) => (
@@ -261,6 +279,42 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </div>
           )}
 
+          {currentQ.type === 'contact' && (
+            <div className="mt-8 space-y-3">
+              <input
+                type="tel"
+                value={contactPhone}
+                onChange={e => setContactPhone(e.target.value)}
+                placeholder="Cell phone"
+                autoComplete="tel"
+                enterKeyHint="next"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    submitContact()
+                  }
+                }}
+                className={`w-full rounded-xl px-4 py-4 focus:outline-none ${textAreaClasses}`}
+              />
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                enterKeyHint="next"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    submitContact()
+                  }
+                }}
+                className={`w-full rounded-xl px-4 py-4 focus:outline-none ${textAreaClasses}`}
+              />
+              <p className={`text-sm ${descClasses}`}>Either one is enough.</p>
+            </div>
+          )}
+
           {currentQ.type === 'text' && isSingleLine && (
             <input
               type={lineInputType}
@@ -318,6 +372,17 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           onClick={submitText}
           disabled={!canContinueText || isSubmitting}
           className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!canContinueText ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Continue'}
+        </button>
+      )}
+
+      {currentQ.type === 'contact' && footer(
+        <button
+          type="button"
+          onClick={submitContact}
+          disabled={!canContinueContact || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!canContinueContact ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>

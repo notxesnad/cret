@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Questionnaire, type Question } from '@/app/components/Questionnaire'
+import { registrationQuestionsForForm } from '@/app/lib/openhouseRegistration'
 
 export function RegistrationExperience({
   address,
@@ -25,12 +26,12 @@ export function RegistrationExperience({
   if (!started) {
     return (
       <div className="relative flex flex-col h-full min-h-0 bg-slate-50 overflow-hidden">
-        <div className="pointer-events-none absolute -top-24 right-0 w-64 h-64 bg-indigo-400/20 blur-3xl rounded-full" />
-        <div className="pointer-events-none absolute bottom-24 -left-16 w-56 h-56 bg-emerald-300/20 blur-3xl rounded-full" />
+        <div className="pointer-events-none absolute -top-24 right-0 w-64 h-64 bg-blue-900/20 blur-3xl rounded-full" />
+        <div className="pointer-events-none absolute bottom-24 -left-16 w-56 h-56 bg-slate-400/20 blur-3xl rounded-full" />
 
         <div className="relative flex-1 min-h-0 overflow-y-auto hide-scrollbar">
           <div className="min-h-full flex flex-col justify-center px-6 py-10 text-center">
-            <p className="text-[11px] font-bold tracking-[0.28em] text-indigo-500 uppercase">Welcome</p>
+            <p className="text-[11px] font-bold tracking-[0.28em] text-blue-900 uppercase">Welcome</p>
             <h1 className="font-openhouse text-4xl md:text-5xl text-slate-900 leading-tight mt-4">
               {listing}
             </h1>
@@ -40,7 +41,7 @@ export function RegistrationExperience({
             <button
               type="button"
               onClick={() => setStarted(true)}
-              className="mt-10 w-full max-w-sm mx-auto bg-indigo-500 hover:bg-indigo-400 text-white font-black py-4 rounded-2xl shadow-lg shadow-indigo-500/25 transition active:scale-[0.98]"
+              className="mt-10 w-full max-w-sm mx-auto bg-blue-900 hover:bg-blue-800 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-900/30 transition active:scale-[0.98]"
             >
               Register
             </button>
@@ -68,9 +69,9 @@ export function RegistrationExperience({
     <Questionnaire
       key={quizKey}
       title={title}
-      questions={questions}
+      questions={registrationQuestionsForForm(questions)}
       onSubmit={onSubmit}
-      accentColor="indigo"
+      accentColor="navy"
       theme="light"
       doneTitle="You're on the list"
       doneBody="Thanks for signing in. Enjoy the open house."
