@@ -6,6 +6,10 @@ import { Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
+import { HowToTour } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { ToolLanding } from '@/app/components/ToolLanding'
+import { OUTREACH_TOUR } from '@/app/lib/toolTours'
 import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
 
 export interface OutreachCampaign {
@@ -28,13 +32,34 @@ interface OutreachViewProps {
 }
 
 export function OutreachView({ campaigns, updateCampaigns, switchView, showCustomModal, userId, persistWorkspace }: OutreachViewProps) {
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [howPage, setHowPage] = useState(0)
   const [step, setStep] = useState(1) // 1: list, 2: template select, 3: view campaign details, 4: custom builder
   const [activeId, setActiveId] = useState<string | null>(null)
-  useInnerSwipeBack(step, 1, () => {
-    if (step <= 1) return
-    if (step === 4) setStep(2)
-    else setStep(1)
-  })
+  const howLast = howPage >= OUTREACH_TOUR.length - 1
+  const hubRank = hub === 'menu' ? 1 : hub === 'how' ? 2 + howPage : 1 + step
+  const goBack = () => {
+    if (hub === 'how') {
+      if (howLast || howPage === 0) {
+        setHowPage(0)
+        setHub('menu')
+        return
+      }
+      setHowPage(page => page - 1)
+      return
+    }
+    if (hub === 'work') {
+      if (step <= 1) {
+        setHub('menu')
+        return
+      }
+      if (step === 4) setStep(2)
+      else setStep(1)
+      return
+    }
+    switchView('home')
+  }
+  useInnerSwipeBack(hubRank, 1, goBack)
 
   // Custom Builder State
   const [customTitle, setCustomTitle] = useState('')
@@ -140,23 +165,47 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
       
       {/* HEADER */}
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step > 1 ? (
-          <button onClick={() => {
-            if (step === 4) setStep(2)
-            else setStep(1)
-          }} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
-          </button>
-        ) : (
-          <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Close</span>
-          </button>
-        )}
+        <OverlayNavButton
+          kind={hub === 'menu' || (hub === 'how' && howLast) ? 'close' : 'back'}
+          label={hub === 'menu' || (hub === 'how' && howLast) ? 'Close' : 'Back'}
+          onClick={goBack}
+        />
       </div>
 
-      {/* CONTENT */}
+      {hub === 'menu' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+          <ToolLanding
+            kicker="Client Outreach"
+            kickerClass="text-sky-400"
+            title="Re-engage Your Clients"
+            blurb="People love giving advice. Send a 25-second quiz to engage your network without being salesy."
+            primaryLabel="My Quizzes"
+            primaryEmoji="🤝"
+            primaryClass="group relative bg-sky-500 hover:bg-sky-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            onPrimary={() => setHub('work')}
+            onHow={() => {
+              setHowPage(0)
+              setHub('how')
+            }}
+            howClass="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-sky-300"
+          />
+        </div>
+      ) : hub === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={OUTREACH_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => {
+              setHowPage(0)
+              setHub('menu')
+            }}
+            doneLabel="Got it"
+            accent="sky"
+          />
+        </div>
+      ) : (
+      <>
       <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
         <div className="p-6">
 
@@ -362,6 +411,8 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
             Save Campaign
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   )

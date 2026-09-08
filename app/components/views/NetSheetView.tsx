@@ -4,6 +4,10 @@ import { useState } from 'react'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import { HowToTour } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { ToolLanding } from '@/app/components/ToolLanding'
+import { NET_SHEET_TOUR } from '@/app/lib/toolTours'
 import {
   EXTRA_FIELDS,
   applyAiToSheet,
@@ -135,6 +139,8 @@ export function NetSheetView({
   signedIn,
   exitView = 'home',
 }: NetSheetViewProps) {
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [howPage, setHowPage] = useState(0)
   const [step, setStep] = useState(1)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [aiPaste, setAiPaste] = useState('')
@@ -291,7 +297,20 @@ export function NetSheetView({
   }
 
   const back = () => {
-    if (step === 1) switchView(exitView)
+    if (hub === 'how') {
+      if (howLast || howPage === 0) {
+        setHowPage(0)
+        setHub('menu')
+        return
+      }
+      setHowPage(page => page - 1)
+      return
+    }
+    if (hub === 'menu') {
+      switchView(exitView)
+      return
+    }
+    if (step === 1) setHub('menu')
     else goInnerBack()
   }
 
@@ -306,7 +325,9 @@ export function NetSheetView({
     else setStep(step - 1)
   }
 
-  useInnerSwipeBack(step, 1, goInnerBack)
+  const howLast = howPage >= NET_SHEET_TOUR.length - 1
+  const hubRank = hub === 'menu' ? 1 : hub === 'how' ? 2 + howPage : 1 + step
+  useInnerSwipeBack(hubRank, 1, back)
 
   const progress = step === 1 ? 0 : (step / LAST) * 100
   const questionStep = step >= PLACE && step <= CLOSING
@@ -350,18 +371,59 @@ export function NetSheetView({
   return (
     <div id="view-netsheet" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        <button onClick={back} className="text-slate-400 hover:text-white transition flex items-center">
-          <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-          <span className="text-sm font-bold uppercase tracking-wider">{step === 1 ? 'Close' : 'Back'}</span>
-        </button>
-        <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
-          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
-        </div>
-        {questionStep && (
-          <span className="text-xs font-bold tracking-wider uppercase text-slate-500 whitespace-nowrap">{step - 1} of 5</span>
+        <OverlayNavButton
+          kind={hub === 'menu' || (hub === 'how' && howLast) ? 'close' : 'back'}
+          label={hub === 'menu' || (hub === 'how' && howLast) ? 'Close' : 'Back'}
+          onClick={back}
+        />
+        {hub === 'work' && (
+          <>
+            <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
+              <div className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+            </div>
+            {questionStep && (
+              <span className="text-xs font-bold tracking-wider uppercase text-slate-500 whitespace-nowrap">{step - 1} of 5</span>
+            )}
+          </>
         )}
       </div>
 
+      {hub === 'menu' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+          <ToolLanding
+            kicker={exitView === 'home' ? 'Money Stuff' : 'Seller Tools'}
+            kickerClass="text-emerald-400"
+            title="Seller Net Sheet"
+            titleClass="font-money"
+            blurb="A seller net sheet, one step at a time — price, loan, commission, closing costs, extras."
+            primaryLabel="My Net Sheets"
+            primaryEmoji="💰"
+            primaryClass="group relative bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            onPrimary={() => setHub('work')}
+            onHow={() => {
+              setHowPage(0)
+              setHub('how')
+            }}
+            howClass="group relative bg-emerald-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-emerald-300"
+          />
+        </div>
+      ) : hub === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={NET_SHEET_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => {
+              setHowPage(0)
+              setHub('menu')
+            }}
+            doneLabel="Got it"
+            accent="emerald"
+            titleClass="font-money"
+          />
+        </div>
+      ) : (
+      <>
       <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-6 py-6">
         {step === 1 && (
           <div>
@@ -779,6 +841,8 @@ export function NetSheetView({
             Done, show my sheet
           </button>
         </div>
+      )}
+      </>
       )}
       {pendingDeleteSheetId && (
         <ConfirmDeleteDialog

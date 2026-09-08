@@ -6,6 +6,10 @@ import { createPortal } from 'react-dom'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { DateField, TimeField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import { HowToTour } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { ToolLanding } from '@/app/components/ToolLanding'
+import { DRIVING_TOUR } from '@/app/lib/toolTours'
 import { supabase } from '@/utils/supabase'
 import { ensurePdfUploadsAllowed } from '@/app/actions/upload'
 import {
@@ -106,11 +110,32 @@ export function DrivingView({
   userId,
   persistWorkspace
 }: DrivingViewProps) {
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [howPage, setHowPage] = useState(0)
   const [step, setStep] = useState(1)
   const [activeClientId, setActiveClientId] = useState<string | null>(null)
   const [activeTourId, setActiveTourId] = useState<string | null>(null)
   const [activeHomeId, setActiveHomeId] = useState<string | null>(null)
-  useInnerSwipeBack(step, 1, () => setStep(s => Math.max(1, s - 1)))
+  const howLast = howPage >= DRIVING_TOUR.length - 1
+  const hubRank = hub === 'menu' ? 1 : hub === 'how' ? 2 + howPage : 1 + step
+  const goBack = () => {
+    if (hub === 'how') {
+      if (howLast || howPage === 0) {
+        setHowPage(0)
+        setHub('menu')
+        return
+      }
+      setHowPage(page => page - 1)
+      return
+    }
+    if (hub === 'work') {
+      if (step > 1) setStep(step - 1)
+      else setHub('menu')
+      return
+    }
+    switchView('home')
+  }
+  useInnerSwipeBack(hubRank, 1, goBack)
 
   const [isAddingClient, setIsAddingClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
@@ -601,26 +626,60 @@ export function DrivingView({
     <div id="view-driving" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
 
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step > 1 ? (
-          <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-sm font-bold uppercase tracking-wider">Back</span>
-          </button>
+        {hub === 'how' && howLast ? (
+          <OverlayNavButton kind="close" label="Close" onClick={goBack} />
+        ) : hub !== 'menu' ? (
+          <OverlayNavButton kind="back" label="Back" onClick={goBack} />
         ) : (
-          <button onClick={() => switchView('home')} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-sm font-bold uppercase tracking-wider">Close</span>
-          </button>
+          <OverlayNavButton kind="close" label="Close" onClick={() => switchView('home')} />
         )}
 
-        <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
-          <div
-            className="bg-rose-500 h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / 4) * 100}%` }}
-          ></div>
-        </div>
+        {hub === 'work' && (
+          <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div
+              className="bg-rose-500 h-full rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(step / 4) * 100}%` }}
+            ></div>
+          </div>
+        )}
       </div>
 
+      {hub === 'menu' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+          <ToolLanding
+            kicker="Tour Itinerary"
+            kickerClass="text-rose-400"
+            title="Driving to a Million Places"
+            titleClass="font-driving"
+            blurb="Line up the houses, pick the drive order, and send a tour they can follow from the car."
+            primaryLabel="My Tour Itineraries"
+            primaryEmoji="🚗"
+            primaryClass="group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            onPrimary={() => setHub('work')}
+            onHow={() => {
+              setHowPage(0)
+              setHub('how')
+            }}
+            howClass="group relative bg-rose-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-rose-300"
+          />
+        </div>
+      ) : hub === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={DRIVING_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => {
+              setHowPage(0)
+              setHub('menu')
+            }}
+            doneLabel="Got it"
+            accent="rose"
+            titleClass="font-driving"
+          />
+        </div>
+      ) : (
+      <>
       <div className="flex-1 min-h-0 relative">
         <div
           className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full"
@@ -1115,6 +1174,8 @@ export function DrivingView({
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {showMapsInfo && (

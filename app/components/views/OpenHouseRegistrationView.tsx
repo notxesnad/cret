@@ -8,6 +8,7 @@ import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
 import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { RegistrationExperience } from '@/app/components/RegistrationForm'
 import {
   OPENHOUSE_REGISTRATION_KIND,
@@ -111,13 +112,30 @@ export function OpenHouseRegistrationView({
   const [customDesc, setCustomDesc] = useState('')
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [preview, setPreview] = useState(false)
+  const [previewFromHow, setPreviewFromHow] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [howPage, setHowPage] = useState(0)
+  const howLast = howPage >= REGISTRATION_TOUR.length - 1
+  const closeHow = (step === 'how' && howLast) || (preview && previewFromHow)
 
   const stepRank = OH_RANK[step] + (preview ? 1 : 0) + (step === 'how' ? howPage : 0)
+  const exitHow = () => {
+    setPreview(false)
+    setPreviewFromHow(false)
+    setHowPage(0)
+    setStep('home')
+  }
   const goBack = () => {
+    if (preview && previewFromHow) {
+      exitHow()
+      return
+    }
     if (preview) {
       setPreview(false)
+      return
+    }
+    if (step === 'how' && howLast) {
+      exitHow()
       return
     }
     if (step === 'how' && howPage > 0) {
@@ -257,16 +275,12 @@ export function OpenHouseRegistrationView({
   return (
     <div id="view-ohregistration" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
       <div className="flex-none h-[72px] flex justify-between items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step !== 'home' || preview ? (
-          <button onClick={goBack} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
-          </button>
+        {step === 'home' && !preview ? (
+          <OverlayNavButton kind="back" label="Open House" onClick={() => switchView('openhouse')} />
+        ) : closeHow ? (
+          <OverlayNavButton kind="close" label="Close" onClick={goBack} />
         ) : (
-          <button onClick={() => switchView('openhouse')} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Open House</span>
-          </button>
+          <OverlayNavButton kind="back" label="Back" onClick={goBack} />
         )}
       </div>
 
@@ -290,8 +304,12 @@ export function OpenHouseRegistrationView({
             pages={REGISTRATION_TOUR}
             page={howPage}
             onPageChange={setHowPage}
-            onDone={() => setPreview(true)}
+            onDone={() => {
+              setPreviewFromHow(true)
+              setPreview(true)
+            }}
             doneLabel="Preview what visitors see"
+            titleClass="font-openhouse"
           />
         </div>
       ) : (

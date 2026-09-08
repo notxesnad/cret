@@ -5,6 +5,10 @@ import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { DateField } from '@/app/components/DateField'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
+import { HowToTour } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { ToolLanding } from '@/app/components/ToolLanding'
+import { SELLER_TRACKER_TOUR } from '@/app/lib/toolTours'
 import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
 import { isSellerDemoListing, SELLER_DEMO_PREVIEW_KEY, SELLER_DEMO_PUBLIC_PATH } from '@/app/lib/sellerDemo'
 
@@ -75,6 +79,8 @@ export function SellerTrackerView({
   persistWorkspace,
   persistDemoShare
 }: SellerTrackerViewProps) {
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [howPage, setHowPage] = useState(0)
   const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
   const [activeListingId, setActiveListingId] = useState<string | null>(null)
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null)
@@ -86,7 +92,26 @@ export function SellerTrackerView({
 
   const activityLogRef = useRef<HTMLDivElement>(null)
   const activityLogHeaderRef = useRef<HTMLHeadingElement>(null)
-  useInnerSwipeBack(step, 1, () => setStep(s => Math.max(1, s - 1)))
+  const howLast = howPage >= SELLER_TRACKER_TOUR.length - 1
+  const hubRank = hub === 'menu' ? 1 : hub === 'how' ? 2 + howPage : 1 + step
+  const goBack = () => {
+    if (hub === 'how') {
+      if (howLast || howPage === 0) {
+        setHowPage(0)
+        setHub('menu')
+        return
+      }
+      setHowPage(page => page - 1)
+      return
+    }
+    if (hub === 'work') {
+      if (step > 1) setStep(step - 1)
+      else setHub('menu')
+      return
+    }
+    switchView('seller')
+  }
+  useInnerSwipeBack(hubRank, 1, goBack)
 
   const activeListing = listings.find(l => l.id === activeListingId)
   const activeActivity = activeListing?.activities.find(a => a.id === activeActivityId)
@@ -227,27 +252,61 @@ export function SellerTrackerView({
       
       {/* Header */}
       <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
-        {step > 1 ? (
-          <button onClick={() => setStep(step - 1)} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Back</span>
-          </button>
+        {hub === 'how' && howLast ? (
+          <OverlayNavButton kind="close" label="Close" onClick={goBack} />
+        ) : hub !== 'menu' ? (
+          <OverlayNavButton kind="back" label="Back" onClick={goBack} />
         ) : (
-          <button onClick={() => switchView('seller')} className="text-slate-400 hover:text-white transition flex items-center">
-            <svg className="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            <span className="text-xs font-bold uppercase tracking-wider">Close</span>
-          </button>
+          <OverlayNavButton kind="close" label="Close" onClick={() => switchView('seller')} />
         )}
-        
-        <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
-          <div 
-            className="bg-amber-500 h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / 3) * 100}%` }}
-          ></div>
-        </div>
+
+        {hub === 'work' && (
+          <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div
+              className="bg-amber-500 h-full rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(step / 3) * 100}%` }}
+            ></div>
+          </div>
+        )}
       </div>
 
       {/* Scrollable content area */}
+      {hub === 'menu' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+          <ToolLanding
+            kicker="Seller Tools"
+            kickerClass="text-amber-500"
+            title="Seller Tracking Report"
+            titleClass="font-seller"
+            blurb="A living report of everything you’ve done for the listing — so they stop asking what’s happening."
+            primaryLabel="My Tracking Reports"
+            primaryEmoji="📋"
+            primaryClass="group relative bg-amber-500 hover:bg-amber-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            onPrimary={() => setHub('work')}
+            onHow={() => {
+              setHowPage(0)
+              setHub('how')
+            }}
+            howClass="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-amber-300"
+          />
+        </div>
+      ) : hub === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={SELLER_TRACKER_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => {
+              setHowPage(0)
+              setHub('menu')
+            }}
+            doneLabel="Got it"
+            accent="amber"
+            titleClass="font-seller"
+          />
+        </div>
+      ) : (
+      <>
       <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0 flex transition-transform duration-500 ease-in-out h-full" style={{ width: '300%', transform: step === 1 ? 'translateX(0%)' : step === 2 ? 'translateX(-33.333333%)' : 'translateX(-66.666667%)' }}>
             
@@ -513,6 +572,8 @@ export function SellerTrackerView({
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {confirmDelete && (

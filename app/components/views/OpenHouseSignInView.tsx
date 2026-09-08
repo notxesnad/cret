@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { saveProspect } from '@/app/actions/prospects'
+import { HowToTour } from '@/app/components/HowToTour'
+import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { ToolLanding } from '@/app/components/ToolLanding'
+import { SIGNIN_TOUR } from '@/app/lib/toolTours'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export function OpenHouseSignInView({
@@ -17,6 +21,8 @@ export function OpenHouseSignInView({
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   userId?: string
 }) {
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [howPage, setHowPage] = useState(0)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [selectedListingId, setSelectedListingId] = useState(listings[0]?.id || '')
@@ -80,12 +86,69 @@ export function OpenHouseSignInView({
     setIsSubmitted(false)
   }
 
-  return (
-    <div id="view-ohsignin" className="app-view active space-y-4">
-      <button onClick={() => switchView('openhouse')} className="text-xs font-bold text-indigo-300 hover:text-white transition">
-        ← Open House Tools
-      </button>
+  const howLast = howPage >= SIGNIN_TOUR.length - 1
+  const goBack = () => {
+    if (hub === 'how') {
+      if (howLast || howPage === 0) {
+        setHowPage(0)
+        setHub('menu')
+        return
+      }
+      setHowPage(page => page - 1)
+      return
+    }
+    if (hub === 'work') {
+      setHub('menu')
+      return
+    }
+    switchView('openhouse')
+  }
 
+  return (
+    <div id="view-ohsignin" className="app-view active bg-slate-900 border-x border-slate-800 shadow-2xl overflow-hidden fixed top-0 left-0 right-0 mx-auto w-full max-w-xl h-[100dvh] z-50 flex flex-col">
+      <div className="flex-none h-[72px] flex items-center px-6 border-b border-slate-800 bg-slate-900 z-10 pt-safe">
+        <OverlayNavButton
+          kind={hub === 'menu' || (hub === 'how' && howLast) ? 'close' : 'back'}
+          label={hub === 'menu' || (hub === 'how' && howLast) ? 'Close' : 'Back'}
+          onClick={goBack}
+        />
+      </div>
+
+      {hub === 'menu' ? (
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
+          <ToolLanding
+            kicker="Open House Tools"
+            kickerClass="text-indigo-400"
+            title="Guest Sign-In"
+            titleClass="font-openhouse"
+            blurb="iPad at the door. Name, cell, and the brochure goes to their phone."
+            primaryLabel="Start Guest Sign-In"
+            primaryEmoji="🏡"
+            primaryClass="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            onPrimary={() => setHub('work')}
+            onHow={() => {
+              setHowPage(0)
+              setHub('how')
+            }}
+            howClass="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
+          />
+        </div>
+      ) : hub === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={SIGNIN_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => {
+              setHowPage(0)
+              setHub('menu')
+            }}
+            doneLabel="Got it"
+            titleClass="font-openhouse"
+          />
+        </div>
+      ) : (
+      <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar p-6">
       <div className="bg-indigo-900/60 border border-indigo-800/80 backdrop-blur-md rounded-3xl p-6 shadow-2xl text-center space-y-5">
         {!isSubmitted ? (
           <div>
@@ -176,6 +239,8 @@ export function OpenHouseSignInView({
           </div>
         )}
       </div>
+      </div>
+      )}
     </div>
   )
 }
