@@ -413,6 +413,7 @@ function HomeContent() {
 
       if (currentUser) {
         clearAwaitingMagicLink()
+        sessionStorage.removeItem('crt-magic-finishing')
         const sessionOnly = sessionStorage.getItem('crt-session-only') === '1'
         const created = Date.parse(currentUser.created_at || '')
         const lastSign = Date.parse(currentUser.last_sign_in_at || currentUser.created_at || '')
@@ -827,6 +828,46 @@ function HomeContent() {
     }
     return persistWorkspace()
   }
+
+  useEffect(() => {
+    const waiting = modalData.isOpen && modalData.requiresAuth && modalAuthSent
+    if (!waiting) return
+
+    let cancelled = false
+    const finishIfSignedIn = async () => {
+      if (cancelled) return
+      if (sessionStorage.getItem('crt-magic-finishing') === '1') return
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) return
+      sessionStorage.setItem('crt-magic-finishing', '1')
+      clearAwaitingMagicLink()
+      window.location.reload()
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void finishIfSignedIn()
+    })
+    const interval = window.setInterval(() => { void finishIfSignedIn() }, 2000)
+    const onReturn = () => { void finishIfSignedIn() }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'crt-auth' || event.key === 'crt-auth-persist' || event.key === 'crt-auth-persist-pending') {
+        void finishIfSignedIn()
+      }
+    }
+    window.addEventListener('focus', onReturn)
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('storage', onStorage)
+    void finishIfSignedIn()
+
+    return () => {
+      cancelled = true
+      data.subscription.unsubscribe()
+      window.clearInterval(interval)
+      window.removeEventListener('focus', onReturn)
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [modalData.isOpen, modalData.requiresAuth, modalAuthSent])
 
   const closeCustomModal = () => {
     if (getAwaitingMagicLink()) return
@@ -1555,6 +1596,7 @@ function HomeContent() {
                         <p className="text-base text-slate-300">Click the link we sent to {modalEmail || 'your email'}.</p>
                         <p className="text-base text-slate-300">You&apos;ll stay logged in on this device.</p>
                         <p className="text-sm font-normal text-slate-500">(We know it&apos;s a pain in the butt, but it&apos;s easier than remembering a password)</p>
+                        <p className="text-xs text-slate-600">This screen closes on its own after you click the link.</p>
                       </div>
                     </div>
       )}
