@@ -86,7 +86,7 @@ export function HomeView({
 
         <ToolTile onClick={() => switchView('seller')} className="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">✨</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Net Sheets & Instant Reports</span>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller Reports & Net Sheets</span>
           <h2 className="font-seller text-3xl md:text-4xl mt-1">Make My Seller Happy</h2>
         </ToolTile>
 
