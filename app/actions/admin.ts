@@ -64,7 +64,7 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
       prospectsRes,
       visitsRes,
     ] = await Promise.all([
-      db.from('profiles').select('id, email, full_name, created_at, subscription_status, trial_ends_at, promo_code, show_custom_header'),
+      db.from('profiles').select('id, email, full_name, updated_at, subscription_status, trial_ends_at, promo_code, show_custom_header'),
       db.from('listings').select('profile_id'),
       db.from('net_sheets').select('profile_id'),
       db.from('tours').select('profile_id'),
@@ -78,6 +78,16 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
     if (profilesRes.error) {
       console.error('admin profiles', profilesRes.error.message)
       return { error: 'Could not load accounts.' }
+    }
+
+    const createdById = new Map<string, string>()
+    try {
+      const { data: authUsers } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 })
+      for (const authUser of authUsers?.users || []) {
+        if (authUser.created_at) createdById.set(authUser.id, authUser.created_at)
+      }
+    } catch (err) {
+      console.error('admin auth users', err)
     }
 
     const tableReady = !(visitsRes.error && isMissingRelation(visitsRes.error))
@@ -137,7 +147,7 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
         id: row.id,
         email: row.email || '',
         name: row.full_name || '',
-        createdAt: row.created_at || null,
+        createdAt: createdById.get(row.id) || row.updated_at || null,
         billing: billingLabel(billing) || 'None',
         header: Boolean(row.show_custom_header),
         listings: listingsBy.get(row.id) || 0,
