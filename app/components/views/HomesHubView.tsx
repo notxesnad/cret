@@ -1,11 +1,15 @@
 'use client'
 
 import { ToolTile } from '@/app/components/ToolTile'
+import { OverlayNavButton, ToolOverlay } from '@/app/components/OverlayNavButton'
 
 export function HomesHubView({ switchView }: { switchView: (view: string) => void }) {
   return (
-    <div id="view-myhomes" className="app-view active space-y-4">
-      <div className="text-center mb-6">
+    <ToolOverlay
+      id="view-myhomes"
+      nav={<OverlayNavButton kind="close" label="Close" onClick={() => switchView('home')} />}
+    >
+      <div className="text-center mb-2">
         <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Your inventory</span>
         <h1 className="text-2xl font-black mt-1">My Homes</h1>
         <p className="text-base text-slate-400 mt-1">Seller listings in one list. Homes you’re showing buyers in the other.</p>
@@ -26,6 +30,6 @@ export function HomesHubView({ switchView }: { switchView: (view: string) => voi
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Tours and buyer tools</span>
         <h2 className="text-2xl md:text-3xl mt-1 font-black">Homes I’m Showing</h2>
       </ToolTile>
-    </div>
+    </ToolOverlay>
   )
 }

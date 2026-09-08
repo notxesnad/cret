@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { OverlayNavButton, ToolOverlay } from '@/app/components/OverlayNavButton'
 import { CrmModeBar, CrmSpreadsheet } from '@/app/components/CrmSpreadsheet'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { isArchived } from '@/app/lib/archive'
@@ -130,10 +130,16 @@ export function ShowingHomesView({
   }
 
   return (
-    <div id="view-myshowing" className="app-view active space-y-4">
+    <ToolOverlay
+      id="view-myshowing"
+      nav={step === 1 ? (
+        <OverlayNavButton kind="back" label="Back" onClick={() => switchView('myhomes')} />
+      ) : (
+        <OverlayNavButton kind="back" label="Back" onClick={() => setStep(1)} />
+      )}
+    >
       {step === 1 ? (
         <>
-          <OverlayNavButton kind="back" label="My Homes" onClick={() => switchView('myhomes')} />
           <div className="text-center mb-2">
             <span className="text-xs font-bold tracking-widest text-orange-400 uppercase">Buyer inventory</span>
             <h1 className="text-2xl font-black mt-1">Homes I’m Showing</h1>
@@ -247,7 +253,6 @@ export function ShowingHomesView({
         </>
       ) : active ? (
         <>
-          <OverlayNavButton kind="back" label="Showing" onClick={() => setStep(1)} />
           <h1 className="text-2xl font-black">{homeLabel(active)}</h1>
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Address</span>
@@ -335,9 +340,7 @@ export function ShowingHomesView({
             {isArchived(active) ? 'Move back to active' : 'Archive this home'}
           </button>
         </>
-      ) : (
-        <OverlayNavButton kind="back" label="Showing" onClick={() => setStep(1)} />
-      )}
-    </div>
+      ) : null}
+    </ToolOverlay>
   )
 }

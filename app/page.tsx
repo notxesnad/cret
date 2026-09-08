@@ -68,7 +68,7 @@ const VIEW_PARENT: Record<string, string> = {
 const OVERLAY_VIEWS = new Set([
   'profile', 'sellertracker', 'netsheet', 'money', 'driving',
   'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration',
-  'myclients', 'mylistings', 'myshowing',
+  'myclients', 'myhomes', 'mylistings', 'myshowing',
 ])
 
 function parentOf(view: string) {
@@ -1293,7 +1293,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active, #view-myclients.active, #view-myhomes.active, #view-mylistings.active, #view-myshowing.active { display: flex !important; flex-direction: column !important; }
           .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -1304,7 +1304,7 @@ function HomeContent() {
         `}</style>
 
         <header className={`${shellWidth} mx-auto w-full flex justify-between items-center mb-6`}>
-          {['seller', 'openhouse', 'account', 'contact', 'myhomes'].includes(currentView) ? (
+          {['seller', 'openhouse', 'account', 'contact'].includes(currentView) ? (
             <button
               type="button"
               onClick={closeView}
@@ -1320,7 +1320,7 @@ function HomeContent() {
             </div>
           )}
           <div className="flex items-center gap-3">
-            {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact', 'myhomes'].includes(currentView) && (
+            {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact'].includes(currentView) && (
               <button onClick={closeView} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
                 ← Back
               </button>

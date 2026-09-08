@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { OverlayNavButton } from '@/app/components/OverlayNavButton'
+import { OverlayNavButton, ToolOverlay } from '@/app/components/OverlayNavButton'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { CrmModeBar, CrmSpreadsheet } from '@/app/components/CrmSpreadsheet'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
@@ -96,10 +96,16 @@ export function ClientsView({
   const assignedListings = listings.filter((listing) => listing.clientId === activeId)
 
   return (
-    <div id="view-myclients" className="app-view active space-y-4">
+    <ToolOverlay
+      id="view-myclients"
+      nav={step === 1 ? (
+        <OverlayNavButton kind="close" label="Close" onClick={() => switchView('home')} />
+      ) : (
+        <OverlayNavButton kind="back" label="Back" onClick={() => setStep(1)} />
+      )}
+    >
       {step === 1 ? (
         <>
-          <OverlayNavButton kind="close" label="Close" onClick={() => switchView('home')} />
           <div className="text-center mb-2">
             <span className="text-xs font-bold tracking-widest text-sky-400 uppercase">Your people</span>
             <h1 className="text-2xl font-black mt-1">My Clients</h1>
@@ -209,7 +215,6 @@ export function ClientsView({
         </>
       ) : active ? (
         <>
-          <OverlayNavButton kind="back" label="Clients" onClick={() => setStep(1)} />
           <h1 className="text-2xl font-black">{active.name || 'Client'}</h1>
           <div className="space-y-3">
             <label className="block">
@@ -308,9 +313,7 @@ export function ClientsView({
             {isArchived(active) ? 'Move back to active' : 'Archive this client'}
           </button>
         </>
-      ) : (
-        <OverlayNavButton kind="back" label="Clients" onClick={() => setStep(1)} />
-      )}
-    </div>
+      ) : null}
+    </ToolOverlay>
   )
 }
