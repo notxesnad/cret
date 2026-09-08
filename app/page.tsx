@@ -104,7 +104,7 @@ function HomeContent() {
     headshot_url: '',
     logo_url: '',
     custom_header_url: '',
-    pdf_look: 'look1',
+    pdf_look: 'look14',
     show_headshot: false,
     show_logo: false,
     show_custom_header: false,
@@ -456,7 +456,7 @@ function HomeContent() {
             headshot_url: data.headshot_url || pendingProfile.headshot_url || '',
             logo_url: data.logo_url || pendingProfile.logo_url || '',
             custom_header_url: data.custom_header_url || pendingProfile.custom_header_url || '',
-            pdf_look: dbHasName ? (data.pdf_look || 'look1') : (pendingProfile.pdf_look || data.pdf_look || 'look1'),
+            pdf_look: dbHasName ? (data.pdf_look || 'look14') : (pendingProfile.pdf_look || data.pdf_look || 'look14'),
             show_headshot: dbHasName ? data.show_headshot === true : pendingProfile.show_headshot === true,
             show_logo: dbHasName ? data.show_logo === true : pendingProfile.show_logo === true,
             show_custom_header: dbHasName
@@ -547,7 +547,7 @@ function HomeContent() {
             full_name: pendingProfile.full_name || '',
             phone: pendingProfile.phone || '',
             brokerage: pendingProfile.brokerage || '',
-            pdf_look: pendingProfile.pdf_look || 'look1',
+            pdf_look: pendingProfile.pdf_look || 'look14',
             show_headshot: pendingProfile.show_headshot === true,
             show_logo: pendingProfile.show_logo === true,
             show_custom_header: pendingProfile.show_custom_header === true,
@@ -1224,7 +1224,7 @@ function HomeContent() {
   }
 
   const clearCustomHeader = async () => {
-    const nextLook = profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1'
+    const nextLook = profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look14'
     setProfile((prev: any) => ({
       ...prev,
       custom_header_url: '',

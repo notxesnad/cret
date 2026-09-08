@@ -9,7 +9,7 @@ export function renderAgentHeader(profile: any, themeOverride: string | null = n
     )
   }
 
-  const look = themeOverride || (profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look1')
+  const look = themeOverride || (profile.pdf_look && profile.pdf_look !== 'custom' ? profile.pdf_look : 'look14')
   const name = profile.full_name || 'Jane Doe'
   const brokerage = profile.brokerage || 'Luxury Real Estate'
   const phone = profile.phone || '(555) 123-4567'

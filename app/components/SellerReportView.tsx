@@ -7,7 +7,7 @@ export const SELLER_DEMO_PUBLIC_PROFILE = {
   brokerage: 'Cool Real Estate Tools',
   phone: '(555) 555-0100',
   email: 'hello@coolrealestatetools.com',
-  pdf_look: 'look1',
+  pdf_look: 'look14',
 }
 
 export function SellerReportView({ profile, listing }: { profile: any; listing: any }) {
