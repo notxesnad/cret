@@ -1,0 +1,21 @@
+---
+description: Git deploy flow before launch vs after going live
+alwaysApply: true
+---
+
+# Deploy flow
+
+Vercel production is `main` → https://coolrealestatetools.com
+
+## Until the user says they are live
+
+When finishing work, commit and push to `main` unless they say not to.
+
+## After they say they are live
+
+Treat `main` as production.
+
+- Do not push unfinished or routine feature work straight to `main`.
+- Commit on a branch, push that branch, and open a PR when they want review.
+- Merge or push to `main` only when they explicitly ask to ship or push to production.
+- Never force-push `main`.
