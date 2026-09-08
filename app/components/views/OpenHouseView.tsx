@@ -6,8 +6,17 @@ export function OpenHouseView({ switchView }: { switchView: (view: string) => vo
       <div className="text-center mb-6">
         <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase font-openhouse">Open House Tools</span>
         <h1 className="text-2xl font-black mt-1">Host like a pro</h1>
-        <p className="text-base text-slate-400 mt-1">Sign-in sheets and anonymous visitor feedback.</p>
+        <p className="text-base text-slate-400 mt-1">Guest registration and anonymous visitor feedback.</p>
       </div>
+
+      <ToolTile
+        onClick={() => switchView('ohregistration')}
+        className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+      >
+        <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">📝</div>
+        <span className="text-xs font-bold tracking-wider uppercase opacity-70">Full-page sign-in &amp; QR</span>
+        <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Open House Registration</h2>
+      </ToolTile>
 
       <ToolTile
         onClick={() => switchView('ohfeedback')}
@@ -20,7 +29,7 @@ export function OpenHouseView({ switchView }: { switchView: (view: string) => vo
 
       <ToolTile
         onClick={() => switchView('ohsignin')}
-        className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+        className="group relative bg-white hover:bg-indigo-50 text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
       >
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏡</div>
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">iPad Sign-In &amp; Text-Back</span>

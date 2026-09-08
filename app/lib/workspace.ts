@@ -1,5 +1,6 @@
 import { isNetSheet, NET_SHEET_KIND, type NetSheet } from '@/app/lib/netSheet'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import {
   PROSPECT_KIND,
   PROSPECT_STORE_ID,
@@ -336,7 +337,12 @@ export function findCampaignInWorkspace(
   return workspace.outreachCampaigns.find((campaign: any) => {
     if (campaign.id !== campaignId) return false
     if (kind === OPENHOUSE_FEEDBACK_KIND) return campaign.kind === OPENHOUSE_FEEDBACK_KIND
-    if (kind === 'advice') return campaign.kind !== OPENHOUSE_FEEDBACK_KIND && campaign.kind !== PROSPECT_STORE_KIND
+    if (kind === OPENHOUSE_REGISTRATION_KIND) return campaign.kind === OPENHOUSE_REGISTRATION_KIND
+    if (kind === 'advice') {
+      return campaign.kind !== OPENHOUSE_FEEDBACK_KIND
+        && campaign.kind !== OPENHOUSE_REGISTRATION_KIND
+        && campaign.kind !== PROSPECT_STORE_KIND
+    }
     return true
   })
 }

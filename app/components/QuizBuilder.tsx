@@ -16,6 +16,14 @@ const ADVICE_QUESTION_BANK: Omit<Question, 'id'>[] = [
   { type: 'rating', maxRating: 5, text: 'On a scale of 1-5, how would you rate my current social media presence?' },
 ]
 
+const REGISTRATION_QUESTION_BANK: Omit<Question, 'id'>[] = [
+  { type: 'choice', text: 'How did you hear about this open house?', options: ['Yard sign', 'Online listing', 'Social media', 'My agent', 'A friend / neighbor', 'Just driving by'] },
+  { type: 'choice', text: "What's your timeline to buy?", options: ['Ready now', 'In the next 3 months', '3–6 months', 'Just looking'] },
+  { type: 'choice', text: 'Would you like the brochure and floor plan emailed to you?', options: ['Yes, please', 'No thanks'] },
+  { type: 'text', optional: true, text: "If you're working with an agent, what's their name?", placeholder: "Agent's name" },
+  { type: 'text', optional: true, text: 'Any questions about the home?', placeholder: 'Ask anything...' },
+]
+
 const OPENHOUSE_QUESTION_BANK: Omit<Question, 'id'>[] = [
   { type: 'rating', maxRating: 5, text: 'Overall, how would you rate this home?' },
   { type: 'choice', text: 'How does the asking price feel?', options: ['Priced too high', 'About right', 'A good value'] },
@@ -38,12 +46,16 @@ export function QuizBuilder({
 }: {
   questions: Question[]
   onChange: (q: Question[]) => void
-  bank?: 'advice' | 'openhouse'
+  bank?: 'advice' | 'openhouse' | 'registration'
 }) {
   const [bankOpen, setBankOpen] = useState(false)
   const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<string | null>(null)
   const [pendingDeleteOption, setPendingDeleteOption] = useState<{ qId: string; optIndex: number } | null>(null)
-  const questionBank = bank === 'openhouse' ? OPENHOUSE_QUESTION_BANK : ADVICE_QUESTION_BANK
+  const questionBank = bank === 'openhouse'
+    ? OPENHOUSE_QUESTION_BANK
+    : bank === 'registration'
+      ? REGISTRATION_QUESTION_BANK
+      : ADVICE_QUESTION_BANK
 
   const addBankQuestion = (q: Omit<Question, 'id'>) => {
     onChange([...questions, { ...q, id: Math.random().toString(36).substr(2, 9) }])

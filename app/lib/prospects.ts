@@ -5,6 +5,7 @@ export const PROSPECT_STORE_ID = '__prospects__'
 export type ProspectSourceTool =
   | 'openhouse_feedback'
   | 'openhouse_signin'
+  | 'openhouse_registration'
   | 'advice'
   | 'seller_report'
   | 'tour'

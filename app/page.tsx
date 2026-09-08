@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
@@ -19,6 +20,7 @@ import {
   OpenHouseView,
   OpenHouseSignInView,
   OpenHouseFeedbackView,
+  OpenHouseRegistrationView,
   SellerMenuView,
   NetSheetView,
   SellerTrackerView,
@@ -44,7 +46,7 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 }
 
 const VALID_VIEWS = [
-  'home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'seller', 'netsheet',
+  'home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
   'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
   'contact', 'account',
 ] as const
@@ -53,12 +55,13 @@ const VIEW_PARENT: Record<string, string> = {
   sellertracker: 'seller',
   netsheet: 'seller',
   ohfeedback: 'openhouse',
+  ohregistration: 'openhouse',
   ohsignin: 'openhouse',
 }
 
 const OVERLAY_VIEWS = new Set([
   'profile', 'sellertracker', 'netsheet', 'money', 'driving',
-  'neighborhoods', 'outreach', 'ohfeedback',
+  'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration',
 ])
 
 function parentOf(view: string) {
@@ -1209,7 +1212,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active { display: flex !important; flex-direction: column !important; }
           .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -1322,6 +1325,23 @@ function HomeContent() {
               agentHeader={renderAgentHeader(profile)}
             />
           )}
+          {currentView === 'ohregistration' && (
+            <OpenHouseRegistrationView
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind === OPENHOUSE_REGISTRATION_KIND)}
+              updateCampaigns={(updater) => updateOutreachCampaigns(prev => {
+                const others = (prev || []).filter((c: { kind?: string }) => c.kind !== OPENHOUSE_REGISTRATION_KIND)
+                const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_REGISTRATION_KIND)
+                return [...updater(mine), ...others]
+              })}
+              listings={workingListings}
+              updateListings={updatePropertyListings}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
+              persistWorkspace={persistIfSharingAllowed}
+              agentHeader={renderAgentHeader(profile)}
+            />
+          )}
           {showSeller && (
             <div className={currentView === 'seller' ? '' : 'hidden'}>
               <SellerMenuView switchView={switchView} />
@@ -1399,7 +1419,7 @@ function HomeContent() {
           )}
           {currentView === 'outreach' && (
             <OutreachView 
-              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== PROSPECT_STORE_KIND)}
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== OPENHOUSE_REGISTRATION_KIND && c.kind !== PROSPECT_STORE_KIND)}
               updateCampaigns={updateOutreachCampaigns}
               switchView={switchView}
               showCustomModal={showCustomModal}
