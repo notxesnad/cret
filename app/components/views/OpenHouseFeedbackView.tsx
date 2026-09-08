@@ -11,6 +11,7 @@ import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { OpenHouseFeedbackSigns } from '@/app/components/OpenHouseFeedbackSigns'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
+import { csvFilename, downloadResponsesCsv, formatCsvDate, type CsvResponse } from '@/app/lib/csvDownload'
 import { type QuizTheme } from '@/app/lib/quizTheme'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
@@ -121,7 +122,7 @@ const FEEDBACK_TOUR: HowToPage[] = [
   {
     emoji: '💚',
     kicker: 'The bonus',
-    title: 'Why sellers like it.',
+    title: 'Why visitors like it.',
     body: 'No clipboard staring at them. No pressure. After they submit, we can ask if they want a free monthly neighborhood snapshot. They can skip it. The quiz itself stays anonymous.',
   },
 ]
@@ -339,6 +340,21 @@ export function OpenHouseFeedbackView({
     navigator.clipboard.writeText(reportUrl).then(() => {
       showCustomModal(`Client link copied. Send this to your seller.\n\n${reportUrl}`)
     })
+  }
+
+  const handleDownloadCsv = () => {
+    if (!activeCampaign?.responses?.length) return
+    downloadResponsesCsv(
+      csvFilename('feedback', activeCampaign.listingAddress || activeCampaign.title),
+      [
+        { header: 'Submitted', get: r => formatCsvDate(r.date) },
+        ...activeCampaign.questions.map(q => ({
+          header: q.text,
+          get: (r: CsvResponse) => String(r.answers?.[q.id] ?? ''),
+        })),
+      ],
+      activeCampaign.responses as CsvResponse[],
+    )
   }
 
   const previewLead = {
@@ -735,6 +751,18 @@ export function OpenHouseFeedbackView({
 
       {step === 'responses' && (
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <button
+            type="button"
+            onClick={handleDownloadCsv}
+            disabled={!activeCampaign?.responses?.length}
+            className={`w-full font-black py-4 rounded-xl transition shadow mb-3 ${
+              activeCampaign?.responses?.length
+                ? 'bg-indigo-500 hover:bg-indigo-400 text-white'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            Download CSV
+          </button>
           <div className="flex gap-3">
             <button
               type="button"

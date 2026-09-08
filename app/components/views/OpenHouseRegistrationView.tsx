@@ -13,7 +13,9 @@ import { RegistrationExperience } from '@/app/components/RegistrationForm'
 import {
   OPENHOUSE_REGISTRATION_KIND,
   STANDARD_REGISTRATION_QUESTIONS,
+  registrationQuestionsForForm,
 } from '@/app/lib/openhouseRegistration'
+import { csvFilename, downloadResponsesCsv, formatCsvDate, type CsvResponse } from '@/app/lib/csvDownload'
 import type { Listing } from '@/app/components/views/SellerTrackerView'
 
 export interface RegistrationCampaign {
@@ -260,6 +262,27 @@ export function OpenHouseRegistrationView({
     navigator.clipboard.writeText(pageUrl).then(() => {
       showCustomModal(`Link copied. Open this on your iPad, or let visitors scan the QR.\n\n${pageUrl}`)
     })
+  }
+
+  const handleDownloadCsv = () => {
+    if (!activeCampaign?.responses?.length) return
+    const extra = registrationQuestionsForForm(activeCampaign.questions).filter(
+      q => !['name', 'contact', 'phone', 'email'].includes(q.id)
+    )
+    downloadResponsesCsv(
+      csvFilename('sign-ins', activeCampaign.listingAddress || activeCampaign.title),
+      [
+        { header: 'Signed in', get: r => formatCsvDate(r.date) },
+        { header: 'Name', get: r => String(r.answers?.name || '') },
+        { header: 'Phone', get: r => String(r.answers?.phone || '') },
+        { header: 'Email', get: r => String(r.answers?.email || '') },
+        ...extra.map(q => ({
+          header: q.text,
+          get: (r: CsvResponse) => String(r.answers?.[q.id] ?? ''),
+        })),
+      ],
+      activeCampaign.responses as CsvResponse[],
+    )
   }
 
   const previewCampaign = activeCampaign || {
@@ -640,6 +663,23 @@ export function OpenHouseRegistrationView({
             }`}
           >
             Save Registration Page
+          </button>
+        </div>
+      )}
+
+      {step === 'responses' && (
+        <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
+          <button
+            type="button"
+            onClick={handleDownloadCsv}
+            disabled={!activeCampaign?.responses?.length}
+            className={`w-full font-black py-4 rounded-xl transition shadow ${
+              activeCampaign?.responses?.length
+                ? 'bg-indigo-500 hover:bg-indigo-400 text-white'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            Download CSV
           </button>
         </div>
       )}
