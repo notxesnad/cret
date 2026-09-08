@@ -10,6 +10,7 @@ export interface TourHome {
   notes?: string
   photo_url?: string
   mls_pdf_url?: string
+  archived?: boolean
 }
 
 export interface TourStop {
@@ -33,6 +34,7 @@ export interface TourClient {
   homeNotes?: Record<string, string>
   homes?: TourHome[]
   kind?: string
+  archived?: boolean
 }
 
 export function isTourHomeStore(record: { kind?: string; id?: string } | null | undefined) {

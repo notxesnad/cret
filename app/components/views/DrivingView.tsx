@@ -30,6 +30,7 @@ import {
   type ClientTour,
   type TourClient,
 } from '@/app/lib/tourHomes'
+import { isActive } from '@/app/lib/archive'
 
 export type ClientHome = TourHome
 export type { TourStop, ClientTour }
@@ -210,8 +211,9 @@ export function DrivingView({
   }).filter(Boolean) as { stop: TourStop; home: TourHome }[]
 
   const unusedHomes = homes.filter(
-    h => !(activeTour?.stops || []).some(s => s.homeId === h.id)
+    h => isActive(h) && !(activeTour?.stops || []).some(s => s.homeId === h.id)
   )
+  const visibleClients = clients.filter(isActive)
 
   const updateActiveClient = (updater: (client: Client) => Client) => {
     if (!activeClientId) return
@@ -734,13 +736,13 @@ export function DrivingView({
             )}
 
             <div className="space-y-3">
-              {clients.length === 0 ? (
+              {visibleClients.length === 0 ? (
                 <div className="text-center py-10 bg-slate-800/50 rounded-2xl border border-slate-700/50">
                   <div className="text-4xl mb-3 opacity-50">🚗</div>
                   <p className="text-base text-slate-400 font-medium">No clients yet.<br/>Add one to start building tours.</p>
                 </div>
               ) : (
-                clients.map(client => (
+                visibleClients.map(client => (
                   <div
                     key={client.id}
                     onClick={() => { setActiveClientId(client.id); setStep(2) }}

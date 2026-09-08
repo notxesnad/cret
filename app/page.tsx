@@ -8,6 +8,7 @@ import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
+import { isActive, isArchived } from '@/app/lib/archive'
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { isSellerDemoListing, withSellerDemoListing } from '@/app/lib/sellerDemo'
@@ -30,7 +31,11 @@ import {
   NeighborhoodExpertView,
   OutreachView,
   ContactView,
-  AccountView
+  AccountView,
+  ClientsView,
+  HomesHubView,
+  ListingsManageView,
+  ShowingHomesView,
 } from './components/views'
 import { TrackLanding } from './components/TrackLanding'
 
@@ -48,7 +53,7 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 const VALID_VIEWS = [
   'home', 'signin', 'money', 'openhouse', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
   'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
-  'contact', 'account',
+  'contact', 'account', 'myclients', 'myhomes', 'mylistings', 'myshowing',
 ] as const
 
 const VIEW_PARENT: Record<string, string> = {
@@ -56,11 +61,14 @@ const VIEW_PARENT: Record<string, string> = {
   netsheet: 'seller',
   ohfeedback: 'openhouse',
   ohregistration: 'openhouse',
+  mylistings: 'myhomes',
+  myshowing: 'myhomes',
 }
 
 const OVERLAY_VIEWS = new Set([
   'profile', 'sellertracker', 'netsheet', 'money', 'driving',
   'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration',
+  'myclients', 'mylistings', 'myshowing',
 ])
 
 function parentOf(view: string) {
@@ -295,6 +303,7 @@ function HomeContent() {
 
   const propertyListings = listings.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
   const workingListings = propertyListings.filter((item: { id?: string }) => !isSellerDemoListing(item))
+  const activeWorkingListings = workingListings.filter(isActive)
   const netSheets = listings.filter(isNetSheet)
 
   const updatePropertyListings = (updater: (prev: any[]) => any[]) => {
@@ -302,6 +311,16 @@ function HomeContent() {
       const sheets = prev.filter(isNetSheet)
       const homes = prev.filter((item: { kind?: string }) => item.kind !== NET_SHEET_KIND)
       return [...updater(homes), ...sheets]
+    })
+  }
+
+  const updateActivePropertyListings = (updater: (prev: any[]) => any[]) => {
+    updatePropertyListings(prev => {
+      const archived = prev.filter(isArchived)
+      const active = prev.filter(isActive)
+      const next = updater(active)
+      const nextIds = new Set(next.map((item: { id?: string }) => item.id))
+      return [...next, ...archived.filter((item) => !nextIds.has(item.id))]
     })
   }
 
@@ -1256,6 +1275,9 @@ function HomeContent() {
   const showHome = currentView === 'home' || buriedParent === 'home'
   const showSeller = currentView === 'seller' || buriedParent === 'seller'
   const showOpenhouse = currentView === 'openhouse' || buriedParent === 'openhouse'
+  const showMyHomes = currentView === 'myhomes' || buriedParent === 'myhomes'
+  const crmWide = ['myclients', 'mylistings', 'myshowing'].includes(currentView)
+  const shellWidth = crmWide ? 'max-w-6xl' : 'max-w-xl'
 
   return (
     <>
@@ -1281,8 +1303,8 @@ function HomeContent() {
           html.crt-swipe-nav .app-view .transition-all { transition: none !important; }
         `}</style>
 
-        <header className="max-w-xl mx-auto w-full flex justify-between items-center mb-6">
-          {['seller', 'openhouse', 'account', 'contact'].includes(currentView) ? (
+        <header className={`${shellWidth} mx-auto w-full flex justify-between items-center mb-6`}>
+          {['seller', 'openhouse', 'account', 'contact', 'myhomes'].includes(currentView) ? (
             <button
               type="button"
               onClick={closeView}
@@ -1298,7 +1320,7 @@ function HomeContent() {
             </div>
           )}
           <div className="flex items-center gap-3">
-            {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact'].includes(currentView) && (
+            {currentView !== 'home' && !['seller', 'openhouse', 'account', 'contact', 'myhomes'].includes(currentView) && (
               <button onClick={closeView} className="text-xs font-bold bg-slate-800 hover:bg-slate-700 active:scale-[0.97] px-4 py-2 rounded-full border border-slate-700 transition">
                 ← Back
               </button>
@@ -1312,7 +1334,7 @@ function HomeContent() {
         </header>
 
         {/* Main Container */}
-        <main className="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative">
+        <main className={`${shellWidth} mx-auto w-full flex-1 flex flex-col justify-center my-4 sm:my-8 relative`}>
           {showHome && (
             <div className={currentView === 'home' ? '' : 'hidden'}>
             <HomeView
@@ -1342,7 +1364,7 @@ function HomeContent() {
           )}
           {currentView === 'money' && (
             <NetSheetView
-              listings={workingListings}
+              listings={activeWorkingListings}
               sheets={netSheets}
               updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
@@ -1366,8 +1388,8 @@ function HomeContent() {
                 const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_FEEDBACK_KIND)
                 return [...updater(mine), ...others]
               })}
-              listings={workingListings}
-              updateListings={updatePropertyListings}
+              listings={activeWorkingListings}
+              updateListings={updateActivePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
@@ -1383,8 +1405,8 @@ function HomeContent() {
                 const mine = (prev || []).filter((c: { kind?: string }) => c.kind === OPENHOUSE_REGISTRATION_KIND)
                 return [...updater(mine), ...others]
               })}
-              listings={workingListings}
-              updateListings={updatePropertyListings}
+              listings={activeWorkingListings}
+              updateListings={updateActivePropertyListings}
               switchView={switchView}
               showCustomModal={showCustomModal}
               userId={user?.id}
@@ -1399,7 +1421,7 @@ function HomeContent() {
           )}
           {currentView === 'netsheet' && (
             <NetSheetView
-              listings={workingListings}
+              listings={activeWorkingListings}
               sheets={netSheets}
               updateHomesAndSheets={updateHomesAndSheets}
               showCustomModal={showCustomModal}
@@ -1412,8 +1434,8 @@ function HomeContent() {
           )}
           {currentView === 'sellertracker' && (
             <SellerTrackerView
-              listings={propertyListings}
-              updateListings={updatePropertyListings}
+              listings={propertyListings.filter((item) => isActive(item) || isSellerDemoListing(item))}
+              updateListings={updateActivePropertyListings}
               showCustomModal={showCustomModal}
               switchView={switchView}
               userId={user?.id}
@@ -1439,8 +1461,43 @@ function HomeContent() {
               persistWorkspace={persistIfSharingAllowed}
             />
           )}
+          {showMyHomes && (
+            <div className={currentView === 'myhomes' ? '' : 'hidden'}>
+              <HomesHubView switchView={switchView} />
+            </div>
+          )}
+          {currentView === 'myclients' && (
+            <ClientsView
+              clients={unpackTourData(clients).people}
+              listings={workingListings}
+              updateClients={(updater) => updateClients(prev => {
+                const { people, prospects } = unpackTourData(prev)
+                return packPeopleAndProspects(updater(people), prospects)
+              })}
+              updateListings={updatePropertyListings}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
+              persistWorkspace={persistIfSharingAllowed}
+            />
+          )}
+          {currentView === 'mylistings' && (
+            <ListingsManageView
+              listings={workingListings}
+              clients={unpackTourData(clients).people}
+              updateListings={updatePropertyListings}
+              switchView={switchView}
+            />
+          )}
+          {currentView === 'myshowing' && (
+            <ShowingHomesView
+              homes={tourHomes}
+              updateHomes={updateTourHomes}
+              switchView={switchView}
+            />
+          )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}
-          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={workingListings} signedIn={!!user} />}
+          {currentView === 'sellercall' && <SellerCallView showCustomModal={showCustomModal} listings={activeWorkingListings} signedIn={!!user} />}
           {currentView === 'profile' && (
             <ProfileBuilderView 
               profileStep={profileStep} 

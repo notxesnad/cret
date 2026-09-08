@@ -11,6 +11,19 @@ type SupabaseLike = {
   from: (table: string) => any
 }
 
+function isMissingColumn(error: { code?: string; message?: string } | null | undefined) {
+  if (!error) return false
+  return (
+    error.code === 'PGRST204' ||
+    /archived|client_id/i.test(error.message || '')
+  )
+}
+
+function withoutNewCrmColumns(row: Record<string, unknown>) {
+  const { archived, client_id, ...rest } = row
+  return rest
+}
+
 async function syncRows(
   supabase: SupabaseLike,
   table: string,
@@ -32,7 +45,13 @@ async function syncRows(
   }
   if (rows.length) {
     const { error } = await supabase.from(table).upsert(rows)
-    if (error) return error
+    if (error && isMissingColumn(error)) {
+      const stripped = rows.map((row) => withoutNewCrmColumns(row as Record<string, unknown>))
+      const retry = await supabase.from(table).upsert(stripped)
+      if (retry.error) return retry.error
+    } else if (error) {
+      return error
+    }
   }
   return null
 }

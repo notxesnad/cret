@@ -85,6 +85,8 @@ export function assembleWorkspace(rows: {
     city: row.city || undefined,
     state: row.state || undefined,
     county: row.county || undefined,
+    clientId: row.client_id || undefined,
+    archived: row.archived === true,
     activities: Array.isArray(row.activities) ? row.activities : [],
   }))
 
@@ -107,6 +109,7 @@ export function assembleWorkspace(rows: {
     notes: row.notes || undefined,
     photo_url: row.photo_url || undefined,
     mls_pdf_url: row.mls_pdf_url || undefined,
+    archived: row.archived === true,
   }))
 
   const toursByClient = new Map<string, any[]>()
@@ -128,6 +131,7 @@ export function assembleWorkspace(rows: {
     phone: row.phone || undefined,
     homeNotes: row.home_notes && typeof row.home_notes === 'object' ? row.home_notes : {},
     tours: toursByClient.get(row.id) || [],
+    archived: row.archived === true,
   }))
 
   const prospects = asArray(rows.prospects).map((row) => ({
@@ -204,6 +208,8 @@ export function decomposeWorkspace(profileId: string, workspace: WorkspaceData) 
     city: listing.city || null,
     state: listing.state || null,
     county: listing.county || null,
+    client_id: listing.clientId || null,
+    archived: listing.archived === true,
     activities: Array.isArray(listing.activities) ? listing.activities : [],
     updated_at: new Date().toISOString(),
   }))
@@ -226,6 +232,7 @@ export function decomposeWorkspace(profileId: string, workspace: WorkspaceData) 
     notes: home.notes || null,
     photo_url: home.photo_url || null,
     mls_pdf_url: home.mls_pdf_url || null,
+    archived: home.archived === true,
   }))
 
   const clientRows = people.map((person) => ({
@@ -235,6 +242,7 @@ export function decomposeWorkspace(profileId: string, workspace: WorkspaceData) 
     email: person.email || null,
     phone: person.phone || null,
     home_notes: person.homeNotes || {},
+    archived: person.archived === true,
   }))
 
   const tourRows = people.flatMap((person) =>

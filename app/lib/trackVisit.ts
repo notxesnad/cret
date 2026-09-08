@@ -12,6 +12,7 @@ export const VISIT_TOOLS = [
   'tour',
   'netsheet',
   'report',
+  'dashboard',
 ] as const
 
 export type VisitTool = (typeof VISIT_TOOLS)[number]

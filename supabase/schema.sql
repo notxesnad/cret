@@ -13,6 +13,8 @@ create table if not exists public.listings (
   city text,
   state text,
   county text,
+  client_id text,
+  archived boolean not null default false,
   activities jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -38,6 +40,7 @@ create table if not exists public.tour_homes (
   notes text,
   photo_url text,
   mls_pdf_url text,
+  archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index if not exists tour_homes_profile_id_idx on public.tour_homes (profile_id);
@@ -49,6 +52,7 @@ create table if not exists public.clients (
   email text,
   phone text,
   home_notes jsonb not null default '{}'::jsonb,
+  archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index if not exists clients_profile_id_idx on public.clients (profile_id);
