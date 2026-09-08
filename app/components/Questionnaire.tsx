@@ -14,6 +14,8 @@ export interface Question {
   maxRating?: number
   optional?: boolean
   placeholder?: string
+  singleLine?: boolean
+  inputType?: 'text' | 'tel' | 'email'
 }
 
 interface QuestionnaireProps {
@@ -29,9 +31,12 @@ interface QuestionnaireProps {
     cta: string
     onSubmit: (info: { email: string; phone: string }) => Promise<void>
   }
+  doneTitle?: string
+  doneBody?: string
+  doneAction?: { label: string; onClick: () => void }
 }
 
-export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'dark', captureLead }: QuestionnaireProps) {
+export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'dark', captureLead, doneTitle, doneBody, doneAction }: QuestionnaireProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string | number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -46,6 +51,8 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
 
   const currentQ = questions[currentIndex]
   const progress = (currentIndex / questions.length) * 100
+  const isSingleLine = Boolean(currentQ?.singleLine || (currentQ && ['name', 'phone', 'email'].includes(currentQ.id)))
+  const lineInputType = currentQ?.inputType || (currentQ?.id === 'phone' ? 'tel' : currentQ?.id === 'email' ? 'email' : 'text')
 
   const colorMap = {
     fuchsia: 'bg-fuchsia-500',
@@ -125,8 +132,8 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>Thank you!</h2>
-            <p className={descClasses}>Your answers were submitted. I really appreciate your time.</p>
+            <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>{doneTitle || 'Thank you!'}</h2>
+            <p className={descClasses}>{doneBody || 'Your answers were submitted. I really appreciate your time.'}</p>
 
             {showLeadForm && (
               <div className="mt-8 text-left space-y-3">
@@ -186,6 +193,16 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </button>
           </div>
         )}
+
+        {!showLeadForm && doneAction && footer(
+          <button
+            type="button"
+            onClick={doneAction.onClick}
+            className={`w-full py-4 rounded-xl font-black text-white transition-all ${bgClass}`}
+          >
+            {doneAction.label}
+          </button>
+        )}
       </div>
     )
   }
@@ -244,7 +261,25 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </div>
           )}
 
-          {currentQ.type === 'text' && (
+          {currentQ.type === 'text' && isSingleLine && (
+            <input
+              type={lineInputType}
+              value={textInput}
+              onChange={e => setTextInput(e.target.value)}
+              placeholder={currentQ.placeholder || 'Type your answer here...'}
+              autoComplete={lineInputType === 'tel' ? 'tel' : lineInputType === 'email' ? 'email' : 'name'}
+              enterKeyHint="next"
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  submitText()
+                }
+              }}
+              className={`w-full rounded-xl px-4 py-4 mt-8 focus:outline-none ${textAreaClasses}`}
+            />
+          )}
+
+          {currentQ.type === 'text' && !isSingleLine && (
             <textarea
               value={textInput}
               onChange={e => setTextInput(e.target.value)}

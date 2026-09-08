@@ -7,7 +7,7 @@ import { type Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
-import { RegistrationForm } from '@/app/components/RegistrationForm'
+import { RegistrationExperience } from '@/app/components/RegistrationForm'
 import {
   OPENHOUSE_REGISTRATION_KIND,
   STANDARD_REGISTRATION_QUESTIONS,
@@ -243,16 +243,18 @@ export function OpenHouseRegistrationView({
       </div>
 
       {preview ? (
-        <div className="flex-1 min-h-0 flex flex-col bg-slate-50 overflow-y-auto">
+        <div className="flex-1 min-h-0 flex flex-col bg-slate-50">
           {agentHeader ? <div className="flex-none [&>*]:mb-0">{agentHeader}</div> : null}
-          <RegistrationForm
-            address={previewCampaign.listingAddress}
-            title={previewCampaign.title}
-            description={previewCampaign.description}
-            questions={previewCampaign.questions}
-            qrDataUrl={qrDataUrl}
-            onSubmit={() => {}}
-          />
+          <div className="flex-1 min-h-0">
+            <RegistrationExperience
+              address={previewCampaign.listingAddress}
+              title={previewCampaign.title}
+              description={previewCampaign.description}
+              questions={previewCampaign.questions}
+              qrDataUrl={qrDataUrl}
+              onSubmit={async () => {}}
+            />
+          </div>
         </div>
       ) : (
         <>

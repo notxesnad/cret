@@ -5,9 +5,9 @@ export const OPENHOUSE_REGISTRATION_KIND = 'openhouse_registration'
 export const REGISTRATION_FIELD_IDS = ['name', 'phone', 'email', 'is_realtor', 'with_realtor'] as const
 
 export const STANDARD_REGISTRATION_QUESTIONS: Question[] = [
-  { id: 'name', type: 'text', text: 'Full name', placeholder: 'Your name' },
-  { id: 'phone', type: 'text', text: 'Cell phone', placeholder: '(555) 555-5555' },
-  { id: 'email', type: 'text', optional: true, text: 'Email', placeholder: 'you@email.com' },
+  { id: 'name', type: 'text', text: "What's your name?", placeholder: 'Your full name', singleLine: true },
+  { id: 'phone', type: 'text', text: "What's your cell number?", placeholder: '(555) 555-5555', singleLine: true, inputType: 'tel' },
+  { id: 'email', type: 'text', optional: true, text: "What's your email?", placeholder: 'you@email.com', singleLine: true, inputType: 'email' },
   {
     id: 'is_realtor',
     type: 'choice',
