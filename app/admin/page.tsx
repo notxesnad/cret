@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loadAdminDashboard } from '@/app/actions/admin'
-import { TOOL_LABELS, type AdminDashboard } from '@/app/lib/adminTypes'
+import { deleteAdminUser, loadAdminDashboard } from '@/app/actions/admin'
+import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
+import { TOOL_LABELS, type AdminAgentRow, type AdminDashboard } from '@/app/lib/adminTypes'
 import { supabase } from '@/utils/supabase'
 
 function when(iso: string | null) {
@@ -32,10 +33,15 @@ export default function AdminPage() {
   const [message, setMessage] = useState('')
   const [data, setData] = useState<AdminDashboard | null>(null)
   const [query, setQuery] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<AdminAgentRow | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
 
-  const refresh = useCallback(async () => {
-    setStatus('loading')
-    setMessage('')
+  const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) {
+      setStatus('loading')
+      setMessage('')
+    }
     const { data: sessionData } = await supabase.auth.getSession()
     const token = sessionData.session?.access_token
     if (!token) {
@@ -55,6 +61,29 @@ export default function AdminPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deletingId) return
+    setDeleteError('')
+    setDeletingId(pendingDelete.id)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) {
+        setDeleteError('Sign in first.')
+        return
+      }
+      const result = await deleteAdminUser({ accessToken: token, profileId: pendingDelete.id })
+      if ('error' in result) {
+        setDeleteError(result.error)
+        return
+      }
+      setPendingDelete(null)
+      await refresh({ quiet: true })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const agents = useMemo(() => {
     if (!data) return []
@@ -247,6 +276,7 @@ export default function AdminPage() {
                       <th className="px-3 py-2 font-bold text-right">Quizzes</th>
                       <th className="px-3 py-2 font-bold text-right">Replies</th>
                       <th className="px-3 py-2 font-bold text-right">Client clicks</th>
+                      <th className="px-3 py-2 font-bold"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -280,6 +310,19 @@ export default function AdminPage() {
                         <td className="px-3 py-2 text-right">{agent.quizzes}</td>
                         <td className="px-3 py-2 text-right">{agent.responses}</td>
                         <td className="px-3 py-2 text-right font-bold">{agent.clientClicks}</td>
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteError('')
+                              setPendingDelete(agent)
+                            }}
+                            disabled={deletingId === agent.id}
+                            className="text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-50"
+                          >
+                            {deletingId === agent.id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -289,6 +332,30 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      {pendingDelete && (
+        <ConfirmDeleteDialog
+          message={
+            deleteError
+              ? deleteError
+              : `Delete ${pendingDelete.email || pendingDelete.name || 'this account'} and all of their tools, images, and login? This cannot be undone.`
+          }
+          confirmLabel={deletingId ? 'Deleting…' : 'Delete everything'}
+          cancelLabel={deleteError ? 'Close' : 'Keep them'}
+          onCancel={() => {
+            if (deletingId) return
+            setPendingDelete(null)
+            setDeleteError('')
+          }}
+          onConfirm={() => {
+            if (deleteError) {
+              setPendingDelete(null)
+              setDeleteError('')
+              return
+            }
+            void confirmDelete()
+          }}
+        />
+      )}
     </div>
   )
 }

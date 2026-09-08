@@ -8,6 +8,7 @@ import { billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
+import { getStripe } from '@/app/lib/stripe'
 import { isMissingRelation } from '@/app/lib/workspace'
 
 function admin() {
@@ -23,6 +24,13 @@ async function userFromToken(accessToken: string) {
   const { data, error } = await supabase.auth.getUser(accessToken)
   if (error || !data.user) return null
   return data.user
+}
+
+async function requireAdmin(accessToken: string): Promise<{ user: { id: string; email?: string } } | { error: string }> {
+  const user = await userFromToken(accessToken)
+  if (!user) return { error: 'Sign in first.' }
+  if (!isAdminEmail(user.email)) return { error: 'Not authorized.' }
+  return { user }
 }
 
 function countBy(rows: { profile_id?: string | null }[] | null | undefined) {
@@ -46,9 +54,9 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
   { data: AdminDashboard } | { error: string }
 > {
   try {
-    const user = await userFromToken(input.accessToken)
-    if (!user) return { error: 'Sign in first.' }
-    if (!isAdminEmail(user.email)) return { error: 'Not authorized.' }
+    const authed = await requireAdmin(input.accessToken)
+    if (!('user' in authed)) return { error: authed.error }
+    const user = authed.user
 
     const db = admin()
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -243,5 +251,97 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
   } catch (err) {
     console.error('loadAdminDashboard', err)
     return { error: 'Could not load the dashboard.' }
+  }
+}
+
+async function listStoragePaths(db: ReturnType<typeof admin>, prefix: string) {
+  const paths: string[] = []
+  const { data, error } = await db.storage.from('profiles').list(prefix, { limit: 1000 })
+  if (error || !data) return paths
+  for (const item of data) {
+    const path = prefix ? `${prefix}/${item.name}` : item.name
+    const isFolder = !item.id
+    if (isFolder) paths.push(...await listStoragePaths(db, path))
+    else paths.push(path)
+  }
+  return paths
+}
+
+async function removeUserImages(db: ReturnType<typeof admin>, userId: string) {
+  const paths = await listStoragePaths(db, userId)
+  if (!paths.length) return
+  for (let i = 0; i < paths.length; i += 100) {
+    const chunk = paths.slice(i, i + 100)
+    const { error } = await db.storage.from('profiles').remove(chunk)
+    if (error) console.error('admin storage remove', error.message)
+  }
+}
+
+async function removeStripeCustomer(customerId?: string | null, subscriptionId?: string | null) {
+  if (!customerId) return
+  try {
+    const stripe = getStripe()
+    if (subscriptionId) {
+      try {
+        await stripe.subscriptions.cancel(subscriptionId)
+      } catch (err) {
+        console.error('admin stripe cancel', err)
+      }
+    }
+    await stripe.customers.del(customerId)
+  } catch (err) {
+    console.error('admin stripe delete customer', err)
+  }
+}
+
+export async function deleteAdminUser(input: { accessToken: string; profileId: string }): Promise<
+  { ok: true } | { error: string }
+> {
+  try {
+    const authed = await requireAdmin(input.accessToken)
+    if (!('user' in authed)) return { error: authed.error }
+
+    const profileId = input.profileId?.trim()
+    if (!profileId) return { error: 'Missing account.' }
+    if (profileId === authed.user.id) return { error: 'You cannot delete your own account from here.' }
+
+    const db = admin()
+    const { data: profile, error: profileError } = await db
+      .from('profiles')
+      .select('id, email, stripe_customer_id, stripe_subscription_id')
+      .eq('id', profileId)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error('admin delete profile lookup', profileError.message)
+      return { error: 'Could not find that account.' }
+    }
+    if (!profile) return { error: 'That account is already gone.' }
+    if (isAdminEmail(profile.email)) return { error: 'Admin accounts cannot be deleted from here.' }
+
+    await removeUserImages(db, profileId)
+    await removeStripeCustomer(profile.stripe_customer_id, profile.stripe_subscription_id)
+
+    const visitDelete = await db.from('link_visits').delete().eq('profile_id', profileId)
+    if (visitDelete.error && !isMissingRelation(visitDelete.error)) {
+      console.error('admin delete visits', visitDelete.error.message)
+    }
+
+    const { error: rowError } = await db.from('profiles').delete().eq('id', profileId)
+    if (rowError) {
+      console.error('admin delete profile', rowError.message)
+      return { error: 'Could not delete their saved work.' }
+    }
+
+    const { error: authError } = await db.auth.admin.deleteUser(profileId)
+    if (authError) {
+      console.error('admin delete auth user', authError.message)
+      return { error: 'Deleted their data, but the login account is still there. Try again.' }
+    }
+
+    return { ok: true }
+  } catch (err) {
+    console.error('deleteAdminUser', err)
+    return { error: 'Could not delete that account.' }
   }
 }
