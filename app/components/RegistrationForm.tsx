@@ -76,7 +76,7 @@ export function RegistrationExperience({
       doneTitle="You're on the list"
       doneBody="Thanks for signing in. Enjoy the open house."
       doneAction={{
-        label: 'Next guest',
+        label: 'Home',
         onClick: () => {
           setStarted(false)
           setQuizKey((k) => k + 1)

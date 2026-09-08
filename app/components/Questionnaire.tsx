@@ -282,11 +282,11 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           {currentQ.type === 'contact' && (
             <div className="mt-8 space-y-3">
               <input
-                type="tel"
-                value={contactPhone}
-                onChange={e => setContactPhone(e.target.value)}
-                placeholder="Cell phone"
-                autoComplete="tel"
+                type="email"
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
                 enterKeyHint="next"
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -297,11 +297,11 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
                 className={`w-full rounded-xl px-4 py-4 focus:outline-none ${textAreaClasses}`}
               />
               <input
-                type="email"
-                value={contactEmail}
-                onChange={e => setContactEmail(e.target.value)}
-                placeholder="Email"
-                autoComplete="email"
+                type="tel"
+                value={contactPhone}
+                onChange={e => setContactPhone(e.target.value)}
+                placeholder="Cell phone"
+                autoComplete="tel"
                 enterKeyHint="next"
                 onKeyDown={e => {
                   if (e.key === 'Enter') {

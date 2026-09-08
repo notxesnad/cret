@@ -7,6 +7,7 @@ import { Question, Questionnaire } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
+import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { OpenHouseFeedbackSigns } from '@/app/components/OpenHouseFeedbackSigns'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { type QuizTheme } from '@/app/lib/quizTheme'
@@ -85,6 +86,45 @@ const templates: { title: string; description: string; questions: Question[] }[]
 
 const DEMO_PREVIEW = templates[0]
 
+const FEEDBACK_TOUR: HowToPage[] = [
+  {
+    emoji: '🤫',
+    kicker: 'The idea',
+    title: 'Honest answers. No name required.',
+    body: 'Visitors scan a QR on their phone and tap through a few questions. Nobody is holding a clipboard, so you actually hear what they think.',
+  },
+  {
+    emoji: '✏️',
+    kicker: 'Step 1',
+    title: 'Make a short questionnaire.',
+    body: 'Pick a listing and a template. Takes a minute. You can always write your own questions.',
+  },
+  {
+    emoji: '🪧',
+    kicker: 'Step 2',
+    title: 'Print a QR sign.',
+    body: 'Leave copies on the kitchen counter, the flyer table, or the front door. They scan. You keep hosting.',
+  },
+  {
+    emoji: '📲',
+    kicker: 'Step 3',
+    title: 'They tap through on their phone.',
+    body: 'Price, staging, first impression — honest notes while you are busy showing the house.',
+  },
+  {
+    emoji: '📊',
+    kicker: 'Step 4',
+    title: 'Read the notes later.',
+    body: 'Sellers get real feedback they would never say to your face. That is the whole trick.',
+  },
+  {
+    emoji: '💚',
+    kicker: 'The bonus',
+    title: 'Why sellers like it.',
+    body: 'No clipboard staring at them. No pressure. After they submit, we can ask if they want a free monthly neighborhood snapshot. They can skip it. The quiz itself stays anonymous.',
+  },
+]
+
 export function OpenHouseFeedbackView({
   campaigns,
   updateCampaigns,
@@ -106,23 +146,16 @@ export function OpenHouseFeedbackView({
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [preview, setPreview] = useState<{ title: string; description: string; questions: Question[] } | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState('')
+  const [howPage, setHowPage] = useState(0)
 
-  const stepRank = OH_RANK[step] + (preview ? 1 : 0)
-  useInnerSwipeBack(stepRank, 1, () => {
+  const stepRank = OH_RANK[step] + (preview ? 1 : 0) + (step === 'how' ? howPage : 0)
+  const goBack = () => {
     if (preview) {
       setPreview(null)
       return
     }
-    if (step === 'custom') setStep('template')
-    else if (step === 'template') setStep('listing')
-    else if (step === 'responses' || step === 'signs') setStep('detail')
-    else if (step === 'detail') setStep('list')
-    else setStep('home')
-  })
-
-  const goBack = () => {
-    if (preview) {
-      setPreview(null)
+    if (step === 'how' && howPage > 0) {
+      setHowPage(page => page - 1)
       return
     }
     if (step === 'custom') setStep('template')
@@ -131,6 +164,7 @@ export function OpenHouseFeedbackView({
     else if (step === 'detail') setStep('list')
     else setStep('home')
   }
+  useInnerSwipeBack(stepRank, 1, goBack)
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
   const selectedListing = listings.find(l => l.id === selectedListingId)
@@ -333,6 +367,16 @@ export function OpenHouseFeedbackView({
             />
           </div>
         </div>
+      ) : step === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={FEEDBACK_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => setPreview(DEMO_PREVIEW)}
+            doneLabel="Preview what visitors see"
+          />
+        </div>
       ) : (
         <>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden hide-scrollbar bg-slate-900">
@@ -346,14 +390,6 @@ export function OpenHouseFeedbackView({
               </div>
 
               <div className="space-y-4">
-                <ToolTile
-                  onClick={() => setStep('how')}
-                  className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
-                >
-                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
-                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
-                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
-                </ToolTile>
                 <ToolTile
                   onClick={startCreate}
                   className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
@@ -372,48 +408,18 @@ export function OpenHouseFeedbackView({
                   </span>
                   <h2 className="font-openhouse text-2xl md:text-3xl mt-1">See the ones I&apos;ve built already</h2>
                 </ToolTile>
+                <ToolTile
+                  onClick={() => {
+                    setHowPage(0)
+                    setStep('how')
+                  }}
+                  className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
+                >
+                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
+                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
+                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
+                </ToolTile>
               </div>
-            </div>
-          )}
-
-          {step === 'how' && (
-            <div className="animate-fade-in-up space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-black text-white">What this does</h2>
-                <p className="text-base text-slate-300 mt-3 leading-relaxed">
-                  Visitors scan a QR code on their phone and answer a few quick questions. No name required, so you actually hear what they think.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { n: '1', t: 'You make a short questionnaire', d: 'Pick a listing and a template. Takes a minute.' },
-                  { n: '2', t: 'Print a QR sign', d: 'Leave copies on the kitchen counter, the flyer table, or the front door.' },
-                  { n: '3', t: 'They tap through on their phone', d: 'Price, staging, first impression — honest answers while you host.' },
-                  { n: '4', t: 'You read the notes later', d: 'Sellers get real feedback they would never say to your face.' },
-                ].map(item => (
-                  <div key={item.n} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex gap-4">
-                    <div className="flex-none w-9 h-9 rounded-full bg-indigo-500 text-white font-black flex items-center justify-center">{item.n}</div>
-                    <div>
-                      <p className="font-black text-white">{item.t}</p>
-                      <p className="text-sm text-slate-400 mt-1">{item.d}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 space-y-2">
-                <p className="font-black text-indigo-200">Why sellers like it</p>
-                <p className="text-sm text-slate-300 leading-relaxed">No clipboard staring at them. No pressure. You still catch people who are willing to talk — after they submit, we ask if they want a free monthly neighborhood snapshot. They can skip it. The quiz itself stays anonymous.</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setPreview(DEMO_PREVIEW)}
-                className={primaryBtn}
-              >
-                Preview what visitors see
-              </button>
             </div>
           )}
 

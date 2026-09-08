@@ -7,6 +7,7 @@ import { type Question } from '@/app/components/Questionnaire'
 import { QuizBuilder } from '@/app/components/QuizBuilder'
 import { SharePreviewButtons } from '@/app/components/SharePreviewButtons'
 import { ToolTile } from '@/app/components/ToolTile'
+import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { RegistrationExperience } from '@/app/components/RegistrationForm'
 import {
   OPENHOUSE_REGISTRATION_KIND,
@@ -57,6 +58,39 @@ const STANDARD_TEMPLATE = {
   questions: STANDARD_REGISTRATION_QUESTIONS,
 }
 
+const REGISTRATION_TOUR: HowToPage[] = [
+  {
+    emoji: '🚪',
+    kicker: 'The idea',
+    title: 'Put an iPad at the door.',
+    body: 'Visitors sign in with their name, or scan the QR and do it on their phone. About 20 seconds. You keep showing the house.',
+  },
+  {
+    emoji: '🏡',
+    kicker: 'Step 1',
+    title: 'Pick the listing.',
+    body: 'Use one you already have, or add a new address. Every sign-in is tied to that house.',
+  },
+  {
+    emoji: '✍️',
+    kicker: 'Step 2',
+    title: 'The form is already written.',
+    body: 'Name, a phone or email, and “are you working with a realtor?” Always included. Add extra questions if you want.',
+  },
+  {
+    emoji: '📱',
+    kicker: 'Step 3',
+    title: 'Open it. Leave the QR out.',
+    body: 'Load the link on your iPad. Print or show the QR so people can sign in on their own phones.',
+  },
+  {
+    emoji: '🎉',
+    kicker: 'Step 4',
+    title: 'See who came by.',
+    body: 'Names, how to reach them, and whether they are a realtor or already have one. Ready when the open house is over.',
+  },
+]
+
 export function OpenHouseRegistrationView({
   campaigns,
   updateCampaigns,
@@ -78,23 +112,16 @@ export function OpenHouseRegistrationView({
   const [customQuestions, setCustomQuestions] = useState<Question[]>([])
   const [preview, setPreview] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState('')
+  const [howPage, setHowPage] = useState(0)
 
-  const stepRank = OH_RANK[step] + (preview ? 1 : 0)
-  useInnerSwipeBack(stepRank, 1, () => {
+  const stepRank = OH_RANK[step] + (preview ? 1 : 0) + (step === 'how' ? howPage : 0)
+  const goBack = () => {
     if (preview) {
       setPreview(false)
       return
     }
-    if (step === 'custom') setStep('template')
-    else if (step === 'template') setStep('listing')
-    else if (step === 'responses') setStep('detail')
-    else if (step === 'detail') setStep('list')
-    else setStep('home')
-  })
-
-  const goBack = () => {
-    if (preview) {
-      setPreview(false)
+    if (step === 'how' && howPage > 0) {
+      setHowPage(page => page - 1)
       return
     }
     if (step === 'custom') setStep('template')
@@ -103,6 +130,7 @@ export function OpenHouseRegistrationView({
     else if (step === 'detail') setStep('list')
     else setStep('home')
   }
+  useInnerSwipeBack(stepRank, 1, goBack)
 
   const activeCampaign = campaigns.find(c => c.id === activeId)
   const selectedListing = listings.find(l => l.id === selectedListingId)
@@ -256,6 +284,16 @@ export function OpenHouseRegistrationView({
             />
           </div>
         </div>
+      ) : step === 'how' ? (
+        <div className="flex-1 min-h-0 p-6 pb-safe bg-slate-900">
+          <HowToTour
+            pages={REGISTRATION_TOUR}
+            page={howPage}
+            onPageChange={setHowPage}
+            onDone={() => setPreview(true)}
+            doneLabel="Preview what visitors see"
+          />
+        </div>
       ) : (
         <>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden hide-scrollbar bg-slate-900">
@@ -269,14 +307,6 @@ export function OpenHouseRegistrationView({
               </div>
 
               <div className="space-y-4">
-                <ToolTile
-                  onClick={() => setStep('how')}
-                  className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
-                >
-                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
-                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
-                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
-                </ToolTile>
                 <ToolTile
                   onClick={startCreate}
                   className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
@@ -295,39 +325,18 @@ export function OpenHouseRegistrationView({
                   </span>
                   <h2 className="font-openhouse text-2xl md:text-3xl mt-1">See the ones I&apos;ve built already</h2>
                 </ToolTile>
+                <ToolTile
+                  onClick={() => {
+                    setHowPage(0)
+                    setStep('how')
+                  }}
+                  className="group relative bg-indigo-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
+                >
+                  <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
+                  <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
+                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
+                </ToolTile>
               </div>
-            </div>
-          )}
-
-          {step === 'how' && (
-            <div className="animate-fade-in-up space-y-6">
-              <div className="text-center">
-                <h2 className="text-2xl font-black text-white">What this does</h2>
-                <p className="text-base text-slate-300 mt-3 leading-relaxed">
-                  Put this page on an iPad at the door. Visitors sign in with their name, or scan the QR and do it on their phone.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { n: '1', t: 'Pick the listing', d: 'Use one you already have, or add a new address.' },
-                  { n: '2', t: 'Use the standard form — or add your own questions', d: 'Name, a phone or email, and the realtor question are always included.' },
-                  { n: '3', t: 'Open the link on your iPad', d: 'Or print / show the QR so people can sign in on their phones.' },
-                  { n: '4', t: 'Read who came by', d: 'Names, numbers, and whether they are a realtor or already have one.' },
-                ].map(item => (
-                  <div key={item.n} className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex gap-4">
-                    <div className="flex-none w-9 h-9 rounded-full bg-indigo-500 text-white font-black flex items-center justify-center">{item.n}</div>
-                    <div>
-                      <p className="font-black text-white">{item.t}</p>
-                      <p className="text-sm text-slate-400 mt-1">{item.d}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button type="button" onClick={() => setPreview(true)} className={primaryBtn}>
-                Preview what visitors see
-              </button>
             </div>
           )}
 
