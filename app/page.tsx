@@ -1494,6 +1494,8 @@ function HomeContent() {
               homes={tourHomes}
               updateHomes={updateTourHomes}
               switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
             />
           )}
           {currentView === 'buyer' && <BuyerView showCustomModal={showCustomModal} signedIn={!!user} />}

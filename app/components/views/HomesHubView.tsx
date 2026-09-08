@@ -13,7 +13,7 @@ export function HomesHubView({ switchView }: { switchView: (view: string) => voi
 
       <ToolTile
         onClick={() => switchView('mylistings')}
-        className="group relative bg-amber-500 hover:bg-amber-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+        className="group relative bg-teal-500 hover:bg-teal-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
       >
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller inventory</span>
         <h2 className="text-2xl md:text-3xl mt-1 font-black">My Listings</h2>
@@ -21,7 +21,7 @@ export function HomesHubView({ switchView }: { switchView: (view: string) => voi
 
       <ToolTile
         onClick={() => switchView('myshowing')}
-        className="group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+        className="group relative bg-orange-500 hover:bg-orange-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
       >
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Tours and buyer tools</span>
         <h2 className="text-2xl md:text-3xl mt-1 font-black">Homes I’m Showing</h2>

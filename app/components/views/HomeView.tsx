@@ -78,18 +78,6 @@ export function HomeView({
       </div>
 
       <div className="grid grid-cols-2 gap-4 pb-20">
-        <ToolTile onClick={() => switchView('myclients')} className="group relative bg-sky-600 hover:bg-sky-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
-          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👥</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">People you work with</span>
-          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">My Clients</h2>
-        </ToolTile>
-
-        <ToolTile onClick={() => switchView('myhomes')} className="group relative bg-emerald-900 hover:bg-emerald-800 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
-          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏠</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Listings and showing homes</span>
-          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">My Homes</h2>
-        </ToolTile>
-
         <ToolTile onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Brand your tools &amp; PDF styles</span>
@@ -126,6 +114,18 @@ export function HomeView({
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:rotate-12">💵</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller net sheets</span>
           <h2 className="font-money text-3xl md:text-4xl tracking-wide uppercase mt-1">Money Stuff</h2>
+        </ToolTile>
+
+        <ToolTile onClick={() => switchView('myclients')} className="group relative bg-sky-600 hover:bg-sky-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
+          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👥</div>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">People you work with</span>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">My Clients</h2>
+        </ToolTile>
+
+        <ToolTile onClick={() => switchView('myhomes')} className="group relative bg-emerald-900 hover:bg-emerald-800 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
+          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏠</div>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Listings and showing homes</span>
+          <h2 className="text-2xl md:text-3xl tracking-wide font-black mt-1">My Homes</h2>
         </ToolTile>
 
         <ToolTile onClick={handleInstallClick} className="group relative bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-slate-700 hover:border-slate-600">
