@@ -26,15 +26,6 @@ export function OpenHouseView({ switchView }: { switchView: (view: string) => vo
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Anonymous quizzes &amp; QR signs</span>
         <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Collect Anonymous Open House Feedback</h2>
       </ToolTile>
-
-      <ToolTile
-        onClick={() => switchView('ohsignin')}
-        className="group relative bg-white hover:bg-indigo-50 text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-indigo-300"
-      >
-        <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏡</div>
-        <span className="text-xs font-bold tracking-wider uppercase opacity-70">iPad Sign-In &amp; Text-Back</span>
-        <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Guest Sign-In</h2>
-      </ToolTile>
     </div>
   )
 }

@@ -98,7 +98,7 @@ export function HomeView({
 
         <ToolTile onClick={() => switchView('openhouse')} className="group relative bg-indigo-600 hover:bg-indigo-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🏡</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">iPad sign-in, QR &amp; feedback</span>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Registration, QR &amp; feedback</span>
           <h2 className="font-openhouse text-2xl md:text-3xl tracking-wide mt-1">Open House Tools</h2>
         </ToolTile>
 

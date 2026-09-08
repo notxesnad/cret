@@ -99,33 +99,6 @@ export const NET_SHEET_TOUR: HowToPage[] = [
   },
 ]
 
-export const SIGNIN_TOUR: HowToPage[] = [
-  {
-    emoji: '🏡',
-    kicker: 'The idea',
-    title: 'Sign in. Get the info.',
-    body: 'Put this on an iPad at the door. Guests leave a name and cell, and the brochure and floor plan go to their phone.',
-  },
-  {
-    emoji: '📍',
-    kicker: 'Step 1',
-    title: 'Pick the listing.',
-    body: 'Choose the house this open house is for, or add a new address.',
-  },
-  {
-    emoji: '✍️',
-    kicker: 'Step 2',
-    title: 'They type a name and cell.',
-    body: 'Twenty seconds. No QR, no extra questions — just the info you need to follow up.',
-  },
-  {
-    emoji: '📲',
-    kicker: 'Step 3',
-    title: 'The details get texted over.',
-    body: 'They walk the house with the brochure on their phone. You keep hosting.',
-  },
-]
-
 export const OUTREACH_TOUR: HowToPage[] = [
   {
     emoji: '🤝',

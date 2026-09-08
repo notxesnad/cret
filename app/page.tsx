@@ -18,7 +18,6 @@ import {
   HomeView,
   SignInView,
   OpenHouseView,
-  OpenHouseSignInView,
   OpenHouseFeedbackView,
   OpenHouseRegistrationView,
   SellerMenuView,
@@ -46,7 +45,7 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 }
 
 const VALID_VIEWS = [
-  'home', 'signin', 'money', 'openhouse', 'ohsignin', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
+  'home', 'signin', 'money', 'openhouse', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
   'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
   'contact', 'account',
 ] as const
@@ -56,7 +55,6 @@ const VIEW_PARENT: Record<string, string> = {
   netsheet: 'seller',
   ohfeedback: 'openhouse',
   ohregistration: 'openhouse',
-  ohsignin: 'openhouse',
 }
 
 const OVERLAY_VIEWS = new Set([
@@ -1298,15 +1296,6 @@ function HomeContent() {
             <div className={currentView === 'openhouse' ? '' : 'hidden'}>
               <OpenHouseView switchView={switchView} />
             </div>
-          )}
-          {currentView === 'ohsignin' && (
-            <OpenHouseSignInView
-              listings={workingListings}
-              updateListings={updatePropertyListings}
-              switchView={switchView}
-              showCustomModal={showCustomModal}
-              userId={user?.id}
-            />
           )}
           {currentView === 'ohfeedback' && (
             <OpenHouseFeedbackView
