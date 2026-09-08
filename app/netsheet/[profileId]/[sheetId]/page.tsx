@@ -5,13 +5,16 @@ import { asNetSheet, sheetTitle } from '@/app/lib/netSheet'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicNetSheet } from '@/app/lib/workspacePublic'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NetSheetSharePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ profileId: string; sheetId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { profileId, sheetId } = await params
   const { profile, sheet: raw } = await findPublicNetSheet(adminClient(), profileId, sheetId)
@@ -29,6 +32,14 @@ export default async function NetSheetSharePage({
   if (!hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'netsheet',
+    profileId,
+    sourceId: sheetId,
+    path: `/netsheet/${profileId}/${sheetId}`,
+    searchParams,
+  })
 
   return (
     <div className="min-h-screen bg-[#ece8df] text-slate-900 font-sans pb-20">

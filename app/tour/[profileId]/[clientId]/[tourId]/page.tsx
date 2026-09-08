@@ -6,6 +6,7 @@ import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } fr
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicTour } from '@/app/lib/workspacePublic'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,9 +20,11 @@ async function getTourShareUrl(path: string) {
 }
 
 export default async function TourItineraryPage({
-  params
+  params,
+  searchParams,
 }: {
   params: Promise<{ profileId: string; clientId: string; tourId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { profileId, clientId, tourId } = await params
   const supabaseAdmin = adminClient()
@@ -44,6 +47,14 @@ export default async function TourItineraryPage({
   if (!hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'tour',
+    profileId,
+    sourceId: tourId,
+    path: `/tour/${profileId}/${clientId}/${tourId}`,
+    searchParams,
+  })
 
   const shareUrl = await getTourShareUrl(`/tour/${profileId}/${clientId}/${tourId}`)
   const qrDataUrl = await QRCode.toDataURL(shareUrl, {

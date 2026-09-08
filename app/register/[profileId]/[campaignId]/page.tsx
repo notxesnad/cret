@@ -2,6 +2,7 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { RegistrationClient } from './RegistrationClient'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +13,13 @@ export const viewport = {
   interactiveWidget: 'resizes-content',
 }
 
-export default async function OpenHouseRegistrationPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
+export default async function OpenHouseRegistrationPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ profileId: string; campaignId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { profileId, campaignId } = await params
   const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'registration')
 
@@ -28,6 +35,14 @@ export default async function OpenHouseRegistrationPage({ params }: { params: Pr
   if (!hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'register',
+    profileId,
+    sourceId: campaignId,
+    path: `/register/${profileId}/${campaignId}`,
+    searchParams,
+  })
 
   return (
     <div className="h-[100dvh] flex flex-col font-sans bg-slate-50 text-slate-900">

@@ -3,6 +3,7 @@ import { AdviceClient } from './AdviceClient'
 import { normalizeQuizTheme } from '@/app/lib/quizTheme'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,13 @@ export const viewport = {
   interactiveWidget: 'resizes-content',
 }
 
-export default async function AdvicePage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
+export default async function AdvicePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ profileId: string; campaignId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { profileId, campaignId } = await params
   const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'advice')
 
@@ -29,6 +36,14 @@ export default async function AdvicePage({ params }: { params: Promise<{ profile
   if (!hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'advice',
+    profileId,
+    sourceId: campaignId,
+    path: `/advice/${profileId}/${campaignId}`,
+    searchParams,
+  })
 
   const theme = normalizeQuizTheme(campaign.theme)
   const isDark = theme === 'dark'

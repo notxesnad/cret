@@ -1,11 +1,18 @@
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { OpenHouseFeedbackReportView } from '@/app/components/OpenHouseFeedbackReportView'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
-export default async function OpenHouseFeedbackReportPage({ params }: { params: Promise<{ profileId: string; campaignId: string }> }) {
+export default async function OpenHouseFeedbackReportPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ profileId: string; campaignId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { profileId, campaignId } = await params
   const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'feedback')
 
@@ -21,6 +28,14 @@ export default async function OpenHouseFeedbackReportPage({ params }: { params: 
   if (!hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'feedback_report',
+    profileId,
+    sourceId: campaignId,
+    path: `/feedback/${profileId}/${campaignId}/report`,
+    searchParams,
+  })
 
   return <OpenHouseFeedbackReportView profile={profile} campaign={campaign} />
 }

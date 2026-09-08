@@ -2,11 +2,18 @@ import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { SellerReportView } from '@/app/components/SellerReportView'
 import { isSellerDemoListing } from '@/app/lib/sellerDemo'
+import { trackShareVisit } from '@/app/lib/trackVisit'
 import { adminClient, findPublicListing } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
-export default async function SellerReportPage({ params }: { params: Promise<{ profileId: string; listingId: string }> }) {
+export default async function SellerReportPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ profileId: string; listingId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { profileId, listingId } = await params
   const supabaseAdmin = adminClient()
   const { profile, listing } = await findPublicListing(supabaseAdmin, profileId, listingId)
@@ -28,6 +35,14 @@ export default async function SellerReportPage({ params }: { params: Promise<{ p
   if (!isSellerDemoListing(listing) && !hasShareAccess(billingFromProfile(profile))) {
     return <ShareUnavailable profile={profile} />
   }
+
+  await trackShareVisit({
+    tool: 'report',
+    profileId,
+    sourceId: listingId,
+    path: `/report/${profileId}/${listingId}`,
+    searchParams,
+  })
 
   return <SellerReportView profile={profile} listing={listing} />
 }

@@ -32,6 +32,7 @@ import {
   ContactView,
   AccountView
 } from './components/views'
+import { TrackLanding } from './components/TrackLanding'
 
 function extraHomesFrom(source: { homes?: TourHome[] } | null | undefined): TourHome[] {
   return Array.isArray(source?.homes) ? source.homes : []
@@ -1199,6 +1200,7 @@ function HomeContent() {
 
   return (
     <>
+      <TrackLanding />
       <div className="min-h-screen flex flex-col justify-between p-4 md:p-8 bg-[#0f172a] text-[#f8fafc] font-['Inter',sans-serif]">
         
         <style jsx global>{`
