@@ -1,5 +1,6 @@
 export const TOOL_LABELS: Record<string, string> = {
   site: 'Site',
+  app: 'App visit',
   register: 'OH registration',
   feedback: 'OH feedback',
   feedback_report: 'Feedback report',
@@ -27,6 +28,9 @@ export type AdminAgentRow = {
   prospects: number
   clientClicks: number
   clicksByTool: Record<string, number>
+  appVisits: number
+  appVisitsThisWeek: number
+  lastVisit: string | null
 }
 
 export type AdminRecentVisit = {
@@ -51,6 +55,9 @@ export type AdminDashboard = {
     siteClicksWithUtm: number
     clientClicks: number
     clientClicksThisWeek: number
+    appVisits: number
+    appVisitsThisWeek: number
+    agentsActiveThisWeek: number
     responses: number
   }
   siteByCampaign: { campaign: string; source: string; clicks: number }[]

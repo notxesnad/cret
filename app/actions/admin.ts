@@ -114,7 +114,8 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
 
     const visits = tableReady ? (visitsRes.data || []) : []
     const siteVisits = visits.filter((row) => row.tool === 'site')
-    const clientVisits = visits.filter((row) => row.tool !== 'site')
+    const appVisits = visits.filter((row) => row.tool === 'app')
+    const clientVisits = visits.filter((row) => row.tool !== 'site' && row.tool !== 'app')
 
     const siteByCampaignMap = new Map<string, { campaign: string; source: string; clicks: number }>()
     for (const row of siteVisits) {
@@ -136,6 +137,19 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
       const tools = clicksByAgentTool.get(row.profile_id) || {}
       tools[row.tool] = (tools[row.tool] || 0) + 1
       clicksByAgentTool.set(row.profile_id, tools)
+    }
+
+    const appVisitsByAgent = new Map<string, number>()
+    const appVisitsThisWeekByAgent = new Map<string, number>()
+    const lastVisitByAgent = new Map<string, string>()
+    for (const row of appVisits) {
+      if (!row.profile_id) continue
+      appVisitsByAgent.set(row.profile_id, (appVisitsByAgent.get(row.profile_id) || 0) + 1)
+      if (row.created_at >= weekAgo) {
+        appVisitsThisWeekByAgent.set(row.profile_id, (appVisitsThisWeekByAgent.get(row.profile_id) || 0) + 1)
+      }
+      const previous = lastVisitByAgent.get(row.profile_id)
+      if (!previous || row.created_at > previous) lastVisitByAgent.set(row.profile_id, row.created_at)
     }
 
     const profiles = profilesRes.data || []
@@ -161,8 +175,14 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
         prospects: prospectsBy.get(row.id) || 0,
         clientClicks: clientClicksByAgent.get(row.id) || 0,
         clicksByTool: clicksByAgentTool.get(row.id) || {},
+        appVisits: appVisitsByAgent.get(row.id) || 0,
+        appVisitsThisWeek: appVisitsThisWeekByAgent.get(row.id) || 0,
+        lastVisit: lastVisitByAgent.get(row.id) || null,
       }
     }).sort((a, b) => {
+      const aVisit = a.lastVisit ? Date.parse(a.lastVisit) : 0
+      const bVisit = b.lastVisit ? Date.parse(b.lastVisit) : 0
+      if (aVisit !== bVisit) return bVisit - aVisit
       const aTime = a.createdAt ? Date.parse(a.createdAt) : 0
       const bTime = b.createdAt ? Date.parse(b.createdAt) : 0
       return bTime - aTime
@@ -198,6 +218,9 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
           siteClicksWithUtm: siteVisits.filter((row) => row.utm_source || row.utm_campaign).length,
           clientClicks: clientVisits.length,
           clientClicksThisWeek: clientVisits.filter((row) => row.created_at >= weekAgo).length,
+          appVisits: appVisits.length,
+          appVisitsThisWeek: appVisits.filter((row) => row.created_at >= weekAgo).length,
+          agentsActiveThisWeek: appVisitsThisWeekByAgent.size,
           responses: (responsesRes.data || []).length,
         },
         siteByCampaign: [...siteByCampaignMap.values()].sort((a, b) => b.clicks - a.clicks),

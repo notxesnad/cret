@@ -114,13 +114,18 @@ export default function AdminPage() {
               </div>
             )}
 
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Stat label="Agents" value={data.totals.agents} hint={`${data.totals.agentsThisWeek} this week`} />
               <Stat label="Trial / paid" value={`${data.totals.trialing} / ${data.totals.paid}`} />
               <Stat
                 label="Site clicks"
                 value={data.totals.siteClicks}
                 hint={`${data.totals.siteClicksThisWeek} this week · ${data.totals.siteClicksWithUtm} with UTM`}
+              />
+              <Stat
+                label="Agent visits"
+                value={data.totals.appVisitsThisWeek}
+                hint={`${data.totals.agentsActiveThisWeek} agents this week · ${data.totals.appVisits} all time`}
               />
               <Stat
                 label="Client link clicks"
@@ -231,6 +236,8 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-3 py-2 font-bold">Agent</th>
                       <th className="px-3 py-2 font-bold">Status</th>
+                      <th className="px-3 py-2 font-bold">Last visit</th>
+                      <th className="px-3 py-2 font-bold text-right">Visits</th>
                       <th className="px-3 py-2 font-bold text-right">Listings</th>
                       <th className="px-3 py-2 font-bold text-right">Net sheets</th>
                       <th className="px-3 py-2 font-bold text-right">Tours</th>
@@ -250,6 +257,13 @@ export default function AdminPage() {
                           <div className="text-xs text-slate-600">{when(agent.createdAt)}</div>
                         </td>
                         <td className="px-3 py-2">{agent.billing}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{when(agent.lastVisit)}</td>
+                        <td className="px-3 py-2 text-right">
+                          <div className="font-bold">{agent.appVisits}</div>
+                          {agent.appVisitsThisWeek ? (
+                            <div className="text-xs text-slate-500">{agent.appVisitsThisWeek} this week</div>
+                          ) : null}
+                        </td>
                         <td className="px-3 py-2 text-right">{agent.listings}</td>
                         <td className="px-3 py-2 text-right">{agent.netSheets}</td>
                         <td className="px-3 py-2 text-right">{agent.tours}</td>

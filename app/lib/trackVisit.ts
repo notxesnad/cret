@@ -4,6 +4,7 @@ import { adminClient } from '@/app/lib/workspacePublic'
 
 export const VISIT_TOOLS = [
   'site',
+  'app',
   'register',
   'feedback',
   'feedback_report',
@@ -59,7 +60,7 @@ export async function recordVisit(input: {
 }
 
 export async function trackShareVisit(opts: {
-  tool: Exclude<VisitTool, 'site'>
+  tool: Exclude<VisitTool, 'site' | 'app'>
   profileId: string
   sourceId?: string
   path: string
@@ -96,4 +97,36 @@ export async function trackShareVisit(opts: {
     referrer,
     userAgent,
   })
+}
+
+const APP_VISIT_GAP_MS = 30 * 60 * 1000
+
+export async function recordAppVisit(input: {
+  profileId: string
+  path: string
+  referrer?: string | null
+  userAgent?: string | null
+}) {
+  try {
+    if (isVisitBot(input.userAgent)) return
+    const since = new Date(Date.now() - APP_VISIT_GAP_MS).toISOString()
+    const recent = await adminClient()
+      .from('link_visits')
+      .select('id')
+      .eq('profile_id', input.profileId)
+      .eq('tool', 'app')
+      .gte('created_at', since)
+      .limit(1)
+    if (recent.error && isMissingRelation(recent.error)) return
+    if (recent.data?.length) return
+    await recordVisit({
+      tool: 'app',
+      profileId: input.profileId,
+      path: input.path,
+      referrer: input.referrer,
+      userAgent: input.userAgent,
+    })
+  } catch (err) {
+    console.error('recordAppVisit failed', err)
+  }
 }
