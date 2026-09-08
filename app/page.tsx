@@ -964,6 +964,28 @@ function HomeContent() {
     }
   }, [currentView, router])
 
+  const registerGuestFromProfile = async () => {
+    localStorage.setItem('crt_profile_step', String(profileStep))
+    localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
+    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
+
+    const result = await completeEmailAuth(profile.email)
+    if (result.status === 'error') {
+      showCustomModal('Error creating your account: ' + result.message)
+      return result
+    }
+    if (result.status === 'existing') {
+      const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
+      setAwaitingMagicLink({ email: profile.email, firstName: result.firstName || typedFirst })
+      setModalData({ isOpen: true, msg: '', requiresAuth: true })
+      setModalWelcomeName(result.firstName || typedFirst)
+      setModalAuthSent(true)
+      setModalEmail(profile.email)
+      setModalAuthError('')
+    }
+    return result
+  }
+
   const handleNextStep = async (nextStep: 2 | 3 = 2) => {
     if (profileNextBusy) return
     if (profileStep !== 1) {
@@ -979,28 +1001,11 @@ function HomeContent() {
       return
     }
 
-    localStorage.setItem('crt_profile_step', String(nextStep))
-    localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
-    localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
-
     setProfileNextBusy(true)
     try {
     if (!user) {
-      const result = await completeEmailAuth(profile.email)
-      if (result.status === 'error') {
-        showCustomModal('Error creating your account: ' + result.message)
-        return
-      }
-      if (result.status === 'existing') {
-      const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
-      setAwaitingMagicLink({ email: profile.email, firstName: result.firstName || typedFirst })
-      setModalData({ isOpen: true, msg: '', requiresAuth: true })
-      setModalWelcomeName(result.firstName || typedFirst)
-      setModalAuthSent(true)
-      setModalEmail(profile.email)
-      setModalAuthError('')
-      return
-    }
+      const result = await registerGuestFromProfile()
+      if (result.status !== 'new') return
       setProfileStep(nextStep)
       showWelcomeModal()
       return
@@ -1037,12 +1042,25 @@ function HomeContent() {
   }
 
   const handleFinalSave = async (opts?: { silent?: boolean }) => {
+    if (profileNextBusy) return
     if (!user) {
-      if (opts?.silent) {
-        switchView('home')
+      if (!profile.email?.trim()) {
+        if (opts?.silent) {
+          switchView('home')
+          return
+        }
+        showAuthModal()
         return
       }
-      showAuthModal()
+      setProfileNextBusy(true)
+      try {
+        const result = await registerGuestFromProfile()
+        if (result.status === 'error') return
+        switchView('home')
+        if (result.status === 'new') showWelcomeModal()
+      } finally {
+        setProfileNextBusy(false)
+      }
       return
     }
       const finalPayload = {

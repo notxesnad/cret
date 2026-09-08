@@ -81,10 +81,17 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
     }
 
     const createdById = new Map<string, string>()
+    const verifiedById = new Map<string, boolean>()
     try {
       const { data: authUsers } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 })
       for (const authUser of authUsers?.users || []) {
         if (authUser.created_at) createdById.set(authUser.id, authUser.created_at)
+        const created = Date.parse(authUser.created_at || '')
+        const lastSign = Date.parse(authUser.last_sign_in_at || '')
+        verifiedById.set(
+          authUser.id,
+          Number.isFinite(created) && Number.isFinite(lastSign) && lastSign - created > 60_000
+        )
       }
     } catch (err) {
       console.error('admin auth users', err)
@@ -162,6 +169,7 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
         email: row.email || '',
         name: row.full_name || '',
         createdAt: createdById.get(row.id) || row.updated_at || null,
+        emailVerified: verifiedById.get(row.id) === true,
         billing: billingLabel(billing) || 'None',
         header: Boolean(row.show_custom_header),
         listings: listingsBy.get(row.id) || 0,
@@ -204,6 +212,7 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
         totals: {
           agents: agents.length,
           agentsThisWeek: agents.filter((row) => row.createdAt && row.createdAt >= weekAgo).length,
+          verified: agents.filter((row) => row.emailVerified).length,
           trialing: agents.filter((row) => {
             const match = profiles.find((profile) => profile.id === row.id)
             const billing = billingFromProfile(match)

@@ -115,7 +115,7 @@ export default function AdminPage() {
             )}
 
             <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <Stat label="Agents" value={data.totals.agents} hint={`${data.totals.agentsThisWeek} this week`} />
+              <Stat label="Agents" value={data.totals.agents} hint={`${data.totals.agentsThisWeek} this week · ${data.totals.verified} verified email`} />
               <Stat label="Trial / paid" value={`${data.totals.trialing} / ${data.totals.paid}`} />
               <Stat
                 label="Site clicks"
@@ -236,6 +236,7 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-3 py-2 font-bold">Agent</th>
                       <th className="px-3 py-2 font-bold">Status</th>
+                      <th className="px-3 py-2 font-bold">Email</th>
                       <th className="px-3 py-2 font-bold">Last visit</th>
                       <th className="px-3 py-2 font-bold text-right">Visits</th>
                       <th className="px-3 py-2 font-bold text-right">Listings</th>
@@ -257,6 +258,13 @@ export default function AdminPage() {
                           <div className="text-xs text-slate-600">{when(agent.createdAt)}</div>
                         </td>
                         <td className="px-3 py-2">{agent.billing}</td>
+                        <td className="px-3 py-2">
+                          {agent.emailVerified ? (
+                            <span className="text-emerald-400 font-bold">Verified</span>
+                          ) : (
+                            <span className="text-amber-400">Pending</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 whitespace-nowrap">{when(agent.lastVisit)}</td>
                         <td className="px-3 py-2 text-right">
                           <div className="font-bold">{agent.appVisits}</div>

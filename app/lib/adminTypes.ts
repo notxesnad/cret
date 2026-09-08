@@ -15,6 +15,7 @@ export type AdminAgentRow = {
   email: string
   name: string
   createdAt: string | null
+  emailVerified: boolean
   billing: string
   header: boolean
   listings: number
@@ -48,6 +49,7 @@ export type AdminDashboard = {
   totals: {
     agents: number
     agentsThisWeek: number
+    verified: number
     trialing: number
     paid: number
     siteClicks: number
