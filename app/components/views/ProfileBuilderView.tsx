@@ -283,7 +283,7 @@ export function ProfileBuilderView({
                       <div className="bg-slate-900 rounded-lg p-2 text-[10px] font-bold tracking-wider uppercase text-slate-300 border-b border-slate-800 mb-2">
                         {look.title}
                       </div>
-                      <div className="pointer-events-none overflow-visible">
+                      <div className="pointer-events-none overflow-visible bg-white [&>*]:mb-0">
                         {renderAgentHeader(look.id)}
                       </div>
                     </div>
