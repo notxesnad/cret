@@ -91,6 +91,16 @@ function hrefForView(viewId: string, search = '') {
   return qs ? `/?${qs}` : '/'
 }
 
+function firstNameFrom(fullName?: string | null) {
+  return (fullName || '').trim().split(/\s+/)[0] || ''
+}
+
+function waitForPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+}
+
 function HomeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -121,7 +131,7 @@ function HomeContent() {
   const [uploading, setUploading] = useState<boolean>(false)
 
 
-  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean; welcomeNew?: boolean; paywall?: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
+  const [modalData, setModalData] = useState<{isOpen: boolean; msg: string; requiresAuth: boolean; welcomeNew?: boolean; paywall?: boolean; working?: boolean}>({ isOpen: false, msg: '', requiresAuth: false })
   const [modalEmail, setModalEmail] = useState('')
   const [modalAuthSent, setModalAuthSent] = useState(false)
   const [modalAuthError, setModalAuthError] = useState('')
@@ -640,7 +650,7 @@ function HomeContent() {
   const showCustomModal = (msg: string, requireAuth = false) => {
     if (getAwaitingMagicLink()) return
     const requiresAuth = requireAuth || msg.toLowerCase().includes('logged in') || msg.toLowerCase().includes('signed in')
-    setModalData({ isOpen: true, msg, requiresAuth, welcomeNew: false, paywall: false })
+    setModalData({ isOpen: true, msg, requiresAuth, welcomeNew: false, paywall: false, working: false })
     setModalAuthSent(false)
     setModalEmail(profile.email || '')
     setModalAuthError('')
@@ -743,17 +753,18 @@ function HomeContent() {
     return { status: 'new' as const }
   }
 
-  const showWelcomeModal = () => {
+  const showWelcomeModal = (firstName?: string) => {
     if (getAwaitingMagicLink()) return
+    setModalWelcomeName(firstName || firstNameFrom(profile.full_name))
     setModalData({
       isOpen: true,
       msg: '',
       requiresAuth: false,
-      welcomeNew: true
+      welcomeNew: true,
+      working: false,
     })
     setModalAuthSent(false)
     setModalAuthError('')
-    setModalWelcomeName('')
     setModalAuthLoading(false)
   }
 
@@ -846,6 +857,7 @@ function HomeContent() {
       msg: `Your ${trialPeriodDays()}-day free trial has ended. Subscribe for $29/month to create links and download PDFs.`,
       requiresAuth: false,
       paywall: true,
+      working: false,
     })
   }
 
@@ -929,7 +941,7 @@ function HomeContent() {
 
   const closeCustomModal = () => {
     if (getAwaitingMagicLink()) return
-    setModalData(prev => ({ ...prev, isOpen: false }))
+    setModalData(prev => prev.working ? prev : ({ ...prev, isOpen: false }))
   }
 
   const handleModalAuth = async (e: React.FormEvent) => {
@@ -939,15 +951,19 @@ function HomeContent() {
     if (!modalEmail) return
 
     setModalAuthLoading(true)
+    setModalData(prev => ({ ...prev, working: true }))
+    await waitForPaint()
     try {
       const result = await completeEmailAuth(modalEmail)
       if (result.status === 'error') {
+        setModalData(prev => ({ ...prev, working: false }))
         setModalAuthError(result.message)
         return
       }
       if (result.status === 'existing') {
-        setModalWelcomeName(result.firstName || '')
+        setModalWelcomeName(result.firstName || firstNameFrom(profile.full_name))
         setModalAuthSent(true)
+        setModalData(prev => ({ ...prev, working: false, requiresAuth: true }))
         return
       }
       const intent = sessionStorage.getItem('crt_billing_intent')
@@ -968,7 +984,7 @@ function HomeContent() {
         switchView('account')
         return
       }
-      showWelcomeModal()
+      showWelcomeModal(firstNameFrom(profile.full_name))
     } finally {
       setModalAuthLoading(false)
     }
@@ -1064,24 +1080,47 @@ function HomeContent() {
   }, [currentView, router])
 
   const registerGuestFromProfile = async () => {
+    const typedFirst = firstNameFrom(profile.full_name)
+    setModalEmail(profile.email)
+    setModalWelcomeName(typedFirst)
+    setModalAuthSent(false)
+    setModalAuthError('')
+    setModalAuthLoading(false)
+    setModalData({ isOpen: true, msg: '', requiresAuth: false, welcomeNew: false, paywall: false, working: true })
+    await waitForPaint()
+
     localStorage.setItem('crt_profile_step', String(profileStep))
     localStorage.setItem('crt_profile_draft', JSON.stringify(profile))
     localStorage.setItem('crt_pending_data', JSON.stringify(snapshotGuestWork()))
 
     const result = await completeEmailAuth(profile.email)
     if (result.status === 'error') {
-      showCustomModal('Error creating your account: ' + result.message)
+      setModalData({
+        isOpen: true,
+        msg: 'Error creating your account: ' + result.message,
+        requiresAuth: false,
+        working: false,
+      })
       return result
     }
     if (result.status === 'existing') {
-      const typedFirst = (profile.full_name || '').trim().split(/\s+/)[0] || ''
-      setAwaitingMagicLink({ email: profile.email, firstName: result.firstName || typedFirst })
-      setModalData({ isOpen: true, msg: '', requiresAuth: true })
-      setModalWelcomeName(result.firstName || typedFirst)
+      const firstName = result.firstName || typedFirst
+      setAwaitingMagicLink({ email: profile.email, firstName })
+      setModalWelcomeName(firstName)
       setModalAuthSent(true)
       setModalEmail(profile.email)
       setModalAuthError('')
+      setModalData({ isOpen: true, msg: '', requiresAuth: true, working: false })
+      return result
     }
+    setModalWelcomeName(typedFirst)
+    setModalData({
+      isOpen: true,
+      msg: '',
+      requiresAuth: false,
+      welcomeNew: true,
+      working: false,
+    })
     return result
   }
 
@@ -1106,7 +1145,6 @@ function HomeContent() {
       const result = await registerGuestFromProfile()
       if (result.status !== 'new') return
       setProfileStep(nextStep)
-      showWelcomeModal()
       return
     }
 
@@ -1156,7 +1194,6 @@ function HomeContent() {
         const result = await registerGuestFromProfile()
         if (result.status === 'error') return
         switchView('home')
-        if (result.status === 'new') showWelcomeModal()
       } finally {
         setProfileNextBusy(false)
       }
@@ -1613,11 +1650,22 @@ function HomeContent() {
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
               <div className="text-3xl mb-4">✨</div>
               
-              {!modalData.requiresAuth ? (
+              {modalData.working ? (
+                <div className="space-y-4">
+                  <p className="text-base font-bold text-white">Hang on...</p>
+                  <p className="text-sm text-slate-400">We&apos;re checking your email and saving your work.</p>
+                  <div className="flex justify-center py-2">
+                    <svg className="w-8 h-8 animate-spin text-emerald-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  </div>
+                </div>
+              ) : !modalData.requiresAuth ? (
                 <div className="space-y-4">
                   {modalData.welcomeNew ? (
                     <div className="space-y-3">
-                      <p className="text-base font-bold text-white">Welcome to</p>
+                      <p className="text-base font-bold text-white">Welcome{modalWelcomeName ? ` ${modalWelcomeName}` : ''} to</p>
                       <p className="text-lg font-bold tracking-widest text-white uppercase">
                         Cool<span className="text-emerald-400">RealEstate</span>Tools
                       </p>
