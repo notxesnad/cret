@@ -56,8 +56,8 @@ export function isSubscribed(status?: string | null) {
 
 export function hasShareAccess(billing: BillingState) {
   if (isPaid(billing.status)) return true
-  if (billing.trialEndsAt && Date.parse(billing.trialEndsAt) > Date.now()) return true
-  return false
+  if (billing.trialEndsAt) return Date.parse(billing.trialEndsAt) > Date.now()
+  return billing.status === 'trialing'
 }
 
 export function billingLabel(billing: BillingState) {

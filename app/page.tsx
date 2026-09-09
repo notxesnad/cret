@@ -227,6 +227,10 @@ function HomeContent() {
   const [billing, setBilling] = useState<BillingState>(emptyBilling())
   const [billingBusy, setBillingBusy] = useState(false)
   const [profileNextBusy, setProfileNextBusy] = useState(false)
+  const userRef = useRef(user)
+  const billingRef = useRef(billing)
+  userRef.current = user
+  billingRef.current = billing
   const listingsRef = useRef(listings)
   const neighborhoodsRef = useRef(neighborhoods)
   const campaignsRef = useRef(outreachCampaigns)
@@ -645,8 +649,9 @@ function HomeContent() {
   }
 
   const persistWorkspace = async () => {
-    if (!user) return false
-    const tableError = await saveWorkspaceTables(supabase, user.id, currentWorkspace())
+    const currentUser = userRef.current
+    if (!currentUser) return false
+    const tableError = await saveWorkspaceTables(supabase, currentUser.id, currentWorkspace())
     tablesReadyRef.current = !tableError
     if (tableError) {
       console.error('Could not save workspace:', tableError)
@@ -726,7 +731,11 @@ function HomeContent() {
     if (!newUser) return { status: 'error' as const, message: 'Account created, but sign-in failed. Try again.' }
 
     setUser(newUser)
+    userRef.current = newUser
     setProfile((prev: any) => ({ ...prev, email: trimmed }))
+    const trialBilling = billingFromProfile(appTrialFields())
+    billingRef.current = trialBilling
+    setBilling(trialBilling)
     const saveError = await saveAccountWork(newUser.id, trimmed)
     if (saveError) return { status: 'error' as const, message: 'Account created, but we could not save your work. Try Save again.' }
 
@@ -841,7 +850,37 @@ function HomeContent() {
   }
 
   const persistIfSharingAllowed = async () => {
-    if (!hasShareAccess(billing)) {
+    let currentUser = userRef.current
+    if (!currentUser) {
+      const { data: { user: sessionUser } } = await supabase.auth.getUser()
+      if (sessionUser) {
+        currentUser = sessionUser
+        userRef.current = sessionUser
+        setUser(sessionUser)
+      }
+    }
+    if (!currentUser) {
+      showAuthModal()
+      return false
+    }
+
+    let access = billingRef.current
+    if (!hasShareAccess(access)) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('subscription_status, trial_ends_at, subscription_current_period_end, promo_code')
+        .eq('id', currentUser.id)
+        .single()
+      access = data ? billingFromProfile(data) : access
+      if (!isPaid(access.status) && !access.trialEndsAt) {
+        const trial = appTrialFields()
+        const { error: trialError } = await supabase.from('profiles').update(trial).eq('id', currentUser.id)
+        if (!trialError) access = billingFromProfile({ ...(data || {}), ...trial })
+      }
+      billingRef.current = access
+      setBilling(access)
+    }
+    if (!hasShareAccess(access)) {
       showPaywall()
       return false
     }
