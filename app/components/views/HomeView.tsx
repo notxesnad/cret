@@ -29,6 +29,7 @@ export function HomeView({
   const paid = isPaid(billing.status)
   const onTrial = !paid && hasShareAccess(billing)
   const trialDays = trialPeriodDays()
+  const showHomePricing = false
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -69,7 +70,7 @@ export function HomeView({
     <div id="view-home" className="app-view active space-y-4">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-black tracking-tight">Tap a Tool. Get to Work.</h1>
-        {!paid && (
+        {showHomePricing && !paid && (
           <p className="text-base text-slate-400 mt-1">
             $29 a month. All tools included.{' '}
             <span className="block sm:inline whitespace-nowrap">If you hate it, cancel <a href="/cancel" className="text-blue-400 hover:underline">here</a>.</span>
@@ -77,7 +78,7 @@ export function HomeView({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 pb-20">
+      <div className={`grid grid-cols-2 gap-4 ${showHomePricing ? 'pb-20' : 'pb-4'}`}>
         <ToolTile onClick={() => switchView('profile')} className="group relative bg-fuchsia-600 hover:bg-fuchsia-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">👤</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Brand your tools &amp; PDF styles</span>
@@ -153,7 +154,8 @@ export function HomeView({
         </ToolTile>
       </div>
       
-      {/* Pricing Section */}
+      {/* Pricing Section — flip showHomePricing to bring this back */}
+      {showHomePricing && (
       <div className="mt-12 bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full pointer-events-none"></div>
         <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full pointer-events-none"></div>
@@ -221,6 +223,7 @@ export function HomeView({
         </button>
         <p className="text-xs text-slate-500 mt-3 relative z-10">Cancel anytime.</p>
       </div>
+      )}
     </div>
   )
 }

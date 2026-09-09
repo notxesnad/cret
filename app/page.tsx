@@ -1640,7 +1640,10 @@ function HomeContent() {
         {/* Global Footer (Only on Home View) */}
         {currentView === 'home' && (
         <footer className="max-w-xl mx-auto w-full text-center pt-8 pb-2 text-xs text-slate-500 font-medium">
-          coolrealestatetools.com • $29/mo
+          coolrealestatetools.com •{' '}
+          <button type="button" onClick={openContact} className="text-slate-400 hover:text-emerald-400 underline underline-offset-2">
+            Support
+          </button>
         </footer>
         )}
 
