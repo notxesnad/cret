@@ -9,7 +9,7 @@ import { HowToTour } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { ToolLanding } from '@/app/components/ToolLanding'
 import { SELLER_TRACKER_TOUR } from '@/app/lib/toolTours'
-import { toDateInput, formatDateDisplay } from '@/app/lib/tourFormat'
+import { toDateInput, formatDateDisplay, sortActivitiesNewestFirst } from '@/app/lib/tourFormat'
 import { isSellerDemoListing, SELLER_DEMO_PREVIEW_KEY, SELLER_DEMO_PUBLIC_PATH } from '@/app/lib/sellerDemo'
 
 export interface Activity {
@@ -438,7 +438,7 @@ export function SellerTrackerView({
                     <p className="text-xs text-slate-500 italic text-center py-4 bg-slate-900 rounded-xl border border-slate-800">No activities logged yet.</p>
                   ) : (
                     <div className="space-y-2">
-                      {activeListing.activities.map((act) => (
+                      {sortActivitiesNewestFirst(activeListing.activities).map((act) => (
                         <div 
                           key={act.id} 
                           onClick={() => handleOpenActivity(act)}
@@ -503,15 +503,24 @@ export function SellerTrackerView({
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Status</label>
                     <div className="grid grid-cols-3 gap-2">
-                      {(['completed', 'pending', 'upcoming'] as const).map(status => (
+                      {(['completed', 'pending', 'upcoming'] as const).map(status => {
+                        const selected = (editActivityForm.status || 'completed') === status
+                        const selectedClass = status === 'completed'
+                          ? 'bg-emerald-400/10 text-emerald-400'
+                          : status === 'upcoming'
+                            ? 'bg-cyan-400/10 text-cyan-400'
+                            : 'bg-amber-400/10 text-amber-400'
+                        return (
                         <button
                           key={status}
+                          type="button"
                           onClick={() => setEditActivityForm({...editActivityForm, status})}
-                          className={`py-2 px-1 text-[10px] uppercase tracking-wider font-bold rounded-lg transition-colors ${(editActivityForm.status || 'completed') === status ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                          className={`py-2 px-1 text-[10px] uppercase tracking-wider font-bold rounded-lg transition-colors ${selected ? selectedClass : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
                         >
                           {status}
                         </button>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
 
