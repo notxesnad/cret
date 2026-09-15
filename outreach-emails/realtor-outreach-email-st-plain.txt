@@ -1,0 +1,24 @@
+Paste this in Gmail after switching the compose window to Plain text.
+Do not open an HTML file in Chrome and copy it.
+
+A/B: this is the plain version. Split the list with realtor-outreach-email-st-html.html.
+
+Subject (pick one):
+your seller still thinks nothing is happening
+something for your seller at 123 Oak
+
+---
+
+Hey — if you have a listing right now, your seller is probably wondering what you’ve actually done since the photos.
+
+I built a free tracking report you can text them. Photos, broker open, showings, offers — dated, in order, with your header on it.
+
+Preview a sample:
+coolrealestatetools.com/seller-preview
+
+Make one for your listing:
+coolrealestatetools.com/seller-tracker
+
+If not, ignore this.
+
+Parker

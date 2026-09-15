@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { TrackLanding } from '@/app/components/TrackLanding'
 import { SellerReportView, SELLER_DEMO_PUBLIC_PROFILE } from '@/app/components/SellerReportView'
 import { createSellerDemoListing, SELLER_DEMO_PREVIEW_KEY } from '@/app/lib/sellerDemo'
 
@@ -20,5 +21,10 @@ export default function DemoSellerReportPage() {
     }
   }, [])
 
-  return <SellerReportView profile={profile} listing={listing} headerCta={{ mode: 'always' }} />
+  return (
+    <>
+      <TrackLanding />
+      <SellerReportView profile={profile} listing={listing} headerCta={{ mode: 'always' }} />
+    </>
+  )
 }
