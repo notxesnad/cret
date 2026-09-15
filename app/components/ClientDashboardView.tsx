@@ -1,4 +1,7 @@
+'use client'
+
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { formatCityState, formatDateDisplay, formatPrice } from '@/app/lib/tourFormat'
 import { isNetSheet, sheetTitle } from '@/app/lib/netSheet'
 import { isArchived } from '@/app/lib/archive'
@@ -51,7 +54,9 @@ export function ClientDashboardView({
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       <div className="max-w-xl mx-auto bg-white shadow-xl min-h-screen">
         <div className="px-1 pt-2">
-          {renderAgentHeader(profile)}
+          <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+            {renderAgentHeader(profile)}
+          </AgentHeaderFrame>
         </div>
         <div className="px-5 pb-10">
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Your dashboard</p>

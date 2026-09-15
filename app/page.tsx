@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense, useCallback, useRef, type ChangeEvent } 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, markAuthSessionOnly, markAuthPersistPending, markAuthPersisted, clearAuthPersistFlags, setAwaitingMagicLink, getAwaitingMagicLink, clearAwaitingMagicLink } from '@/utils/supabase'
 import { renderAgentHeader } from './components/AgentHeader'
+import { headerContactComplete, markHeaderBuilderStart, takeHeaderBuilderStart, AgentHeaderFrame } from './components/AgentHeaderCta'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
@@ -1072,6 +1073,11 @@ function HomeContent() {
   }, [urlView])
 
   useEffect(() => {
+    if (currentView !== 'profile') return
+    if (takeHeaderBuilderStart()) setProfileStep(1)
+  }, [currentView])
+
+  useEffect(() => {
     if (!(VALID_VIEWS as readonly string[]).includes(currentView)) {
       viewRef.current = 'home'
       setCurrentView('home')
@@ -1347,6 +1353,20 @@ function HomeContent() {
     if (error) showCustomModal('Could not remove that image: ' + error.message)
   }
 
+  const openHeaderBuilder = () => {
+    markHeaderBuilderStart()
+    setProfileStep(1)
+    switchView('profile')
+  }
+  const headerCustomizeCta = sessionChecked
+    ? {
+        mode: 'always' as const,
+        signedIn: !!user,
+        complete: headerContactComplete(profile),
+        onCustomize: openHeaderBuilder,
+      }
+    : false
+
   const buriedParent = OVERLAY_VIEWS.has(currentView) ? parentOf(currentView) : null
   const showHome = currentView === 'home' || buriedParent === 'home'
   const showSeller = currentView === 'seller' || buriedParent === 'seller'
@@ -1470,7 +1490,11 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               userId={user?.id}
               persistWorkspace={persistIfSharingAllowed}
-              agentHeader={renderAgentHeader(profile)}
+              agentHeader={
+                <AgentHeaderFrame cta={headerCustomizeCta}>
+                  {renderAgentHeader(profile)}
+                </AgentHeaderFrame>
+              }
             />
           )}
           {currentView === 'ohregistration' && (
@@ -1487,7 +1511,11 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               userId={user?.id}
               persistWorkspace={persistIfSharingAllowed}
-              agentHeader={renderAgentHeader(profile)}
+              agentHeader={
+                <AgentHeaderFrame cta={headerCustomizeCta}>
+                  {renderAgentHeader(profile)}
+                </AgentHeaderFrame>
+              }
             />
           )}
           {showSeller && (

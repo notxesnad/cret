@@ -417,6 +417,11 @@ export function OpenHouseFeedbackView({
         <div className="p-6">
           {step === 'home' && (
             <div className="animate-fade-in-up">
+              {agentHeader ? (
+                <div className="mb-6 -mx-6 bg-white [&>*]:mb-0">
+                  {agentHeader}
+                </div>
+              ) : null}
               <div className="text-center mb-8">
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase block mb-2">Open House Tools</span>
                 <h1 className="font-openhouse text-3xl md:text-4xl text-white">Collect Anonymous Open House Feedback</h1>

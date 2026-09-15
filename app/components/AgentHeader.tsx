@@ -1,5 +1,5 @@
 export function renderAgentHeader(profile: any, themeOverride: string | null = null) {
-  if (!profile) return null;
+  if (!profile) return null
   const useCustomHeader = !themeOverride && (profile.show_custom_header === true || profile.pdf_look === 'custom') && !!profile.custom_header_url
   if (useCustomHeader) {
     return (

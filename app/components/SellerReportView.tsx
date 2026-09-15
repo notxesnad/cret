@@ -1,4 +1,7 @@
+'use client'
+
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA, type AgentHeaderCtaProps } from '@/app/components/AgentHeaderCta'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay } from '@/app/lib/tourFormat'
 
@@ -10,7 +13,15 @@ export const SELLER_DEMO_PUBLIC_PROFILE = {
   pdf_look: 'look14',
 }
 
-export function SellerReportView({ profile, listing }: { profile: any; listing: any }) {
+export function SellerReportView({
+  profile,
+  listing,
+  headerCta = PREVIEW_LINK_HEADER_CTA,
+}: {
+  profile: any
+  listing: any
+  headerCta?: AgentHeaderCtaProps | false
+}) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
       <style>{`
@@ -41,7 +52,9 @@ export function SellerReportView({ profile, listing }: { profile: any; listing: 
             <tr>
               <td className="p-0">
                 <div id="report-print-header">
-                  {renderAgentHeader(profile)}
+                  <AgentHeaderFrame cta={headerCta}>
+                    {renderAgentHeader(profile)}
+                  </AgentHeaderFrame>
                 </div>
               </td>
             </tr>

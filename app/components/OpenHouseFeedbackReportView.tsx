@@ -1,4 +1,7 @@
+'use client'
+
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { PrintButtons } from '@/app/components/PrintControls'
 import type { Question } from '@/app/components/Questionnaire'
 
@@ -93,7 +96,9 @@ export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: an
             <tr>
               <td className="p-0">
                 <div id="report-print-header">
-                  {renderAgentHeader(profile)}
+                  <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+                    {renderAgentHeader(profile)}
+                  </AgentHeaderFrame>
                 </div>
               </td>
             </tr>

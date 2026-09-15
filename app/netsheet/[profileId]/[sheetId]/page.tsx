@@ -1,4 +1,5 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { NetSheetDocument } from '@/app/components/NetSheetDocument'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { asNetSheet, sheetTitle } from '@/app/lib/netSheet'
@@ -56,7 +57,11 @@ export default async function NetSheetSharePage({
       <div id="report-print-root" className="w-full max-w-3xl mx-auto bg-white shadow-xl my-0 md:my-8">
         <NetSheetDocument
           sheet={sheet}
-          header={renderAgentHeader(profile)}
+          header={
+            <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+              {renderAgentHeader(profile)}
+            </AgentHeaderFrame>
+          }
         />
       </div>
       <div className="no-print max-w-3xl mx-auto px-5 md:px-8 mt-6 mb-10">

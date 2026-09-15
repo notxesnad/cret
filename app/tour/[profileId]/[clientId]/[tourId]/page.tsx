@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { PrintButtons } from '@/app/components/PrintControls'
 import { formatDateDisplay, formatTimeDisplay, formatPrice, formatCityState } from '@/app/lib/tourFormat'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
@@ -184,7 +185,9 @@ export default async function TourItineraryPage({
             <tr>
               <td className="p-0">
                 <div id="report-print-header">
-                  {renderAgentHeader(profile)}
+                  <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+                    {renderAgentHeader(profile)}
+                  </AgentHeaderFrame>
                   <div className="itinerary-qr-header px-4 md:px-8 max-w-3xl mx-auto">
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Tour Itinerary</p>

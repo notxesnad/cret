@@ -1,4 +1,5 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { RegistrationClient } from './RegistrationClient'
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
@@ -47,7 +48,9 @@ export default async function OpenHouseRegistrationPage({
   return (
     <div className="h-[100dvh] flex flex-col font-sans bg-slate-50 text-slate-900">
       <div className="flex-none w-full max-w-xl mx-auto [&>*]:mb-0">
-        {renderAgentHeader(profile)}
+        <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+          {renderAgentHeader(profile)}
+        </AgentHeaderFrame>
       </div>
       <div className="flex-1 min-h-0 max-w-xl mx-auto w-full">
         <RegistrationClient

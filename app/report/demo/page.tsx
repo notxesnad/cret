@@ -20,5 +20,5 @@ export default function DemoSellerReportPage() {
     }
   }, [])
 
-  return <SellerReportView profile={profile} listing={listing} />
+  return <SellerReportView profile={profile} listing={listing} headerCta={{ mode: 'always' }} />
 }
