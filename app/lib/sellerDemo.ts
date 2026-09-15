@@ -9,7 +9,7 @@ export function isSellerDemoListing(listing: { id?: string } | null | undefined)
 export function createSellerDemoListing(id: string) {
   return {
     id,
-    address: '555 Demo Report',
+    address: '555 Demo Report Ave.',
     activities: [
       {
         id: `${id}-act-1`,
@@ -27,7 +27,7 @@ export function createSellerDemoListing(id: string) {
       {
         id: `${id}-act-3`,
         label: '🚁 Drone/Aerial Photography',
-        date: '2025-04-26',
+        date: '2025-04-10',
         status: 'upcoming' as const,
       },
       {
@@ -50,11 +50,32 @@ export function createSellerDemoListing(id: string) {
         notes: 'We mailed 1,200 postcards to the neighborhood as well as 500 to the community across the street.',
       },
       {
+        id: `${id}-act-8`,
+        label: '🥂 Hosted Broker Open',
+        date: '2025-04-18',
+        status: 'completed' as const,
+        notes: 'It was a very successful broker open with 22 agents viewing the home. Many had wonderful things to say about the home and at least 3 are bringing their clients in this week.',
+      },
+      {
         id: `${id}-act-7`,
         label: '🏡 Hosted Public Open House',
         date: '2025-04-20',
         status: 'completed' as const,
         notes: 'We had 8 groups through. 2 came with realtors. 1 was a neighbor who was looking for a friend.',
+      },
+      {
+        id: `${id}-act-9`,
+        label: '🔑 Showing',
+        date: '2025-04-22',
+        status: 'completed' as const,
+        notes: 'One of the agents from the broker open brought in a family with 2 children. The kitchen blew them away and the kids loved the game room. I would expect to see an offer come in from them.',
+      },
+      {
+        id: `${id}-act-10`,
+        label: '🤝 Received an Offer',
+        date: '2025-04-24',
+        status: 'completed' as const,
+        notes: 'Received an offer from the Michigan couple that came to the Open House.',
       },
     ],
   }
