@@ -3,7 +3,7 @@
 import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA, type AgentHeaderCtaProps } from '@/app/components/AgentHeaderCta'
 import { PrintButtons } from '@/app/components/PrintControls'
-import { formatDateDisplay } from '@/app/lib/tourFormat'
+import { formatDateDisplay, sortActivitiesNewestFirst } from '@/app/lib/tourFormat'
 
 export const SELLER_DEMO_PUBLIC_PROFILE = {
   full_name: 'Alex Rivera',
@@ -51,7 +51,7 @@ export function SellerReportView({
           <thead>
             <tr>
               <td className="p-0">
-                <div id="report-print-header">
+                <div id="report-print-header" className="max-w-3xl mx-auto px-4 md:px-8 pt-6">
                   <AgentHeaderFrame cta={headerCta}>
                     {renderAgentHeader(profile)}
                   </AgentHeaderFrame>
@@ -78,7 +78,7 @@ export function SellerReportView({
                       <p className="text-slate-500 italic py-4">No activities logged yet for this listing.</p>
                     ) : (
                       <div className="relative border-l-2 border-slate-100 ml-3 md:ml-4 space-y-8 pb-4">
-                        {listing.activities.map((act: any) => {
+                        {sortActivitiesNewestFirst(listing.activities).map((act: any) => {
                           const isCompleted = act.status === 'completed' || !act.status
                           const isUpcoming = act.status === 'upcoming'
 

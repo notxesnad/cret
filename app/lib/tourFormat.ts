@@ -59,6 +59,19 @@ export function formatDateDisplay(d: string): string {
   })
 }
 
+export function sortActivitiesNewestFirst<T extends { date?: string }>(activities: T[] | null | undefined): T[] {
+  if (!Array.isArray(activities)) return []
+  return activities
+    .map((act, index) => ({ act, index }))
+    .sort((a, b) => {
+      const da = toDateInput(a.act.date || '')
+      const db = toDateInput(b.act.date || '')
+      if (da !== db) return db.localeCompare(da)
+      return b.index - a.index
+    })
+    .map(item => item.act)
+}
+
 export function sortStopsByTime<T extends { time?: string }>(stops: T[]): T[] {
   return [...stops].sort((a, b) => {
     const ta = toTimeInput(a.time || '')
