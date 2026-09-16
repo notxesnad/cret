@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useInnerSwipeBack } from '@/app/lib/useInnerSwipeBack'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { DateField } from '@/app/components/DateField'
@@ -37,6 +37,7 @@ interface SellerTrackerViewProps {
   userId?: string;
   persistWorkspace?: () => Promise<boolean>;
   persistDemoShare?: () => Promise<boolean>;
+  openListingId?: string | null;
 }
 
 const PRESET_ACTIVITIES = [
@@ -77,18 +78,27 @@ export function SellerTrackerView({
   switchView,
   userId,
   persistWorkspace,
-  persistDemoShare
+  persistDemoShare,
+  openListingId,
 }: SellerTrackerViewProps) {
-  const [hub, setHub] = useState<'menu' | 'how' | 'work'>('menu')
+  const [hub, setHub] = useState<'menu' | 'how' | 'work'>(openListingId ? 'work' : 'menu')
   const [howPage, setHowPage] = useState(0)
-  const [step, setStep] = useState(1) // 1: Listings, 2: Activities, 3: Edit Activity
-  const [activeListingId, setActiveListingId] = useState<string | null>(null)
+  const [step, setStep] = useState(openListingId ? 2 : 1) // 1: Listings, 2: Activities, 3: Edit Activity
+  const [activeListingId, setActiveListingId] = useState<string | null>(openListingId || null)
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null)
   const [customActivity, setCustomActivity] = useState('')
   const [isAddingListing, setIsAddingListing] = useState(false)
   const [newListingAddress, setNewListingAddress] = useState('')
   const [editActivityForm, setEditActivityForm] = useState<Partial<Activity>>({})
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    if (!openListingId) return
+    if (!listings.some((listing) => listing.id === openListingId)) return
+    setActiveListingId(openListingId)
+    setHub('work')
+    setStep(2)
+  }, [openListingId, listings])
 
   const activityLogRef = useRef<HTMLDivElement>(null)
   const activityLogHeaderRef = useRef<HTMLHeadingElement>(null)

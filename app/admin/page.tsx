@@ -148,6 +148,11 @@ export default function AdminPage() {
   }
 
   const reportLinks = importRows.map((row) => row.reportUrl).filter(Boolean) as string[]
+  const editorLinks = importRows.map((row) => row.editorUrl).filter(Boolean) as string[]
+  const importTsv = importRows
+    .filter((row) => row.reportUrl)
+    .map((row) => [row.name, row.email, row.address, row.reportUrl, row.editorUrl || ''].join('\t'))
+    .join('\n')
 
   const agents = useMemo(() => {
     if (!data) return []
@@ -212,7 +217,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                    Upload a CSV. Each row gets an account, their header, and a listing with Pre-Listing Inspection, Listed In the MLS, and Syndicated to Zillow. No welcome email is sent.
+                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing with Pre-Listing Inspection, Listed In the MLS, and Syndicated to Zillow. No welcome email is sent. Use the report and editor links in the “I made this” emails. If editor links are blank, run the latest <code className="font-mono text-slate-400">supabase/schema.sql</code> in Supabase.
                   </p>
                 </div>
                 <button
@@ -245,13 +250,33 @@ export default function AdminPage() {
                 </p>
               ) : null}
               {reportLinks.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => void copyText('all', reportLinks.join('\n'))}
-                  className="mt-3 text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
-                >
-                  {copied === 'all' ? 'Copied' : 'Copy report links'}
-                </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void copyText('all', reportLinks.join('\n'))}
+                    className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                  >
+                    {copied === 'all' ? 'Copied' : 'Copy report links'}
+                  </button>
+                  {editorLinks.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyText('editors', editorLinks.join('\n'))}
+                      className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                    >
+                      {copied === 'editors' ? 'Copied' : 'Copy editor links'}
+                    </button>
+                  ) : null}
+                  {importTsv ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyText('tsv', importTsv)}
+                      className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                    >
+                      {copied === 'tsv' ? 'Copied' : 'Copy table'}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               {importRows.length > 0 ? (
                 <div className="overflow-x-auto rounded-2xl border border-slate-800 mt-4">
@@ -262,6 +287,7 @@ export default function AdminPage() {
                         <th className="px-3 py-2 font-bold">Listing</th>
                         <th className="px-3 py-2 font-bold">Status</th>
                         <th className="px-3 py-2 font-bold">Report</th>
+                        <th className="px-3 py-2 font-bold">Editor</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -295,6 +321,24 @@ export default function AdminPage() {
                                   className="text-xs font-bold text-slate-400 hover:text-slate-200"
                                 >
                                   {copied === row.reportUrl ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {row.editorUrl ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <a href={row.editorUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">
+                                  Open
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(row.editorUrl || '', row.editorUrl || '')}
+                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                >
+                                  {copied === row.editorUrl ? 'Copied' : 'Copy'}
                                 </button>
                               </div>
                             ) : (

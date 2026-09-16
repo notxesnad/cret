@@ -164,6 +164,13 @@ create unique index if not exists profiles_stripe_customer_id_idx
   on public.profiles (stripe_customer_id)
   where stripe_customer_id is not null;
 
+alter table public.profiles
+  add column if not exists imported boolean not null default false,
+  add column if not exists editor_token text;
+create unique index if not exists profiles_editor_token_idx
+  on public.profiles (editor_token)
+  where editor_token is not null;
+
 create table if not exists public.link_visits (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid references public.profiles(id) on delete set null,

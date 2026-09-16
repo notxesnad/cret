@@ -1,0 +1,28 @@
+Paste this in Gmail after switching the compose window to Plain text.
+Do not open an HTML file in Chrome and copy it.
+
+Made-for-them send. Pair with realtor-outreach-email-made.html.
+Swap in the address and the two links from the admin import table.
+On the editor link, keep the listing query and add &via=plain if it is not already there.
+
+Subject (pick one):
+I made this for 123 Oak
+your seller can see this today
+
+---
+
+Hey — I made a tracking report for 123 Oak so you can send it to your seller today.
+
+It’s already started: inspection, MLS, Zillow. Your name is on it.
+
+See what they would see:
+REPORT_LINK
+
+Add photos, broker open, showings:
+EDITOR_LINK
+
+That second link signs you in. Play with it. Opening it confirms your email.
+
+If not, ignore this.
+
+Parker

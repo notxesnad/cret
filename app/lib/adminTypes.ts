@@ -51,6 +51,7 @@ export type AdminImportResultRow = {
   address: string
   status: 'created' | 'added' | 'exists' | 'error'
   reportUrl?: string
+  editorUrl?: string
   message?: string
 }
 

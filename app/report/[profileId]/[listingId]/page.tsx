@@ -44,5 +44,5 @@ export default async function SellerReportPage({
     searchParams,
   })
 
-  return <SellerReportView profile={profile} listing={listing} />
+  return <SellerReportView profile={profile} listing={listing} headerCta={profile.imported ? { mode: 'always' } : undefined} />
 }

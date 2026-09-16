@@ -1548,6 +1548,7 @@ function HomeContent() {
                 if (!user) return true
                 return persistWorkspace()
               }}
+              openListingId={searchParams.get('listing')}
             />
           )}
           {currentView === 'driving' && (

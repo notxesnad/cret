@@ -368,6 +368,27 @@ function reportUrl(profileId: string, listingId: string) {
   return `${publicOrigin()}/report/${profileId}/${listingId}`
 }
 
+function editorUrl(token: string | null | undefined, listingId: string) {
+  if (!token) return undefined
+  return `${publicOrigin()}/open/${token}?listing=${encodeURIComponent(listingId)}`
+}
+
+function newEditorToken() {
+  return crypto.randomUUID().replace(/-/g, '')
+}
+
+async function ensureEditorToken(
+  db: ReturnType<typeof admin>,
+  profileId: string,
+  current?: string | null
+) {
+  if (current) return current
+  const token = newEditorToken()
+  const { error } = await db.from('profiles').update({ editor_token: token }).eq('id', profileId)
+  if (error) return null
+  return token
+}
+
 function emailMatch(email: string) {
   return email.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&')
 }
@@ -406,12 +427,20 @@ export async function importSellerReportsFromCsv(input: {
       try {
         let profileId = ''
         let createdAccount = false
+        let editorToken: string | null = null
 
-        const existingProfile = await db
+        let existingProfile = await db
           .from('profiles')
-          .select('id, full_name, phone, brokerage, show_custom_header, subscription_status, trial_ends_at')
+          .select('id, full_name, phone, brokerage, editor_token, imported')
           .ilike('email', emailMatch(row.email))
           .maybeSingle()
+        if (existingProfile.error) {
+          existingProfile = await db
+            .from('profiles')
+            .select('id, full_name, phone, brokerage')
+            .ilike('email', emailMatch(row.email))
+            .maybeSingle()
+        }
         if (existingProfile.error) {
           results.push({
             line: row.line,
@@ -426,6 +455,7 @@ export async function importSellerReportsFromCsv(input: {
 
         if (existingProfile.data?.id) {
           profileId = existingProfile.data.id
+          editorToken = (existingProfile.data as { editor_token?: string | null }).editor_token || null
           const patch: Record<string, unknown> = {
             email: row.email,
             updated_at: new Date().toISOString(),
@@ -433,7 +463,6 @@ export async function importSellerReportsFromCsv(input: {
           if (row.name) patch.full_name = row.name
           if (row.phone) patch.phone = row.phone
           if (row.brokerage) patch.brokerage = row.brokerage
-          if (row.name && row.email) patch.show_custom_header = true
           await db.from('profiles').update(patch).eq('id', profileId)
         } else {
           const password = `${crypto.randomUUID()}${crypto.randomUUID()}`
@@ -476,6 +505,7 @@ export async function importSellerReportsFromCsv(input: {
             createdAccount = true
           }
 
+          editorToken = newEditorToken()
           const trial = appTrialFields()
           const profileRow = {
             id: profileId,
@@ -483,7 +513,10 @@ export async function importSellerReportsFromCsv(input: {
             full_name: row.name,
             phone: row.phone || null,
             brokerage: row.brokerage || null,
-            show_custom_header: true,
+            pdf_look: 'look8',
+            show_custom_header: false,
+            imported: true,
+            editor_token: editorToken,
             workspace_version: 2,
             updated_at: new Date().toISOString(),
             ...trial,
@@ -496,6 +529,9 @@ export async function importSellerReportsFromCsv(input: {
               full_name: row.name,
               phone: row.phone || null,
               brokerage: row.brokerage || null,
+              pdf_look: 'look8',
+              show_custom_header: false,
+              workspace_version: 2,
               updated_at: new Date().toISOString(),
               ...trial,
             })
@@ -532,46 +568,38 @@ export async function importSellerReportsFromCsv(input: {
         const match = (listings.data || []).find(
           (listing) => normalizeAddress(listing.address || '') === normalizeAddress(row.address)
         )
-        if (match) {
-          results.push({
-            line: row.line,
-            name: row.name,
-            email: row.email,
+        const listingId = match?.id || newId()
+        if (!match) {
+          const inserted = await db.from('listings').insert({
+            id: listingId,
+            profile_id: profileId,
             address: row.address,
-            status: 'exists',
-            reportUrl: reportUrl(profileId, match.id),
-            message: 'Already had this listing.',
+            activities: starterActivities(row.listedOn),
+            updated_at: new Date().toISOString(),
           })
-          continue
+          if (inserted.error) {
+            results.push({
+              line: row.line,
+              name: row.name,
+              email: row.email,
+              address: row.address,
+              status: 'error',
+              message: inserted.error.message,
+            })
+            continue
+          }
         }
 
-        const listingId = newId()
-        const inserted = await db.from('listings').insert({
-          id: listingId,
-          profile_id: profileId,
-          address: row.address,
-          activities: starterActivities(row.listedOn),
-          updated_at: new Date().toISOString(),
-        })
-        if (inserted.error) {
-          results.push({
-            line: row.line,
-            name: row.name,
-            email: row.email,
-            address: row.address,
-            status: 'error',
-            message: inserted.error.message,
-          })
-          continue
-        }
-
+        editorToken = await ensureEditorToken(db, profileId, editorToken)
         results.push({
           line: row.line,
           name: row.name,
           email: row.email,
           address: row.address,
-          status: createdAccount ? 'created' : 'added',
+          status: match ? 'exists' : createdAccount ? 'created' : 'added',
           reportUrl: reportUrl(profileId, listingId),
+          editorUrl: editorUrl(editorToken, listingId),
+          message: match ? 'Already had this listing.' : undefined,
         })
       } catch (err) {
         results.push({
