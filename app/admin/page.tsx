@@ -112,6 +112,13 @@ export default function AdminPage() {
     }
   }
 
+  const previewHtml = (html: string) => {
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
   const runImport = async (file: File | undefined) => {
     if (!file || importing) return
     setImportError('')
@@ -217,7 +224,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing with Pre-Listing Inspection, Listed In the MLS, and Syndicated to Zillow. No welcome email is sent. Use the report and editor links in the “I made this” emails. If editor links are blank, run the latest <code className="font-mono text-slate-400">supabase/schema.sql</code> in Supabase.
+                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. No welcome email. After import, copy the plain email or open the HTML and paste it into Gmail for that agent.
                   </p>
                 </div>
                 <button
@@ -288,6 +295,7 @@ export default function AdminPage() {
                         <th className="px-3 py-2 font-bold">Status</th>
                         <th className="px-3 py-2 font-bold">Report</th>
                         <th className="px-3 py-2 font-bold">Editor</th>
+                        <th className="px-3 py-2 font-bold">Email</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -339,6 +347,35 @@ export default function AdminPage() {
                                   className="text-xs font-bold text-slate-400 hover:text-slate-200"
                                 >
                                   {copied === row.editorUrl ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {row.plainEmail ? (
+                              <div className="flex flex-col items-start gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(`${row.email}-subject`, row.subject || '')}
+                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                >
+                                  {copied === `${row.email}-subject` ? 'Copied' : 'Copy subject'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(`${row.email}-plain`, row.plainEmail || '')}
+                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                >
+                                  {copied === `${row.email}-plain` ? 'Copied' : 'Copy plain'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => previewHtml(row.htmlEmail || '')}
+                                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                >
+                                  Open HTML
                                 </button>
                               </div>
                             ) : (

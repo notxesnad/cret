@@ -2,6 +2,7 @@ import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { SellerReportView } from '@/app/components/SellerReportView'
 import { isSellerDemoListing } from '@/app/lib/sellerDemo'
+import { isImportedProfile } from '@/app/lib/editorLink'
 import { trackShareVisit } from '@/app/lib/trackVisit'
 import { adminClient, findPublicListing } from '@/app/lib/workspacePublic'
 
@@ -44,5 +45,5 @@ export default async function SellerReportPage({
     searchParams,
   })
 
-  return <SellerReportView profile={profile} listing={listing} headerCta={profile.imported ? { mode: 'always' } : undefined} />
+  return <SellerReportView profile={profile} listing={listing} headerCta={isImportedProfile(profile) ? { mode: 'always', force: true } : undefined} />
 }

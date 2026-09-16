@@ -8,6 +8,7 @@ export const HEADER_BUILDER_HREF = '/?view=profile'
 
 export type AgentHeaderCtaProps = {
   mode?: 'always' | 'preview'
+  force?: boolean
   signedIn?: boolean
   complete?: boolean
   onCustomize?: () => void
@@ -48,6 +49,7 @@ function previewFlagFromLocation() {
 
 export function AgentHeaderCta({
   mode = 'always',
+  force = false,
   signedIn,
   complete,
   onCustomize,
@@ -88,9 +90,10 @@ export function AgentHeaderCta({
   }, [signedIn, complete])
 
   if (mode === 'preview' && !allowPreview) return null
-  if (!viewer || (viewer.signedIn && viewer.complete)) return null
+  if (!force && (!viewer || (viewer.signedIn && viewer.complete))) return null
+  if (force && !viewer) return null
 
-  const label = viewer.signedIn ? 'Finish your header' : 'Customize your header'
+  const label = force || !viewer?.signedIn ? 'Customize your header' : 'Finish your header'
 
   const go = () => {
     markHeaderBuilderStart()
@@ -122,7 +125,7 @@ export function AgentHeaderFrame({
   if (!children) return null
   if (!cta) return children
   return (
-    <div className="relative">
+    <div className="relative overflow-visible">
       {children}
       <div className="absolute right-2 bottom-2 z-20 no-print">
         <AgentHeaderCta {...cta} />

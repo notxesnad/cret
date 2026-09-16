@@ -1,4 +1,4 @@
-import { OpenEditorTokenClient } from './OpenEditorTokenClient'
+import { OpenEditorClient } from '@/app/components/OpenEditorClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -6,20 +6,20 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
-export default async function OpenTokenEditorPage({
+export default async function OpenSignedEditorPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ token: string }>
+  params: Promise<{ profileId: string; listingId: string; sig: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { token } = await params
+  const { profileId, listingId, sig } = await params
   const query = await searchParams
-  const listingId = first(query.listing) || ''
   return (
-    <OpenEditorTokenClient
-      token={token}
+    <OpenEditorClient
+      profileId={profileId}
       listingId={listingId}
+      sig={sig}
       next={first(query.next)}
       via={first(query.via)}
     />

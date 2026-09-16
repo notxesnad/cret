@@ -6,6 +6,8 @@ import { normalizeAddress, parseImportCsv, starterActivities } from '@/app/lib/a
 import type { AdminAgentRow, AdminDashboard, AdminImportResultRow, AdminRecentVisit } from '@/app/lib/adminTypes'
 import { TOOL_LABELS } from '@/app/lib/adminTypes'
 import { appTrialFields, billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
+import { editorHref, reportHref } from '@/app/lib/editorLink'
+import { madeEmailHtml, madeEmailPlain, madeEmailSubject } from '@/app/lib/madeEmails'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
@@ -360,35 +362,6 @@ export async function deleteAdminUser(input: { accessToken: string; profileId: s
   }
 }
 
-function publicOrigin() {
-  return (process.env.NEXT_PUBLIC_APP_URL || 'https://coolrealestatetools.com').replace(/\/$/, '')
-}
-
-function reportUrl(profileId: string, listingId: string) {
-  return `${publicOrigin()}/report/${profileId}/${listingId}`
-}
-
-function editorUrl(token: string | null | undefined, listingId: string) {
-  if (!token) return undefined
-  return `${publicOrigin()}/open/${token}?listing=${encodeURIComponent(listingId)}`
-}
-
-function newEditorToken() {
-  return crypto.randomUUID().replace(/-/g, '')
-}
-
-async function ensureEditorToken(
-  db: ReturnType<typeof admin>,
-  profileId: string,
-  current?: string | null
-) {
-  if (current) return current
-  const token = newEditorToken()
-  const { error } = await db.from('profiles').update({ editor_token: token }).eq('id', profileId)
-  if (error) return null
-  return token
-}
-
 function emailMatch(email: string) {
   return email.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&')
 }
@@ -427,11 +400,10 @@ export async function importSellerReportsFromCsv(input: {
       try {
         let profileId = ''
         let createdAccount = false
-        let editorToken: string | null = null
 
         let existingProfile = await db
           .from('profiles')
-          .select('id, full_name, phone, brokerage, editor_token, imported')
+          .select('id, full_name, phone, brokerage, promo_code')
           .ilike('email', emailMatch(row.email))
           .maybeSingle()
         if (existingProfile.error) {
@@ -455,7 +427,7 @@ export async function importSellerReportsFromCsv(input: {
 
         if (existingProfile.data?.id) {
           profileId = existingProfile.data.id
-          editorToken = (existingProfile.data as { editor_token?: string | null }).editor_token || null
+          const promo = (existingProfile.data as { promo_code?: string | null }).promo_code
           const patch: Record<string, unknown> = {
             email: row.email,
             updated_at: new Date().toISOString(),
@@ -463,7 +435,17 @@ export async function importSellerReportsFromCsv(input: {
           if (row.name) patch.full_name = row.name
           if (row.phone) patch.phone = row.phone
           if (row.brokerage) patch.brokerage = row.brokerage
-          await db.from('profiles').update(patch).eq('id', profileId)
+          if (!promo || promo === 'imported') {
+            patch.promo_code = 'imported'
+            patch.imported = true
+            patch.pdf_look = 'look8'
+            patch.show_custom_header = false
+          }
+          const updated = await db.from('profiles').update(patch).eq('id', profileId)
+          if (updated.error) {
+            const { imported: _imported, ...rest } = patch
+            await db.from('profiles').update(rest).eq('id', profileId)
+          }
         } else {
           const password = `${crypto.randomUUID()}${crypto.randomUUID()}`
           const created = await db.auth.admin.createUser({
@@ -505,7 +487,6 @@ export async function importSellerReportsFromCsv(input: {
             createdAccount = true
           }
 
-          editorToken = newEditorToken()
           const trial = appTrialFields()
           const profileRow = {
             id: profileId,
@@ -516,7 +497,7 @@ export async function importSellerReportsFromCsv(input: {
             pdf_look: 'look8',
             show_custom_header: false,
             imported: true,
-            editor_token: editorToken,
+            promo_code: 'imported',
             workspace_version: 2,
             updated_at: new Date().toISOString(),
             ...trial,
@@ -531,6 +512,7 @@ export async function importSellerReportsFromCsv(input: {
               brokerage: row.brokerage || null,
               pdf_look: 'look8',
               show_custom_header: false,
+              promo_code: 'imported',
               workspace_version: 2,
               updated_at: new Date().toISOString(),
               ...trial,
@@ -590,15 +572,30 @@ export async function importSellerReportsFromCsv(input: {
           }
         }
 
-        editorToken = await ensureEditorToken(db, profileId, editorToken)
+        const reportUrl = reportHref(profileId, listingId)
+        const editorUrl = editorHref(profileId, listingId, { via: 'plain' })
+        const htmlEditorUrl = editorHref(profileId, listingId, { via: 'html' })
         results.push({
           line: row.line,
           name: row.name,
           email: row.email,
           address: row.address,
           status: match ? 'exists' : createdAccount ? 'created' : 'added',
-          reportUrl: reportUrl(profileId, listingId),
-          editorUrl: editorUrl(editorToken, listingId),
+          reportUrl,
+          editorUrl,
+          subject: madeEmailSubject(row.address),
+          plainEmail: madeEmailPlain({
+            name: row.name,
+            address: row.address,
+            reportUrl,
+            editorUrl,
+          }),
+          htmlEmail: madeEmailHtml({
+            name: row.name,
+            address: row.address,
+            reportUrl,
+            editorUrl: htmlEditorUrl,
+          }),
           message: match ? 'Already had this listing.' : undefined,
         })
       } catch (err) {
