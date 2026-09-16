@@ -1,7 +1,8 @@
 Paste this in Gmail after switching the compose window to Plain text.
 Do not open an HTML file in Chrome and copy it.
 
-Just-listed send. Not the previous seller-tracker A/B.
+Just-listed send. Pair with realtor-outreach-email-st-justlisted.html.
+Not the previous seller-tracker A/B.
 
 Subject (pick one):
 your listing just went live
