@@ -2,9 +2,10 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { isAdminEmail } from '@/app/lib/adminAccess'
-import type { AdminAgentRow, AdminDashboard, AdminRecentVisit } from '@/app/lib/adminTypes'
+import { normalizeAddress, parseImportCsv, starterActivities } from '@/app/lib/adminCsv'
+import type { AdminAgentRow, AdminDashboard, AdminImportResultRow, AdminRecentVisit } from '@/app/lib/adminTypes'
 import { TOOL_LABELS } from '@/app/lib/adminTypes'
-import { billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
+import { appTrialFields, billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
@@ -15,6 +16,19 @@ function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   return createClient(url, key)
+}
+
+async function findAuthUserIdByEmail(db: ReturnType<typeof admin>, email: string) {
+  const needle = email.trim().toLowerCase()
+  for (let page = 1; page <= 10; page += 1) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 })
+    if (error) return null
+    const users = data?.users || []
+    const match = users.find((user) => (user.email || '').toLowerCase() === needle)
+    if (match?.id) return match.id
+    if (users.length < 1000) return null
+  }
+  return null
 }
 
 async function userFromToken(accessToken: string) {
@@ -343,5 +357,244 @@ export async function deleteAdminUser(input: { accessToken: string; profileId: s
   } catch (err) {
     console.error('deleteAdminUser', err)
     return { error: 'Could not delete that account.' }
+  }
+}
+
+function publicOrigin() {
+  return (process.env.NEXT_PUBLIC_APP_URL || 'https://coolrealestatetools.com').replace(/\/$/, '')
+}
+
+function reportUrl(profileId: string, listingId: string) {
+  return `${publicOrigin()}/report/${profileId}/${listingId}`
+}
+
+function emailMatch(email: string) {
+  return email.replace(/\\/g, '\\\\').replace(/[%_]/g, '\\$&')
+}
+
+function newId() {
+  return crypto.randomUUID().replace(/-/g, '').slice(0, 10)
+}
+
+export async function importSellerReportsFromCsv(input: {
+  accessToken: string
+  csvText: string
+}): Promise<{ error: string } | { created: number; added: number; exists: number; failed: number; rows: AdminImportResultRow[] }> {
+  try {
+    const authed = await requireAdmin(input.accessToken)
+    if (!('user' in authed)) return { error: authed.error }
+
+    const parsed = parseImportCsv(input.csvText || '')
+    if (!parsed.rows.length) {
+      return { error: parsed.errors[0]?.message || 'No data rows in that file.' }
+    }
+    if (parsed.rows.length > 400) {
+      return { error: 'Cap is 400 rows. Split the file and import again.' }
+    }
+
+    const db = admin()
+    const results: AdminImportResultRow[] = parsed.errors.map((item) => ({
+      line: item.line,
+      name: '',
+      email: '',
+      address: '',
+      status: 'error',
+      message: item.message,
+    }))
+
+    for (const row of parsed.rows) {
+      try {
+        let profileId = ''
+        let createdAccount = false
+
+        const existingProfile = await db
+          .from('profiles')
+          .select('id, full_name, phone, brokerage, show_custom_header, subscription_status, trial_ends_at')
+          .ilike('email', emailMatch(row.email))
+          .maybeSingle()
+        if (existingProfile.error) {
+          results.push({
+            line: row.line,
+            name: row.name,
+            email: row.email,
+            address: row.address,
+            status: 'error',
+            message: existingProfile.error.message,
+          })
+          continue
+        }
+
+        if (existingProfile.data?.id) {
+          profileId = existingProfile.data.id
+          const patch: Record<string, unknown> = {
+            email: row.email,
+            updated_at: new Date().toISOString(),
+          }
+          if (row.name) patch.full_name = row.name
+          if (row.phone) patch.phone = row.phone
+          if (row.brokerage) patch.brokerage = row.brokerage
+          if (row.name && row.email) patch.show_custom_header = true
+          await db.from('profiles').update(patch).eq('id', profileId)
+        } else {
+          const password = `${crypto.randomUUID()}${crypto.randomUUID()}`
+          const created = await db.auth.admin.createUser({
+            email: row.email,
+            password,
+            email_confirm: true,
+            user_metadata: { full_name: row.name },
+          })
+          if (created.error || !created.data.user?.id) {
+            const already = (created.error?.message || '').toLowerCase()
+            const status = Number((created.error as { status?: number } | null)?.status || 0)
+            if (created.error && (status === 422 || already.includes('already') || already.includes('registered') || already.includes('exists'))) {
+              const existingId = await findAuthUserIdByEmail(db, row.email)
+              if (!existingId) {
+                results.push({
+                  line: row.line,
+                  name: row.name,
+                  email: row.email,
+                  address: row.address,
+                  status: 'error',
+                  message: created.error.message,
+                })
+                continue
+              }
+              profileId = existingId
+            } else {
+              results.push({
+                line: row.line,
+                name: row.name,
+                email: row.email,
+                address: row.address,
+                status: 'error',
+                message: created.error?.message || 'Could not create the account.',
+              })
+              continue
+            }
+          } else {
+            profileId = created.data.user.id
+            createdAccount = true
+          }
+
+          const trial = appTrialFields()
+          const profileRow = {
+            id: profileId,
+            email: row.email,
+            full_name: row.name,
+            phone: row.phone || null,
+            brokerage: row.brokerage || null,
+            show_custom_header: true,
+            workspace_version: 2,
+            updated_at: new Date().toISOString(),
+            ...trial,
+          }
+          const saved = await db.from('profiles').upsert(profileRow)
+          if (saved.error) {
+            const retry = await db.from('profiles').upsert({
+              id: profileId,
+              email: row.email,
+              full_name: row.name,
+              phone: row.phone || null,
+              brokerage: row.brokerage || null,
+              updated_at: new Date().toISOString(),
+              ...trial,
+            })
+            if (retry.error) {
+              results.push({
+                line: row.line,
+                name: row.name,
+                email: row.email,
+                address: row.address,
+                status: 'error',
+                message: retry.error.message,
+              })
+              continue
+            }
+          }
+        }
+
+        const listings = await db
+          .from('listings')
+          .select('id, address')
+          .eq('profile_id', profileId)
+        if (listings.error && !isMissingRelation(listings.error)) {
+          results.push({
+            line: row.line,
+            name: row.name,
+            email: row.email,
+            address: row.address,
+            status: 'error',
+            message: listings.error.message,
+          })
+          continue
+        }
+
+        const match = (listings.data || []).find(
+          (listing) => normalizeAddress(listing.address || '') === normalizeAddress(row.address)
+        )
+        if (match) {
+          results.push({
+            line: row.line,
+            name: row.name,
+            email: row.email,
+            address: row.address,
+            status: 'exists',
+            reportUrl: reportUrl(profileId, match.id),
+            message: 'Already had this listing.',
+          })
+          continue
+        }
+
+        const listingId = newId()
+        const inserted = await db.from('listings').insert({
+          id: listingId,
+          profile_id: profileId,
+          address: row.address,
+          activities: starterActivities(row.listedOn),
+          updated_at: new Date().toISOString(),
+        })
+        if (inserted.error) {
+          results.push({
+            line: row.line,
+            name: row.name,
+            email: row.email,
+            address: row.address,
+            status: 'error',
+            message: inserted.error.message,
+          })
+          continue
+        }
+
+        results.push({
+          line: row.line,
+          name: row.name,
+          email: row.email,
+          address: row.address,
+          status: createdAccount ? 'created' : 'added',
+          reportUrl: reportUrl(profileId, listingId),
+        })
+      } catch (err) {
+        results.push({
+          line: row.line,
+          name: row.name,
+          email: row.email,
+          address: row.address,
+          status: 'error',
+          message: err instanceof Error ? err.message : 'Could not import this row.',
+        })
+      }
+    }
+
+    results.sort((a, b) => a.line - b.line)
+    return {
+      created: results.filter((row) => row.status === 'created').length,
+      added: results.filter((row) => row.status === 'added').length,
+      exists: results.filter((row) => row.status === 'exists').length,
+      failed: results.filter((row) => row.status === 'error').length,
+      rows: results,
+    }
+  } catch (err) {
+    console.error('importSellerReportsFromCsv', err)
+    return { error: 'Could not import that file.' }
   }
 }

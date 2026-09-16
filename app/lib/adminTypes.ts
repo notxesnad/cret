@@ -44,6 +44,16 @@ export type AdminRecentVisit = {
   utmCampaign: string | null
 }
 
+export type AdminImportResultRow = {
+  line: number
+  name: string
+  email: string
+  address: string
+  status: 'created' | 'added' | 'exists' | 'error'
+  reportUrl?: string
+  message?: string
+}
+
 export type AdminDashboard = {
   you: string
   tableReady: boolean

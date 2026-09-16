@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deleteAdminUser, loadAdminDashboard } from '@/app/actions/admin'
+import { deleteAdminUser, importSellerReportsFromCsv, loadAdminDashboard } from '@/app/actions/admin'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
-import { TOOL_LABELS, type AdminAgentRow, type AdminDashboard } from '@/app/lib/adminTypes'
+import { IMPORT_TEMPLATE_CSV } from '@/app/lib/adminCsv'
+import { TOOL_LABELS, type AdminAgentRow, type AdminDashboard, type AdminImportResultRow } from '@/app/lib/adminTypes'
 import { supabase } from '@/utils/supabase'
 
 function when(iso: string | null) {
@@ -36,6 +37,12 @@ export default function AdminPage() {
   const [pendingDelete, setPendingDelete] = useState<AdminAgentRow | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [importFileName, setImportFileName] = useState('')
+  const [importSummary, setImportSummary] = useState<{ created: number; added: number; exists: number; failed: number } | null>(null)
+  const [importRows, setImportRows] = useState<AdminImportResultRow[]>([])
+  const [copied, setCopied] = useState('')
 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) {
@@ -84,6 +91,63 @@ export default function AdminPage() {
       setDeletingId(null)
     }
   }
+
+  const downloadTemplate = () => {
+    const blob = new Blob([IMPORT_TEMPLATE_CSV], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'seller-report-import.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const copyText = async (label: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(label)
+      window.setTimeout(() => setCopied(''), 1600)
+    } catch {
+      setCopied('')
+    }
+  }
+
+  const runImport = async (file: File | undefined) => {
+    if (!file || importing) return
+    setImportError('')
+    setImportSummary(null)
+    setImportRows([])
+    setImportFileName(file.name)
+    setImporting(true)
+    try {
+      const csvText = await file.text()
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) {
+        setImportError('Sign in first.')
+        return
+      }
+      const result = await importSellerReportsFromCsv({ accessToken: token, csvText })
+      if ('error' in result) {
+        setImportError(result.error)
+        return
+      }
+      setImportSummary({
+        created: result.created,
+        added: result.added,
+        exists: result.exists,
+        failed: result.failed,
+      })
+      setImportRows(result.rows)
+      await refresh({ quiet: true })
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Could not import that file.')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const reportLinks = importRows.map((row) => row.reportUrl).filter(Boolean) as string[]
 
   const agents = useMemo(() => {
     if (!data) return []
@@ -142,6 +206,108 @@ export default function AdminPage() {
                 Click tracking is not live yet. Run <code className="font-mono">supabase/analytics.sql</code> in the Supabase SQL editor.
               </div>
             )}
+
+            <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
+                  <p className="text-sm text-slate-400 mt-1 max-w-2xl">
+                    Upload a CSV. Each row gets an account, their header, and a listing with Pre-Listing Inspection, Listed In the MLS, and Syndicated to Zillow. No welcome email is sent.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadTemplate}
+                  className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                >
+                  Download template
+                </button>
+              </div>
+              <label className="inline-flex items-center gap-3 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 rounded-full cursor-pointer">
+                {importing ? 'Importing…' : 'Upload CSV'}
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  disabled={importing}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    void runImport(file)
+                  }}
+                />
+              </label>
+              {importFileName ? <p className="text-xs text-slate-500 mt-2">{importFileName}</p> : null}
+              {importError ? <p className="text-sm text-rose-300 mt-3">{importError}</p> : null}
+              {importSummary ? (
+                <p className="text-sm text-slate-300 mt-3">
+                  {importSummary.created} new accounts · {importSummary.added} listings added to existing accounts · {importSummary.exists} already had that listing · {importSummary.failed} failed
+                </p>
+              ) : null}
+              {reportLinks.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => void copyText('all', reportLinks.join('\n'))}
+                  className="mt-3 text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                >
+                  {copied === 'all' ? 'Copied' : 'Copy report links'}
+                </button>
+              ) : null}
+              {importRows.length > 0 ? (
+                <div className="overflow-x-auto rounded-2xl border border-slate-800 mt-4">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-[11px] uppercase tracking-wider text-slate-500 bg-slate-950">
+                      <tr>
+                        <th className="px-3 py-2 font-bold">Agent</th>
+                        <th className="px-3 py-2 font-bold">Listing</th>
+                        <th className="px-3 py-2 font-bold">Status</th>
+                        <th className="px-3 py-2 font-bold">Report</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importRows.map((row, index) => (
+                        <tr key={`${row.line}-${row.email}-${index}`} className="border-t border-slate-800 align-top">
+                          <td className="px-3 py-2">
+                            <div className="font-bold">{row.name || '—'}</div>
+                            <div className="text-xs text-slate-500">{row.email || `Line ${row.line}`}</div>
+                          </td>
+                          <td className="px-3 py-2">{row.address || '—'}</td>
+                          <td className="px-3 py-2">
+                            {row.status === 'error' ? (
+                              <span className="text-rose-300">{row.message || 'Failed'}</span>
+                            ) : row.status === 'exists' ? (
+                              <span className="text-amber-300">Already there</span>
+                            ) : row.status === 'created' ? (
+                              <span className="text-emerald-400 font-bold">New account</span>
+                            ) : (
+                              <span className="text-emerald-300">Listing added</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {row.reportUrl ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <a href={row.reportUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline break-all">
+                                  Open
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(row.reportUrl || '', row.reportUrl || '')}
+                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                >
+                                  {copied === row.reportUrl ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </section>
 
             <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Stat label="Agents" value={data.totals.agents} hint={`${data.totals.agentsThisWeek} this week · ${data.totals.verified} verified email`} />
