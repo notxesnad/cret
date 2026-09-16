@@ -19,14 +19,8 @@ export function headerContactComplete(profile?: {
   full_name?: string | null
   email?: string | null
   phone?: string | null
-  imported?: boolean | null
-  headshot_url?: string | null
-  custom_header_url?: string | null
 } | null) {
-  const contact = Boolean(profile?.full_name?.trim() && profile?.email?.trim() && profile?.phone?.trim())
-  if (!contact) return false
-  if (profile?.imported && !profile.headshot_url?.trim() && !profile.custom_header_url?.trim()) return false
-  return true
+  return Boolean(profile?.full_name?.trim() && profile?.email?.trim() && profile?.phone?.trim())
 }
 
 export function markHeaderBuilderStart() {
@@ -79,29 +73,11 @@ export function AgentHeaderCta({
         if (!cancelled) setViewer({ signedIn: false, complete: false })
         return
       }
-      let profile: {
-        full_name?: string | null
-        email?: string | null
-        phone?: string | null
-        imported?: boolean | null
-        headshot_url?: string | null
-        custom_header_url?: string | null
-      } | null = null
-      const first = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, email, phone, imported, headshot_url, custom_header_url')
+        .select('full_name, email, phone')
         .eq('id', user.id)
         .maybeSingle()
-      if (first.error) {
-        const retry = await supabase
-          .from('profiles')
-          .select('full_name, email, phone, headshot_url, custom_header_url')
-          .eq('id', user.id)
-          .maybeSingle()
-        profile = retry.data
-      } else {
-        profile = first.data
-      }
       if (!cancelled) {
         setViewer({ signedIn: true, complete: headerContactComplete(profile) })
       }

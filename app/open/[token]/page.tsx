@@ -49,6 +49,8 @@ export default async function OpenEditorPage({
   dest.searchParams.set('utm_campaign', 'realtors-st-made')
   dest.searchParams.set('utm_content', next === 'profile' ? 'header' : 'editor')
 
+  await db.from('profiles').update({ imported: false, updated_at: new Date().toISOString() }).eq('id', profile.id)
+
   const { data, error: linkError } = await db.auth.admin.generateLink({
     type: 'magiclink',
     email: profile.email,
