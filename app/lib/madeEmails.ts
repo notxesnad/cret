@@ -12,7 +12,7 @@ function escapeHtml(value: string) {
 
 export function madeEmailSubject(address: string) {
   const trimmed = address.trim() || 'your listing'
-  return `I made this for ${trimmed}`
+  return `your seller at ${trimmed}`
 }
 
 export function madeEmailPlain(input: {
@@ -23,19 +23,17 @@ export function madeEmailPlain(input: {
 }) {
   const hi = firstNameFrom(input.name)
   const address = input.address.trim() || 'your listing'
-  return `Hey${hi ? ` ${hi}` : ''} — I made a tracking report for ${address} so you can send it to your seller today.
+  return `Hey${hi ? ` ${hi}` : ''} — ${address} just went live. That first quiet week is when sellers start asking what you’ve actually done.
 
-It’s already started: inspection, MLS, Zillow. Your name is on it.
+There’s a simple report you can text them. Inspection, MLS, Zillow, then photos and showings as they happen — dated, in order, with your name on it. Takes about a minute. Free to try.
 
-See what they would see:
+Peek at one for ${address}:
 ${input.reportUrl}
 
-Add photos, broker open, showings:
+Open it and add the next update:
 ${input.editorUrl}
 
-That second link signs you in. Play with it. Opening it confirms your email.
-
-If not, ignore this.
+If it’s useful, send your seller the first link tonight. If not, ignore this.
 
 Parker`
 }
@@ -54,7 +52,7 @@ export function madeEmailHtml(input: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>I made this for ${address}</title>
+  <title>your seller at ${address}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#0f172a;margin:0;padding:0;">
@@ -69,26 +67,26 @@ export function madeEmailHtml(input: {
           <tr>
             <td style="background-color:#1e293b;border:1px solid #334155;border-radius:24px;padding:32px 28px;">
               <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;">${address}</p>
-              <p style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">I made this for your seller.</p>
+              <p style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">Keep your seller from wondering what’s happening.</p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#94a3b8;">
-                Inspection, MLS, and Zillow are already on it. Your name is on the header. Send them the report, then add photos and showings as they happen.
+                The listing is live. The first quiet days feel like nothing. A dated report — inspection, MLS, Zillow already on it — is something you can text them tonight. Add photos and showings as they happen. About a minute. Free to try.
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px;">
                 <tr>
                   <td align="center" style="background-color:#f59e0b;border-radius:12px;">
-                    <a href="${reportUrl}" style="display:block;background-color:#f59e0b;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#0f172a;text-decoration:none;letter-spacing:0.01em;">See the report</a>
+                    <a href="${reportUrl}" style="display:block;background-color:#f59e0b;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#0f172a;text-decoration:none;letter-spacing:0.01em;">See what they’d get</a>
                   </td>
                 </tr>
               </table>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
                 <tr>
                   <td align="center" style="background-color:#334155;border-radius:12px;">
-                    <a href="${editorUrl}" style="display:block;background-color:#334155;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#f8fafc;text-decoration:none;letter-spacing:0.01em;">Add to it</a>
+                    <a href="${editorUrl}" style="display:block;background-color:#334155;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#f8fafc;text-decoration:none;letter-spacing:0.01em;">Try it on this listing</a>
                   </td>
                 </tr>
               </table>
               <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#94a3b8;">
-                Add to it signs you in. Opening it confirms your email. No extra setup.
+                The second button signs you in. No password. If you like it, send your seller the report tonight.
               </p>
             </td>
           </tr>
