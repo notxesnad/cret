@@ -5,20 +5,20 @@ Cold just-listed send. Pair with realtor-outreach-email-made.html.
 Admin import fills these in per agent. Re-upload the CSV to regenerate.
 
 Subject:
-your seller at 123 Oak
+Seller Tracking Report for 123 Oak
 
 ---
 
-Hey — 123 Oak just went live. That first quiet week is when sellers start asking what you’ve actually done.
+Hey — I started a Seller Tracking Report for 123 Oak.
 
-There’s a simple report you can text them. Inspection, MLS, Zillow, then photos and showings as they happen — dated, in order, with your name on it. Takes about a minute. Free to try.
+It’s a dated log of the work on the listing, with your name on it. Inspection, MLS, and Zillow are already entered. You add the next activities — photos, broker open, showings — and you get a link to text your seller so they can see it.
 
-Peek at one for 123 Oak:
+Preview the report your seller would get:
 REPORT_LINK
 
-Open it and add the next update:
+Add activities and copy the seller link:
 EDITOR_LINK
 
-If it’s useful, send your seller the first link tonight. If not, ignore this.
+Free. About a minute. If not, ignore this.
 
 Parker
