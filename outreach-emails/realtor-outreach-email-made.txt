@@ -11,7 +11,7 @@ Seller Tracking Report for 123 Oak
 
 Hey — I started a Seller Tracking Report for 123 Oak.
 
-It’s a dated log of the work on the listing, with your name on it. Inspection, MLS, and Zillow are already entered. You add the next activities — photos, broker open, showings — and you get a link to text your seller so they can see it.
+It’s a dated log of the work you’ve done for 123 Oak. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
 
 Preview the report your seller would get:
 REPORT_LINK

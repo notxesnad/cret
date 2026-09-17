@@ -25,7 +25,7 @@ export function madeEmailPlain(input: {
   const address = input.address.trim() || 'your listing'
   return `Hey${hi ? ` ${hi}` : ''} — I started a Seller Tracking Report for ${address}.
 
-It’s a dated log of the work on the listing, with your name on it. Inspection, MLS, and Zillow are already entered. You add the next activities — photos, broker open, showings — and you get a link to text your seller so they can see it.
+It’s a dated log of the work you’ve done for ${address}. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
 
 Preview the report your seller would get:
 ${input.reportUrl}
@@ -69,7 +69,7 @@ export function madeEmailHtml(input: {
               <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;">${address}</p>
               <p style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">I started a Seller Tracking Report for this listing.</p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#94a3b8;">
-                It’s a dated log of the work, with your name on it. Inspection, MLS, and Zillow are already entered. You add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
+                It’s a dated log of the work you’ve done for ${address}. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
               </p>
               <p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#e2e8f0;font-weight:700;">
                 Free. About a minute. Two links:
