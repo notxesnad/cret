@@ -33,7 +33,7 @@ ${input.reportUrl}
 Add activities and copy the seller link:
 ${input.editorUrl}
 
-Free. About a minute. If not, ignore this.
+Takes about a minute. Costs you nothing to try. If not, ignore this.
 
 Parker`
 }
@@ -72,7 +72,7 @@ export function madeEmailHtml(input: {
                 It’s a dated log of the work you’ve done for ${address}. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
               </p>
               <p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#e2e8f0;font-weight:700;">
-                Free. About a minute. Two links:
+                Takes about a minute. Costs you nothing to try.
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px;">
                 <tr>
@@ -83,8 +83,8 @@ export function madeEmailHtml(input: {
               </table>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
                 <tr>
-                  <td align="center" style="background-color:#334155;border-radius:12px;">
-                    <a href="${editorUrl}" style="display:block;background-color:#334155;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#f8fafc;text-decoration:none;letter-spacing:0.01em;">Add activities and get the seller link</a>
+                  <td align="center" style="background-color:#34d399;border-radius:12px;">
+                    <a href="${editorUrl}" style="display:block;background-color:#34d399;border-radius:12px;padding:16px 28px;font-size:16px;font-weight:900;color:#0f172a;text-decoration:none;letter-spacing:0.01em;">Add activities and get the seller link</a>
                   </td>
                 </tr>
               </table>
