@@ -87,6 +87,7 @@ export function SellerTrackerView({
   const [activeListingId, setActiveListingId] = useState<string | null>(openListingId || null)
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null)
   const [customActivity, setCustomActivity] = useState('')
+  const [showActivityBank, setShowActivityBank] = useState(false)
   const [isAddingListing, setIsAddingListing] = useState(false)
   const [newListingAddress, setNewListingAddress] = useState('')
   const [editActivityForm, setEditActivityForm] = useState<Partial<Activity>>({})
@@ -96,6 +97,7 @@ export function SellerTrackerView({
     if (!openListingId) return
     if (!listings.some((listing) => listing.id === openListingId)) return
     setActiveListingId(openListingId)
+    setShowActivityBank(false)
     setHub('work')
     setStep(2)
   }, [openListingId, listings])
@@ -137,12 +139,14 @@ export function SellerTrackerView({
       setActiveListingId(newListing.id)
       setNewListingAddress('')
       setIsAddingListing(false)
+      setShowActivityBank(false)
       setStep(2)
     }
   }
 
   const handleOpenListing = (id: string) => {
     setActiveListingId(id)
+    setShowActivityBank(false)
     setStep(2)
   }
 
@@ -399,41 +403,55 @@ export function SellerTrackerView({
             {activeListing && (
               <>
                 <div className="mb-6">
-                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Updating Report for:</span>
+                  <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Updating Seller report for:</span>
                   <h3 className="text-2xl font-black text-white mt-1">{activeListing.address}</h3>
                 </div>
 
-                {/* Add Activity Section */}
-                <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 mb-6">
-                  <h3 className="text-sm font-bold text-white mb-3">Activity Bank</h3>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-4">
-                    {PRESET_ACTIVITIES.map(preset => (
-                      <button
-                        key={preset}
-                        onClick={() => handleAddActivity(preset)}
-                        className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
-                      >
-                        <p className="text-sm font-bold text-slate-200">{preset}</p>
-                      </button>
-                    ))}
-                  </div>
+                <div className="mb-6">
+                  <button
+                    type="button"
+                    aria-expanded={showActivityBank}
+                    onClick={() => setShowActivityBank(open => !open)}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2"
+                  >
+                    <svg className={`w-5 h-5 transition-transform duration-300 ${showActivityBank ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add New Activity
+                  </button>
+                  <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${showActivityBank ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden min-h-0">
+                      <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 mt-4">
+                        <h3 className="text-sm font-bold text-white mb-3">Activity Bank</h3>
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-4">
+                          {PRESET_ACTIVITIES.map(preset => (
+                            <button
+                              key={preset}
+                              onClick={() => handleAddActivity(preset)}
+                              className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
+                            >
+                              <p className="text-sm font-bold text-slate-200">{preset}</p>
+                            </button>
+                          ))}
+                        </div>
 
-                  <p className="text-sm font-bold text-slate-400 text-center mb-3">Or add your own</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Custom activity... (e.g. Sent Email to [ ])"
-                      value={customActivity}
-                      onChange={(e) => setCustomActivity(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddActivity(customActivity)}
-                      className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
-                    />
-                    <button
-                      onClick={() => handleAddActivity(customActivity)}
-                      className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
-                    >
-                      Add
-                    </button>
+                        <p className="text-sm font-bold text-slate-400 text-center mb-3">Or add your own</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Custom activity... (e.g. Sent Email to [ ])"
+                            value={customActivity}
+                            onChange={(e) => setCustomActivity(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddActivity(customActivity)}
+                            className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                          />
+                          <button
+                            onClick={() => handleAddActivity(customActivity)}
+                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

@@ -63,12 +63,12 @@ export function SellerReportView({
             <tr>
               <td className="p-0">
                 <div className="max-w-3xl mx-auto px-4 md:px-8 py-6 space-y-6">
-                  <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl flex flex-col md:flex-row justify-between md:items-end gap-4 print-break-inside-avoid">
+                  <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl print-break-inside-avoid">
                     <div>
                       <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-2">Seller Activity Report</span>
                       <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{listing.address}</h1>
                     </div>
-                    <PrintButtons listingAddress={listing.address} />
+                    <PrintButtons listingAddress={listing.address} variant="links" />
                   </div>
 
                   <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl">

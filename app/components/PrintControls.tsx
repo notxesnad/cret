@@ -2,7 +2,13 @@
 
 import { useState } from 'react'
 
-export function PrintButtons({ listingAddress }: { listingAddress: string }) {
+export function PrintButtons({
+  listingAddress,
+  variant = 'buttons',
+}: {
+  listingAddress: string
+  variant?: 'buttons' | 'links'
+}) {
   const [saving, setSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
 
@@ -207,6 +213,42 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
     }
   }
 
+  const printIcon = (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+  )
+  const saveIcon = (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+  )
+
+  if (variant === 'links') {
+    return (
+      <div className="flex flex-col items-end gap-1 mt-5 no-print">
+        <div className="flex items-center gap-5">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline transition"
+          >
+            {printIcon}
+            Print
+          </button>
+          <button
+            type="button"
+            onClick={handleSavePdf}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-900 underline-offset-4 hover:underline transition disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+          >
+            {saveIcon}
+            {saving ? 'Saving...' : 'Save PDF'}
+          </button>
+        </div>
+        {statusMsg && (
+          <p className="text-xs font-bold max-w-xs text-rose-500">{statusMsg}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-stretch md:items-end gap-2 no-print">
       <div className="flex flex-wrap gap-3">
@@ -214,7 +256,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
           onClick={() => window.print()}
           className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-2 text-sm"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          {printIcon}
           Print
         </button>
         <button 
@@ -222,7 +264,7 @@ export function PrintButtons({ listingAddress }: { listingAddress: string }) {
           disabled={saving}
           className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 px-5 py-2.5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm min-w-[140px]"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          {saveIcon}
           {saving ? 'Saving...' : 'Save PDF'}
         </button>
       </div>
