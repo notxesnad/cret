@@ -420,21 +420,8 @@ export function SellerTrackerView({
                   <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${showActivityBank ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden min-h-0">
                       <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 mt-4">
-                        <h3 className="text-sm font-bold text-white mb-3">Activity Bank</h3>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 mb-4">
-                          {PRESET_ACTIVITIES.map(preset => (
-                            <button
-                              key={preset}
-                              onClick={() => handleAddActivity(preset)}
-                              className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
-                            >
-                              <p className="text-sm font-bold text-slate-200">{preset}</p>
-                            </button>
-                          ))}
-                        </div>
-
-                        <p className="text-sm font-bold text-slate-400 text-center mb-3">Or add your own</p>
-                        <div className="flex gap-2">
+                        <h3 className="text-sm font-bold text-white mb-3">Add Your Own</h3>
+                        <div className="flex gap-2 mb-4">
                           <input
                             type="text"
                             placeholder="Custom activity... (e.g. Sent Email to [ ])"
@@ -449,6 +436,19 @@ export function SellerTrackerView({
                           >
                             Add
                           </button>
+                        </div>
+
+                        <h3 className="text-sm font-bold text-white mb-3">Activity Bank</h3>
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                          {PRESET_ACTIVITIES.map(preset => (
+                            <button
+                              key={preset}
+                              onClick={() => handleAddActivity(preset)}
+                              className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
+                            >
+                              <p className="text-sm font-bold text-slate-200">{preset}</p>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -574,7 +574,7 @@ export function SellerTrackerView({
         <div className="flex-none p-6 bg-slate-900 border-t border-slate-800 z-10 pb-safe">
           <SharePreviewButtons
             url={shareUrl}
-            copyLabel="Copy Link"
+            copyLabel="Copy Seller Link"
             accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
             onCopy={handleShareLink}
             onNeedAuth={!userId && !sharingDemo ? () => showCustomModal('', true) : undefined}
