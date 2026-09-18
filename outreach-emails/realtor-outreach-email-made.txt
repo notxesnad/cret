@@ -3,6 +3,7 @@ Do not open an HTML file in Chrome and copy it.
 
 Cold just-listed send. Pair with realtor-outreach-email-made.html.
 Admin import fills these in per agent. Re-upload the CSV to regenerate.
+Subject and body use Casual Address. The one link opens the Updating report page.
 
 Subject:
 Seller Tracking Report for 123 Oak
@@ -13,10 +14,7 @@ Hey — I started a Seller Tracking Report for 123 Oak.
 
 It’s a dated log of the work you’ve done for 123 Oak. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
 
-Preview the report your seller would get:
-REPORT_LINK
-
-Add activities and copy the seller link:
+Preview the seller report:
 EDITOR_LINK
 
 Takes about a minute. Costs you nothing to try. If not, ignore this.

@@ -1,5 +1,5 @@
-export const IMPORT_TEMPLATE_CSV = `Agent Name,Email,Phone Number,Brokerage,Listing Address,Date Listed
-Jane Agent,jane@broker.com,555-0100,Acme Realty,123 Oak St,2026-09-16
+export const IMPORT_TEMPLATE_CSV = `Agent Name,Email,Phone Number,Brokerage,Listing Address,Casual Address,Date Listed
+Jane Agent,jane@broker.com,555-0100,Acme Realty,123 Oak Street Springfield IL,123 Oak,2026-09-16
 `
 
 export const IMPORT_ACTIVITY_LABELS = {
@@ -15,6 +15,7 @@ export type ParsedImportRow = {
   phone: string
   brokerage: string
   address: string
+  casualAddress: string
   listedOn: string
 }
 
@@ -47,6 +48,9 @@ const HEADER_ALIASES: Record<string, keyof Omit<ParsedImportRow, 'line'>> = {
   address: 'address',
   firstlisting: 'address',
   property: 'address',
+  casualaddress: 'casualAddress',
+  casual: 'casualAddress',
+  shortaddress: 'casualAddress',
   datelisted: 'listedOn',
   listed: 'listedOn',
   listdate: 'listedOn',
@@ -185,7 +189,7 @@ export function parseImportCsv(text: string): ParsedImport {
       rows: [],
       errors: [{
         line: 1,
-        message: `Missing columns: ${missing.join(', ')}. Use Agent Name, Email, Phone Number, Brokerage, Listing Address, Date Listed.`,
+        message: `Missing columns: ${missing.join(', ')}. Use Agent Name, Email, Phone Number, Brokerage, Listing Address, Casual Address, Date Listed.`,
       }],
     }
   }
@@ -201,6 +205,7 @@ export function parseImportCsv(text: string): ParsedImport {
     const email = cell(raw, 'email').toLowerCase()
     const name = cell(raw, 'name')
     const address = cell(raw, 'address')
+    const casualAddress = cell(raw, 'casualAddress') || address
     const listedOn = toIsoDate(cell(raw, 'listedOn'))
     if (!name) {
       errors.push({ line, message: 'Missing agent name.' })
@@ -225,6 +230,7 @@ export function parseImportCsv(text: string): ParsedImport {
       phone: cell(raw, 'phone'),
       brokerage: cell(raw, 'brokerage'),
       address,
+      casualAddress,
       listedOn,
     })
   })

@@ -575,25 +575,25 @@ export async function importSellerReportsFromCsv(input: {
         const reportUrl = reportHref(profileId, listingId)
         const editorUrl = editorHref(profileId, listingId, { via: 'plain' })
         const htmlEditorUrl = editorHref(profileId, listingId, { via: 'html' })
+        const emailAddress = row.casualAddress || row.address
         results.push({
           line: row.line,
           name: row.name,
           email: row.email,
           address: row.address,
+          casualAddress: emailAddress,
           status: match ? 'exists' : createdAccount ? 'created' : 'added',
           reportUrl,
           editorUrl,
-          subject: madeEmailSubject(row.address),
+          subject: madeEmailSubject(emailAddress),
           plainEmail: madeEmailPlain({
             name: row.name,
-            address: row.address,
-            reportUrl,
+            address: emailAddress,
             editorUrl,
           }),
           htmlEmail: madeEmailHtml({
             name: row.name,
-            address: row.address,
-            reportUrl,
+            address: emailAddress,
             editorUrl: htmlEditorUrl,
           }),
           message: match ? 'Already had this listing.' : undefined,

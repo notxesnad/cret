@@ -158,7 +158,7 @@ export default function AdminPage() {
   const editorLinks = importRows.map((row) => row.editorUrl).filter(Boolean) as string[]
   const importTsv = importRows
     .filter((row) => row.reportUrl)
-    .map((row) => [row.name, row.email, row.address, row.reportUrl, row.editorUrl || ''].join('\t'))
+    .map((row) => [row.name, row.email, row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || ''].join('\t'))
     .join('\n')
 
   const agents = useMemo(() => {
@@ -224,7 +224,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. No welcome email. After import, copy the plain email or open the HTML and paste it into Gmail for that agent.
+                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. Listing Address is what the report shows. Casual Address is what goes in the email subject and body. No welcome email. After import, copy the plain email or open the HTML and paste it into Gmail for that agent.
                   </p>
                 </div>
                 <button
@@ -303,9 +303,24 @@ export default function AdminPage() {
                         <tr key={`${row.line}-${row.email}-${index}`} className="border-t border-slate-800 align-top">
                           <td className="px-3 py-2">
                             <div className="font-bold">{row.name || '—'}</div>
-                            <div className="text-xs text-slate-500">{row.email || `Line ${row.line}`}</div>
+                            {row.email ? (
+                              <button
+                                type="button"
+                                onClick={() => void copyText(`${row.line}-email`, row.email)}
+                                className="text-xs text-slate-500 hover:text-slate-200"
+                              >
+                                {copied === `${row.line}-email` ? 'Copied' : row.email}
+                              </button>
+                            ) : (
+                              <div className="text-xs text-slate-500">Line {row.line}</div>
+                            )}
                           </td>
-                          <td className="px-3 py-2">{row.address || '—'}</td>
+                          <td className="px-3 py-2">
+                            <div>{row.address || '—'}</div>
+                            {row.casualAddress ? (
+                              <div className="text-xs text-slate-500">{row.casualAddress}</div>
+                            ) : null}
+                          </td>
                           <td className="px-3 py-2">
                             {row.status === 'error' ? (
                               <span className="text-rose-300">{row.message || 'Failed'}</span>

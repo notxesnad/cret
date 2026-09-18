@@ -49,6 +49,7 @@ export type AdminImportResultRow = {
   name: string
   email: string
   address: string
+  casualAddress?: string
   status: 'created' | 'added' | 'exists' | 'error'
   reportUrl?: string
   editorUrl?: string
