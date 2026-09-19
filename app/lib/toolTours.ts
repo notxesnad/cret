@@ -131,3 +131,36 @@ export const OUTREACH_TOUR: HowToPage[] = [
     body: 'You are asking for their take. That is why they actually do it — and why they remember you.',
   },
 ]
+
+export const SHOWING_FEEDBACK_TOUR: HowToPage[] = [
+  {
+    emoji: '🔑',
+    kicker: 'The idea',
+    title: 'Ask the agent who just showed it.',
+    body: 'Buyers tell their agent things they will never tell you. A short quiz after the showing is how you hear it — and how you keep the seller from guessing.',
+  },
+  {
+    emoji: '🏡',
+    kicker: 'Step 1',
+    title: 'Pick the listing.',
+    body: 'One questionnaire per home. Use a listing you already have, or add the address.',
+  },
+  {
+    emoji: '🔗',
+    kicker: 'Step 2',
+    title: 'Text the link after the showing.',
+    body: 'No clipboard. No awkward driveway debrief. They tap through ratings and a couple of real notes on their phone.',
+  },
+  {
+    emoji: '📊',
+    kicker: 'Step 3',
+    title: 'Read what they said.',
+    body: 'Price, photos vs. reality, offer interest, and the comments that actually matter. Share a report with the seller when you want.',
+  },
+  {
+    emoji: '🤫',
+    kicker: 'The bonus',
+    title: 'They can stay anonymous.',
+    body: 'Name and brokerage are optional. Honest notes beat a polite “they liked it.”',
+  },
+]

@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
+import { SHOWING_FEEDBACK_KIND } from '@/app/lib/showingFeedback'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { isNetSheet } from '@/app/lib/netSheet'
 import { unpackTourData } from '@/app/lib/tourHomes'
@@ -44,7 +45,7 @@ export async function findPublicCampaign(
   supabase: SupabaseClient,
   profileId: string,
   campaignId: string,
-  kind: 'feedback' | 'advice' | 'registration'
+  kind: 'feedback' | 'advice' | 'registration' | 'showing'
 ) {
   const { profile } = await loadPublicProfile(supabase, profileId)
   if (!profile) return { profile: null, campaign: null }
@@ -54,7 +55,8 @@ export async function findPublicCampaign(
     if (item.id !== campaignId) return false
     if (kind === 'feedback') return item.kind === OPENHOUSE_FEEDBACK_KIND
     if (kind === 'registration') return item.kind === OPENHOUSE_REGISTRATION_KIND
-    return item.kind !== OPENHOUSE_FEEDBACK_KIND && item.kind !== OPENHOUSE_REGISTRATION_KIND && item.kind !== PROSPECT_STORE_KIND
+    if (kind === 'showing') return item.kind === SHOWING_FEEDBACK_KIND
+    return item.kind !== OPENHOUSE_FEEDBACK_KIND && item.kind !== OPENHOUSE_REGISTRATION_KIND && item.kind !== SHOWING_FEEDBACK_KIND && item.kind !== PROSPECT_STORE_KIND
   })
   return { profile, campaign: campaign || null }
 }

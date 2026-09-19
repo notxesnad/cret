@@ -6,6 +6,7 @@ import { renderAgentHeader } from './components/AgentHeader'
 import { headerContactComplete, markHeaderBuilderStart, takeHeaderBuilderStart, AgentHeaderFrame } from './components/AgentHeaderCta'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
+import { SHOWING_FEEDBACK_KIND } from '@/app/lib/showingFeedback'
 import { PROSPECT_KIND, PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { NET_SHEET_KIND, isNetSheet, type NetSheet } from '@/app/lib/netSheet'
 import { unpackTourData, packPeopleAndProspects, hydrateTourWorkspace, mergeTourHomes, type TourHome } from '@/app/lib/tourHomes'
@@ -25,6 +26,7 @@ import {
   SellerMenuView,
   NetSheetView,
   SellerTrackerView,
+  ShowingFeedbackView,
   DrivingView,
   BuyerView,
   SellerCallView,
@@ -53,13 +55,14 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 
 const VALID_VIEWS = [
   'home', 'signin', 'money', 'openhouse', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
-  'sellertracker', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
+  'sellertracker', 'showingfeedback', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
   'contact', 'account', 'myclients', 'myhomes', 'mylistings', 'myshowing',
 ] as const
 
 const VIEW_PARENT: Record<string, string> = {
   sellertracker: 'seller',
   netsheet: 'seller',
+  showingfeedback: 'seller',
   ohfeedback: 'openhouse',
   ohregistration: 'openhouse',
   mylistings: 'myhomes',
@@ -68,7 +71,7 @@ const VIEW_PARENT: Record<string, string> = {
 
 const OVERLAY_VIEWS = new Set([
   'profile', 'sellertracker', 'netsheet', 'money', 'driving',
-  'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration',
+  'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration', 'showingfeedback',
   'myclients', 'myhomes', 'mylistings', 'myshowing',
 ])
 
@@ -1389,7 +1392,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; }
-          #view-profile.active, #view-sellertracker.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active, #view-myclients.active, #view-myhomes.active, #view-mylistings.active, #view-myshowing.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-showingfeedback.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active, #view-myclients.active, #view-myhomes.active, #view-mylistings.active, #view-myshowing.active { display: flex !important; flex-direction: column !important; }
           .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -1551,6 +1554,27 @@ function HomeContent() {
               openListingId={searchParams.get('listing')}
             />
           )}
+          {currentView === 'showingfeedback' && (
+            <ShowingFeedbackView
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind === SHOWING_FEEDBACK_KIND)}
+              updateCampaigns={(updater) => updateOutreachCampaigns(prev => {
+                const others = (prev || []).filter((c: { kind?: string }) => c.kind !== SHOWING_FEEDBACK_KIND)
+                const mine = (prev || []).filter((c: { kind?: string }) => c.kind === SHOWING_FEEDBACK_KIND)
+                return [...updater(mine), ...others]
+              })}
+              listings={activeWorkingListings}
+              updateListings={updateActivePropertyListings}
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              userId={user?.id}
+              persistWorkspace={persistIfSharingAllowed}
+              agentHeader={
+                <AgentHeaderFrame cta={headerCustomizeCta}>
+                  {renderAgentHeader(profile)}
+                </AgentHeaderFrame>
+              }
+            />
+          )}
           {currentView === 'driving' && (
             <DrivingView
               clients={unpackTourData(clients).people}
@@ -1633,7 +1657,7 @@ function HomeContent() {
           )}
           {currentView === 'outreach' && (
             <OutreachView 
-              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== OPENHOUSE_REGISTRATION_KIND && c.kind !== PROSPECT_STORE_KIND)}
+              campaigns={outreachCampaigns.filter((c: { kind?: string }) => c.kind !== OPENHOUSE_FEEDBACK_KIND && c.kind !== OPENHOUSE_REGISTRATION_KIND && c.kind !== SHOWING_FEEDBACK_KIND && c.kind !== PROSPECT_STORE_KIND)}
               updateCampaigns={updateOutreachCampaigns}
               switchView={switchView}
               showCustomModal={showCustomModal}

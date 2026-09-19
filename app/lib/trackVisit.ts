@@ -13,6 +13,8 @@ export const VISIT_TOOLS = [
   'netsheet',
   'report',
   'dashboard',
+  'showing',
+  'showing_report',
 ] as const
 
 export type VisitTool = (typeof VISIT_TOOLS)[number]

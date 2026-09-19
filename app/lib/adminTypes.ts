@@ -9,6 +9,8 @@ export const TOOL_LABELS: Record<string, string> = {
   netsheet: 'Net sheet',
   report: 'Seller report',
   dashboard: 'Client dashboard',
+  showing: 'Showing feedback',
+  showing_report: 'Showing report',
 }
 
 export type AdminAgentRow = {

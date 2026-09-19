@@ -54,7 +54,16 @@ function peopleLabel(count: number) {
   return `${count} people answered`
 }
 
-export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: any; campaign: any }) {
+export function OpenHouseFeedbackReportView({
+  profile,
+  campaign,
+  variant = 'openhouse',
+}: {
+  profile: any
+  campaign: any
+  variant?: 'openhouse' | 'showing'
+}) {
+  const showing = variant === 'showing'
   const questions: Question[] = Array.isArray(campaign.questions) ? campaign.questions : []
   const responses: FeedbackResponse[] = Array.isArray(campaign.responses)
     ? [...campaign.responses].sort((a, b) => {
@@ -63,8 +72,20 @@ export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: an
         return da - db
       })
     : []
-  const address = campaign.listingAddress || campaign.title || 'Open house'
+  const address = campaign.listingAddress || campaign.title || (showing ? 'Listing' : 'Open house')
   const count = responses.length
+  const kicker = showing ? 'Showing agent feedback' : 'What visitors said'
+  const anonymousLabel = showing ? 'Name optional' : '100% anonymous'
+  const intro = showing
+    ? 'Notes from agents who showed the home. They can skip their name if they want to stay anonymous.'
+    : 'Nobody left a name. These are the honest notes from people who walked through the home.'
+  const emptyBody = showing
+    ? 'Text the quiz link after a showing, then check back here.'
+    : 'Print the QR sign, leave it out at the open house, and check back after visitors come through.'
+  const everyLabel = showing ? 'Every showing, one by one' : 'Every visitor, one by one'
+  const personWord = showing ? 'Showing' : 'Visitor'
+  const accentText = showing ? 'text-amber-500' : 'text-indigo-500'
+  const accentChip = showing ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
@@ -110,24 +131,24 @@ export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: an
                   <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl print-break-inside-avoid">
                     <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                       <div>
-                        <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest block mb-2">What visitors said</span>
+                        <span className={`text-xs font-bold uppercase tracking-widest block mb-2 ${accentText}`}>{kicker}</span>
                         <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{address}</h1>
                         {campaign.listingAddress && campaign.title ? (
                           <p className="text-base text-slate-500 mt-2">{campaign.title}</p>
                         ) : null}
                       </div>
-                      <PrintButtons listingAddress={`${address}-visitor-feedback`} />
+                      <PrintButtons listingAddress={`${address}-${showing ? 'showing-feedback' : 'visitor-feedback'}`} />
                     </div>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <span className="text-sm font-black bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full">
-                        {peopleLabel(count)}
+                      <span className={`text-sm font-black px-3 py-1.5 rounded-full ${accentChip}`}>
+                        {showing ? (count === 1 ? '1 agent answered' : `${count} agents answered`) : peopleLabel(count)}
                       </span>
                       <span className="text-sm font-black bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
-                        100% anonymous
+                        {anonymousLabel}
                       </span>
                     </div>
                     <p className="text-slate-500 mt-4 leading-relaxed">
-                      Nobody left a name. These are the honest notes from people who walked through the home.
+                      {intro}
                     </p>
                   </div>
 
@@ -135,7 +156,7 @@ export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: an
                     <div className="bg-white border border-slate-200 shadow-sm p-8 rounded-2xl text-center print-break-inside-avoid">
                       <p className="text-xl font-black text-slate-900">No answers yet</p>
                       <p className="text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
-                        Print the QR sign, leave it out at the open house, and check back after visitors come through.
+                        {emptyBody}
                       </p>
                     </div>
                   ) : (
@@ -146,18 +167,19 @@ export function OpenHouseFeedbackReportView({ profile, campaign }: { profile: an
                           question={question}
                           index={qi + 1}
                           values={responses.map((resp) => getAnswers(resp)[question.id])}
+                          tone={showing ? 'amber' : 'indigo'}
                         />
                       ))}
 
                       <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl">
                         <h2 className="text-lg font-black text-slate-900 mb-6 border-b border-slate-100 pb-4">
-                          Every visitor, one by one
+                          {everyLabel}
                         </h2>
                         <div className="space-y-6">
                           {responses.map((resp, i) => (
                             <div key={resp.id || i} className="print-break-inside-avoid border border-slate-100 rounded-2xl p-5 bg-slate-50">
                               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                                <p className="text-base font-black text-slate-900">Visitor {i + 1}</p>
+                                <p className="text-base font-black text-slate-900">{personWord} {i + 1}</p>
                                 <p className="text-sm font-bold text-slate-500">{formatWhen(resp)}</p>
                               </div>
                               <div className="space-y-4">
@@ -190,29 +212,32 @@ function QuestionSummary({
   question,
   index,
   values,
+  tone = 'indigo',
 }: {
   question: Question
   index: number
   values: Array<string | number | undefined>
+  tone?: 'indigo' | 'amber'
 }) {
   const answered = values.filter((value): value is string | number => !isBlank(value))
+  const kickerClass = tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
 
   return (
     <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl print-break-inside-avoid">
-      <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-2">Question {index}</p>
+      <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${kickerClass}`}>Question {index}</p>
       <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-snug">{question.text}</h2>
       {question.type === 'rating' ? (
-        <RatingSummary values={answered} max={question.maxRating || 5} />
+        <RatingSummary values={answered} max={question.maxRating || 5} tone={tone} />
       ) : question.type === 'choice' ? (
-        <ChoiceSummary options={question.options || []} values={answered} />
+        <ChoiceSummary options={question.options || []} values={answered} tone={tone} />
       ) : (
-        <TextSummary values={answered} />
+        <TextSummary values={answered} tone={tone} />
       )}
     </div>
   )
 }
 
-function RatingSummary({ values, max }: { values: Array<string | number>; max: number }) {
+function RatingSummary({ values, max, tone = 'indigo' }: { values: Array<string | number>; max: number; tone?: 'indigo' | 'amber' }) {
   const nums = values.map(Number).filter((n) => Number.isFinite(n))
   if (nums.length === 0) {
     return <p className="text-slate-400 italic mt-4">Nobody answered this one.</p>
@@ -220,14 +245,16 @@ function RatingSummary({ values, max }: { values: Array<string | number>; max: n
   const avg = nums.reduce((sum, n) => sum + n, 0) / nums.length
   const rounded = Math.round(avg)
   const display = Number.isInteger(avg) ? String(avg) : avg.toFixed(1)
+  const avgClass = tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
+  const starOn = tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
 
   return (
     <div className="mt-6 text-center">
-      <p className="text-6xl font-black text-indigo-600 leading-none">{display}</p>
+      <p className={`text-6xl font-black leading-none ${avgClass}`}>{display}</p>
       <p className="text-sm font-bold text-slate-500 mt-2">average out of {max}</p>
       <div className="flex justify-center gap-1 mt-3 text-3xl" aria-hidden="true">
         {Array.from({ length: max }, (_, i) => (
-          <span key={i} className={i < rounded ? 'text-indigo-500' : 'text-slate-200'}>★</span>
+          <span key={i} className={i < rounded ? starOn : 'text-slate-200'}>★</span>
         ))}
       </div>
       <p className="text-sm text-slate-400 mt-3">{peopleLabel(nums.length)}</p>
@@ -235,7 +262,7 @@ function RatingSummary({ values, max }: { values: Array<string | number>; max: n
   )
 }
 
-function ChoiceSummary({ options, values }: { options: string[]; values: Array<string | number> }) {
+function ChoiceSummary({ options, values, tone = 'indigo' }: { options: string[]; values: Array<string | number>; tone?: 'indigo' | 'amber' }) {
   if (values.length === 0) {
     return <p className="text-slate-400 italic mt-4">Nobody answered this one.</p>
   }
@@ -245,6 +272,8 @@ function ChoiceSummary({ options, values }: { options: string[]; values: Array<s
     if (!labels.includes(label)) labels.push(label)
   }
   const total = values.length
+  const countClass = tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
+  const barClass = tone === 'amber' ? 'bg-amber-500' : 'bg-indigo-500'
 
   return (
     <div className="mt-6 space-y-3">
@@ -255,10 +284,10 @@ function ChoiceSummary({ options, values }: { options: string[]; values: Array<s
           <div key={option}>
             <div className="flex justify-between gap-3 mb-1">
               <p className="text-base font-bold text-slate-800">{option}</p>
-              <p className="text-base font-black text-indigo-600 whitespace-nowrap">{n}</p>
+              <p className={`text-base font-black whitespace-nowrap ${countClass}`}>{n}</p>
             </div>
             <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${barClass}`} style={{ width: `${pct}%` }} />
             </div>
           </div>
         )
@@ -268,15 +297,18 @@ function ChoiceSummary({ options, values }: { options: string[]; values: Array<s
   )
 }
 
-function TextSummary({ values }: { values: Array<string | number> }) {
+function TextSummary({ values, tone = 'indigo' }: { values: Array<string | number>; tone?: 'indigo' | 'amber' }) {
   if (values.length === 0) {
     return <p className="text-slate-400 italic mt-4">Nobody wrote extra comments.</p>
   }
+  const quoteClass = tone === 'amber'
+    ? 'bg-amber-50 border-l-4 border-amber-400'
+    : 'bg-indigo-50 border-l-4 border-indigo-400'
 
   return (
     <div className="mt-6 space-y-3">
       {values.map((value, i) => (
-        <blockquote key={i} className="bg-indigo-50 border-l-4 border-indigo-400 rounded-r-xl px-4 py-3 text-lg text-slate-800 leading-relaxed">
+        <blockquote key={i} className={`${quoteClass} rounded-r-xl px-4 py-3 text-lg text-slate-800 leading-relaxed`}>
           “{String(value)}”
         </blockquote>
       ))}

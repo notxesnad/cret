@@ -1,0 +1,64 @@
+import { renderAgentHeader } from '@/app/components/AgentHeader'
+import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
+import { ShowingFeedbackClient } from './ShowingFeedbackClient'
+import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
+import { ShareUnavailable } from '@/app/components/ShareUnavailable'
+import { trackShareVisit } from '@/app/lib/trackVisit'
+import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
+
+export const dynamic = 'force-dynamic'
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  interactiveWidget: 'resizes-content',
+}
+
+export default async function ShowingFeedbackPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ profileId: string; campaignId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const { profileId, campaignId } = await params
+  const { profile, campaign } = await findPublicCampaign(adminClient(), profileId, campaignId, 'showing')
+
+  if (!profile || !campaign) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-black text-slate-100 mb-2">Questionnaire Not Found</h1>
+        <p className="text-slate-400 max-w-md mx-auto mb-4">This feedback form may have been removed or the link is incorrect.</p>
+      </div>
+    )
+  }
+
+  if (!hasShareAccess(billingFromProfile(profile))) {
+    return <ShareUnavailable profile={profile} />
+  }
+
+  await trackShareVisit({
+    tool: 'showing',
+    profileId,
+    sourceId: campaignId,
+    path: `/showing-feedback/${profileId}/${campaignId}`,
+    searchParams,
+  })
+
+  return (
+    <div className="h-[100dvh] flex flex-col font-sans bg-slate-50 text-slate-900">
+      <div className="flex-none w-full max-w-xl mx-auto [&>*]:mb-0">
+        <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
+          {renderAgentHeader(profile)}
+        </AgentHeaderFrame>
+      </div>
+      <div className="flex-1 min-h-0 max-w-xl mx-auto w-full">
+        <ShowingFeedbackClient
+          profileId={profileId}
+          campaignId={campaignId}
+          campaign={campaign}
+        />
+      </div>
+    </div>
+  )
+}

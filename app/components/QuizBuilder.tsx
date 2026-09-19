@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { Question, QuestionType } from './Questionnaire'
+import { SHOWING_QUESTION_BANK } from '@/app/lib/showingFeedback'
 
 const ADVICE_QUESTION_BANK: Omit<Question, 'id'>[] = [
   { type: 'rating', maxRating: 10, text: 'How likely are you to recommend me to a friend or family member? (1=Never, 10=Absolutely)' },
@@ -46,7 +47,7 @@ export function QuizBuilder({
 }: {
   questions: Question[]
   onChange: (q: Question[]) => void
-  bank?: 'advice' | 'openhouse' | 'registration'
+  bank?: 'advice' | 'openhouse' | 'registration' | 'showing'
 }) {
   const [bankOpen, setBankOpen] = useState(false)
   const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<string | null>(null)
@@ -55,7 +56,9 @@ export function QuizBuilder({
     ? OPENHOUSE_QUESTION_BANK
     : bank === 'registration'
       ? REGISTRATION_QUESTION_BANK
-      : ADVICE_QUESTION_BANK
+      : bank === 'showing'
+        ? SHOWING_QUESTION_BANK
+        : ADVICE_QUESTION_BANK
 
   const addBankQuestion = (q: Omit<Question, 'id'>) => {
     onChange([...questions, { ...q, id: Math.random().toString(36).substr(2, 9) }])

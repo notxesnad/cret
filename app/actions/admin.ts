@@ -10,6 +10,7 @@ import { editorHref, reportHref } from '@/app/lib/editorLink'
 import { madeEmailHtml, madeEmailPlain, madeEmailSubject } from '@/app/lib/madeEmails'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
+import { SHOWING_FEEDBACK_KIND } from '@/app/lib/showingFeedback'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { getStripe } from '@/app/lib/stripe'
 import { isMissingRelation } from '@/app/lib/workspace'
@@ -62,7 +63,7 @@ function countBy(rows: { profile_id?: string | null }[] | null | undefined) {
 function campaignBucket(kind?: string | null) {
   if (kind === OPENHOUSE_REGISTRATION_KIND) return 'registration' as const
   if (kind === OPENHOUSE_FEEDBACK_KIND) return 'feedback' as const
-  if (kind === PROSPECT_STORE_KIND) return 'skip' as const
+  if (kind === SHOWING_FEEDBACK_KIND || kind === PROSPECT_STORE_KIND) return 'skip' as const
   return 'advice' as const
 }
 
