@@ -13,6 +13,7 @@ import { TemplatePickCard } from '@/app/components/TemplatePickCard'
 import {
   SHOWING_FEEDBACK_KIND,
   SHOWING_FEEDBACK_TEMPLATES,
+  withShowingAgentQuestion,
 } from '@/app/lib/showingFeedback'
 import { SHOWING_FEEDBACK_TOUR } from '@/app/lib/toolTours'
 import { csvFilename, downloadResponsesCsv, formatCsvDate, type CsvResponse } from '@/app/lib/csvDownload'
@@ -171,7 +172,7 @@ export function ShowingFeedbackView({
         kind: SHOWING_FEEDBACK_KIND,
         title: template.title,
         description: template.description,
-        questions: template.questions,
+        questions: withShowingAgentQuestion(template.questions),
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
         theme: 'light',
@@ -204,7 +205,7 @@ export function ShowingFeedbackView({
         kind: SHOWING_FEEDBACK_KIND,
         title: customTitle,
         description: customDesc,
-        questions: customQuestions,
+        questions: withShowingAgentQuestion(customQuestions),
         listingId: selectedListing.id,
         listingAddress: selectedListing.address,
         theme: 'light',
@@ -264,9 +265,14 @@ export function ShowingFeedbackView({
       csvFilename('showing-feedback', activeCampaign.listingAddress || activeCampaign.title),
       [
         { header: 'Submitted', get: r => formatCsvDate(r.date) },
-        ...activeCampaign.questions.map(q => ({
+        ...withShowingAgentQuestion(activeCampaign.questions).map(q => ({
           header: q.text,
-          get: (r: CsvResponse) => String(r.answers?.[q.id] ?? ''),
+          get: (r: CsvResponse) => {
+            if (q.type === 'name_email') {
+              return [r.answers?.agent_name, r.answers?.agent_email].filter(Boolean).join(' · ')
+            }
+            return String(r.answers?.[q.id] ?? '')
+          },
         })),
       ],
       activeCampaign.responses as CsvResponse[],
@@ -289,13 +295,13 @@ export function ShowingFeedbackView({
 
       {preview ? (
         <div className="flex-1 min-h-0 flex flex-col bg-slate-50">
-          {agentHeader ? <div className="flex-none [&>*]:mb-0">{agentHeader}</div> : null}
+          {agentHeader ? <div className="flex-none px-6 md:px-10 pt-4 [&>*]:mb-0">{agentHeader}</div> : null}
           <div className="flex-1 min-h-0">
             <Questionnaire
               key={`${preview.title}-${preview.questions.length}`}
               title={preview.title}
               description={preview.description}
-              questions={preview.questions}
+              questions={withShowingAgentQuestion(preview.questions)}
               onSubmit={async () => {}}
               accentColor="teal"
               theme="light"
@@ -491,7 +497,6 @@ export function ShowingFeedbackView({
                     title={tpl.title}
                     description={tpl.description}
                     questionCount={tpl.questions.length}
-                    extraPills={['Name optional']}
                     onUse={() => handleCreate(tpl)}
                     onPreview={() => setPreview(tpl)}
                     hoverBorderClass="hover:border-seller"
@@ -593,12 +598,18 @@ export function ShowingFeedbackView({
                     <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                       <p className="text-xs text-slate-400 mb-3">{new Date((resp as { date?: string }).date || '').toLocaleDateString()} at {new Date((resp as { date?: string }).date || '').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       <div className="space-y-3">
-                        {activeCampaign.questions.map((q) => (
+                        {withShowingAgentQuestion(activeCampaign.questions).map((q) => {
+                          const answers = (resp as { answers?: Record<string, string> }).answers || {}
+                          const value = q.type === 'name_email'
+                            ? [answers.agent_name, answers.agent_email].filter(Boolean).join(' · ')
+                            : answers[q.id]
+                          return (
                           <div key={q.id}>
                             <p className="text-xs font-bold text-slate-300 mb-1">{q.text}</p>
-                            <p className="text-sm text-seller bg-slate-900 p-2 rounded">{String((resp as { answers?: Record<string, string> }).answers?.[q.id] || 'No answer')}</p>
+                            <p className="text-sm text-seller bg-slate-900 p-2 rounded">{String(value || 'No answer')}</p>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   ))}

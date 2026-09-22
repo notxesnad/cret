@@ -4,6 +4,7 @@ import { renderAgentHeader } from '@/app/components/AgentHeader'
 import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/AgentHeaderCta'
 import { PrintButtons } from '@/app/components/PrintControls'
 import type { Question } from '@/app/components/Questionnaire'
+import { withShowingAgentQuestion } from '@/app/lib/showingFeedback'
 
 type FeedbackResponse = {
   id?: string
@@ -43,7 +44,14 @@ function formatWhen(resp: FeedbackResponse) {
   return `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
 }
 
-function formatAnswer(question: Question, value: unknown) {
+function formatAnswer(question: Question, answers: Record<string, string | number>) {
+  if (question.type === 'name_email') {
+    const name = String(answers.agent_name || '').trim()
+    const email = String(answers.agent_email || answers.email || '').trim()
+    const bits = [name, email].filter(Boolean)
+    return bits.length ? bits.join(' · ') : 'No answer'
+  }
+  const value = answers[question.id]
   if (isBlank(value)) return 'No answer'
   if (question.type === 'rating') return `${value} out of ${question.maxRating || 5}`
   return String(value)
@@ -64,7 +72,9 @@ export function OpenHouseFeedbackReportView({
   variant?: 'openhouse' | 'showing'
 }) {
   const showing = variant === 'showing'
-  const questions: Question[] = Array.isArray(campaign.questions) ? campaign.questions : []
+  const questions: Question[] = showing
+    ? withShowingAgentQuestion(Array.isArray(campaign.questions) ? campaign.questions : [])
+    : Array.isArray(campaign.questions) ? campaign.questions : []
   const responses: FeedbackResponse[] = Array.isArray(campaign.responses)
     ? [...campaign.responses].sort((a, b) => {
         const da = responseDate(a)?.getTime() || 0
@@ -75,9 +85,9 @@ export function OpenHouseFeedbackReportView({
   const address = campaign.listingAddress || campaign.title || (showing ? 'Listing' : 'Open house')
   const count = responses.length
   const kicker = showing ? 'Showing agent feedback' : 'What visitors said'
-  const anonymousLabel = showing ? 'Name optional' : '100% anonymous'
+  const anonymousLabel = showing ? '' : '100% anonymous'
   const intro = showing
-    ? 'Notes from agents who showed the home. They can skip their name if they want to stay anonymous.'
+    ? 'Notes from agents who showed the home.'
     : 'Nobody left a name. These are the honest notes from people who walked through the home.'
   const emptyBody = showing
     ? 'Text the quiz link after a showing, then check back here.'
@@ -116,7 +126,7 @@ export function OpenHouseFeedbackReportView({
           <thead>
             <tr>
               <td className="p-0">
-                <div id="report-print-header">
+                <div id="report-print-header" className="max-w-3xl mx-auto px-4 md:px-8 pt-6">
                   <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
                     {renderAgentHeader(profile)}
                   </AgentHeaderFrame>
@@ -143,9 +153,11 @@ export function OpenHouseFeedbackReportView({
                       <span className={`text-sm font-black px-3 py-1.5 rounded-full ${accentChip}`}>
                         {showing ? (count === 1 ? '1 agent answered' : `${count} agents answered`) : peopleLabel(count)}
                       </span>
-                      <span className="text-sm font-black bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
-                        {anonymousLabel}
-                      </span>
+                      {anonymousLabel ? (
+                        <span className="text-sm font-black bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
+                          {anonymousLabel}
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-slate-500 mt-4 leading-relaxed">
                       {intro}
@@ -187,7 +199,7 @@ export function OpenHouseFeedbackReportView({
                                   <div key={question.id}>
                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{question.text}</p>
                                     <p className="text-base text-slate-800 leading-relaxed">
-                                      {formatAnswer(question, getAnswers(resp)[question.id])}
+                                      {formatAnswer(question, getAnswers(resp))}
                                     </p>
                                   </div>
                                 ))}

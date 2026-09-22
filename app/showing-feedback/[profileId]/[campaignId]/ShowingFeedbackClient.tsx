@@ -2,6 +2,7 @@
 
 import { Questionnaire, type Question } from '@/app/components/Questionnaire'
 import { submitOutreachResponse } from '@/app/actions/outreach'
+import { withShowingAgentQuestion } from '@/app/lib/showingFeedback'
 import { type QuizTheme } from '@/app/lib/quizTheme'
 
 export function ShowingFeedbackClient({ profileId, campaignId, campaign }: {
@@ -23,7 +24,7 @@ export function ShowingFeedbackClient({ profileId, campaignId, campaign }: {
     <Questionnaire
       title={campaign.title}
       description={campaign.description}
-      questions={campaign.questions}
+      questions={withShowingAgentQuestion(campaign.questions)}
       onSubmit={handleSubmit}
       accentColor="teal"
       theme="light"

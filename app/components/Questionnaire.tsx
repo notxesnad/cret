@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { type QuizTheme } from '@/app/lib/quizTheme'
 
 export type { QuizTheme }
-export type QuestionType = 'choice' | 'rating' | 'text' | 'contact'
+export type QuestionType = 'choice' | 'rating' | 'text' | 'contact' | 'name_email'
 
 export interface Question {
   id: string
@@ -49,6 +49,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
   const [choicePick, setChoicePick] = useState<string | null>(null)
   const [contactPhone, setContactPhone] = useState('')
   const [contactEmail, setContactEmail] = useState('')
+  const [contactName, setContactName] = useState('')
   const keyboardInset = useKeyboardInset()
 
   const currentQ = questions[currentIndex]
@@ -101,6 +102,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       setChoicePick(null)
       setContactPhone('')
       setContactEmail('')
+      setContactName('')
     } else {
       setIsSubmitting(true)
       await onSubmit(newAnswers)
@@ -122,6 +124,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
 
   const canContinueText = Boolean(textInput.trim()) || Boolean(currentQ?.optional)
   const canContinueContact = Boolean(contactPhone.trim() || contactEmail.trim())
+  const canContinueNameEmail = Boolean(contactName.trim() || contactEmail.trim()) || Boolean(currentQ?.optional)
 
   const submitText = () => {
     if (!canContinueText || isSubmitting) return
@@ -133,6 +136,17 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     void commitAnswers({
       phone: contactPhone.trim(),
       email: contactEmail.trim(),
+    })
+  }
+
+  const submitNameEmail = () => {
+    if (!canContinueNameEmail || isSubmitting) return
+    const name = contactName.trim()
+    const email = contactEmail.trim()
+    void commitAnswers({
+      [currentQ.id]: [name, email].filter(Boolean).join(' · '),
+      agent_name: name,
+      agent_email: email,
     })
   }
 
@@ -281,6 +295,35 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </div>
           )}
 
+          {currentQ.type === 'name_email' && (
+            <div className="mt-8 space-y-3">
+              <input
+                type="text"
+                value={contactName}
+                onChange={e => setContactName(e.target.value)}
+                placeholder="Name"
+                autoComplete="name"
+                enterKeyHint="next"
+                className={`w-full rounded-xl px-4 py-4 focus:outline-none ${textAreaClasses}`}
+              />
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                placeholder="Email"
+                autoComplete="email"
+                enterKeyHint="done"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    submitNameEmail()
+                  }
+                }}
+                className={`w-full rounded-xl px-4 py-4 focus:outline-none ${textAreaClasses}`}
+              />
+            </div>
+          )}
+
           {currentQ.type === 'contact' && (
             <div className="mt-8 space-y-3">
               <input
@@ -387,6 +430,17 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${!canContinueContact ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
+        </button>
+      )}
+
+      {currentQ.type === 'name_email' && footer(
+        <button
+          type="button"
+          onClick={submitNameEmail}
+          disabled={!canContinueNameEmail || isSubmitting}
+          className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${!canContinueNameEmail ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isSubmitting ? 'Submitting...' : 'Send'}
         </button>
       )}
     </div>

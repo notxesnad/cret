@@ -47,7 +47,7 @@ export default async function ShowingFeedbackPage({
 
   return (
     <div className="h-[100dvh] flex flex-col font-sans bg-slate-50 text-slate-900">
-      <div className="flex-none w-full max-w-xl mx-auto [&>*]:mb-0">
+      <div className="flex-none w-full max-w-xl mx-auto px-6 md:px-10 [&>*]:mb-0">
         <AgentHeaderFrame cta={PREVIEW_LINK_HEADER_CTA}>
           {renderAgentHeader(profile)}
         </AgentHeaderFrame>

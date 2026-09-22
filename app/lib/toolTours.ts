@@ -160,7 +160,7 @@ export const SHOWING_FEEDBACK_TOUR: HowToPage[] = [
   {
     emoji: '🤫',
     kicker: 'The bonus',
-    title: 'They can stay anonymous.',
-    body: 'Name and brokerage are optional. Honest notes beat a polite “they liked it.”',
+    title: 'They can leave a name and email.',
+    body: 'Ask for it after the notes. Honest feedback still matters more than a signature.',
   },
 ]
