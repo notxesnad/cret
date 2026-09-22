@@ -11,6 +11,7 @@ import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { RegistrationExperience } from '@/app/components/RegistrationForm'
 import { TemplateDivider } from '@/app/components/TemplateDivider'
+import { TemplatePickCard } from '@/app/components/TemplatePickCard'
 import {
   OPENHOUSE_REGISTRATION_KIND,
   STANDARD_REGISTRATION_QUESTIONS,
@@ -502,24 +503,16 @@ export function OpenHouseRegistrationView({
 
                 <TemplateDivider />
 
-                <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500 transition cursor-pointer" onClick={handleCreateStandard}>
-                  <h3 className="text-lg font-bold text-white mb-2">{STANDARD_TEMPLATE.title}</h3>
-                  <p className="text-sm text-slate-400 mb-4">{STANDARD_TEMPLATE.description}</p>
-                  <div className="flex gap-2 items-center flex-wrap">
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation()
-                        setPreview(true)
-                      }}
-                      className="text-xs font-bold bg-white text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100"
-                    >
-                      Preview
-                    </button>
-                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Name &amp; contact</span>
-                    <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Realtor question</span>
-                  </div>
-                </div>
+                <TemplatePickCard
+                  title={STANDARD_TEMPLATE.title}
+                  description={STANDARD_TEMPLATE.description}
+                  questionCount={STANDARD_TEMPLATE.questions.length}
+                  extraPills={['Name & contact', 'Realtor question']}
+                  onUse={handleCreateStandard}
+                  onPreview={() => setPreview(true)}
+                  hoverBorderClass="hover:border-indigo-500"
+                  useClass="bg-indigo-500 hover:bg-indigo-400 text-white"
+                />
               </div>
             </div>
           )}

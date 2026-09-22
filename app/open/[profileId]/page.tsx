@@ -10,10 +10,10 @@ export default async function OpenTokenEditorPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ token: string }>
+  params: Promise<{ profileId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { token } = await params
+  const { profileId: token } = await params
   const query = await searchParams
   const listingId = first(query.listing) || ''
   return (

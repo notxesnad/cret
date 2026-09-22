@@ -88,7 +88,7 @@ export function HomeView({
         <ToolTile onClick={() => switchView('seller')} className="group relative bg-teal-500 hover:bg-teal-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">✨</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Seller Reports & Net Sheets</span>
-          <h2 className="font-seller text-3xl md:text-4xl mt-1">Make My Seller Happy</h2>
+          <h2 className="font-seller text-3xl md:text-4xl font-black mt-1">Make My Seller Happy</h2>
         </ToolTile>
 
         <ToolTile onClick={() => switchView('driving')} className="group relative bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">

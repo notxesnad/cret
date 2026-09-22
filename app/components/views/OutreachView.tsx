@@ -10,6 +10,7 @@ import { HowToTour } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { ToolLanding } from '@/app/components/ToolLanding'
 import { TemplateDivider } from '@/app/components/TemplateDivider'
+import { TemplatePickCard } from '@/app/components/TemplatePickCard'
 import { OUTREACH_TOUR } from '@/app/lib/toolTours'
 import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
 
@@ -281,14 +282,16 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
                 <TemplateDivider />
 
                 {templates.map((tpl, i) => (
-                  <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-sky-500 transition cursor-pointer" onClick={() => handleCreate(tpl)}>
-                    <h3 className="text-lg font-bold text-white mb-2">{tpl.title}</h3>
-                    <p className="text-sm text-slate-400 mb-4">{tpl.description}</p>
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">{tpl.questions.length} Questions</span>
-                      <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Takes ~25 sec</span>
-                    </div>
-                  </div>
+                  <TemplatePickCard
+                    key={i}
+                    title={tpl.title}
+                    description={tpl.description}
+                    questionCount={tpl.questions.length}
+                    extraPills={['Takes ~25 sec']}
+                    onUse={() => handleCreate(tpl)}
+                    hoverBorderClass="hover:border-sky-500"
+                    useClass="bg-sky-500 hover:bg-sky-400 text-white"
+                  />
                 ))}
               </div>
             </div>

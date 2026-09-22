@@ -11,7 +11,7 @@ export function SellerMenuView({ switchView }: { switchView: (view: string) => v
 
       <ToolTile
         onClick={() => switchView('sellertracker')}
-        className="group relative bg-teal-500 hover:bg-teal-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+        className="group relative bg-teal-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-teal-300"
       >
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">📋</div>
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Keep them in the loop</span>
@@ -20,7 +20,7 @@ export function SellerMenuView({ switchView }: { switchView: (view: string) => v
 
       <ToolTile
         onClick={() => switchView('showingfeedback')}
-        className="group relative bg-teal-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-teal-300"
+        className="group relative bg-teal-500 hover:bg-teal-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
       >
         <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🔑</div>
         <span className="text-xs font-bold tracking-wider uppercase opacity-70">Ask the agent who showed it</span>

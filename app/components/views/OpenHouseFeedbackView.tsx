@@ -11,6 +11,7 @@ import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { OpenHouseFeedbackSigns } from '@/app/components/OpenHouseFeedbackSigns'
 import { TemplateDivider } from '@/app/components/TemplateDivider'
+import { TemplatePickCard } from '@/app/components/TemplatePickCard'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { csvFilename, downloadResponsesCsv, formatCsvDate, type CsvResponse } from '@/app/lib/csvDownload'
 import { type QuizTheme } from '@/app/lib/quizTheme'
@@ -436,7 +437,7 @@ export function OpenHouseFeedbackView({
                 >
                   <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">✏️</div>
                   <span className="text-xs font-bold tracking-wider uppercase opacity-70">Start here</span>
-                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">Make a Questionnaire</h2>
+                  <h2 className="font-openhouse text-2xl md:text-3xl font-black mt-1">Make a Questionnaire</h2>
                 </ToolTile>
                 <ToolTile
                   onClick={() => setStep('list')}
@@ -446,7 +447,7 @@ export function OpenHouseFeedbackView({
                   <span className="text-xs font-bold tracking-wider uppercase opacity-70">
                     {campaigns.length === 1 ? '1 saved' : `${campaigns.length} saved`}
                   </span>
-                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">See the ones I&apos;ve built already</h2>
+                  <h2 className="font-openhouse text-2xl md:text-3xl font-black mt-1">See the ones I&apos;ve built already</h2>
                 </ToolTile>
                 <ToolTile
                   onClick={() => {
@@ -457,7 +458,7 @@ export function OpenHouseFeedbackView({
                 >
                   <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">💡</div>
                   <span className="text-xs font-bold tracking-wider uppercase opacity-70">A 30-second tour</span>
-                  <h2 className="font-openhouse text-2xl md:text-3xl mt-1">What does this thing do</h2>
+                  <h2 className="font-openhouse text-2xl md:text-3xl font-black mt-1">What does this thing do</h2>
                 </ToolTile>
               </div>
             </div>
@@ -579,24 +580,17 @@ export function OpenHouseFeedbackView({
                 <TemplateDivider />
 
                 {templates.map((tpl, i) => (
-                  <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500 transition cursor-pointer" onClick={() => handleCreate(tpl)}>
-                    <h3 className="text-lg font-bold text-white mb-2">{tpl.title}</h3>
-                    <p className="text-sm text-slate-400 mb-4">{tpl.description}</p>
-                    <div className="flex gap-2 items-center flex-wrap">
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation()
-                          setPreview(tpl)
-                        }}
-                        className="text-xs font-bold bg-white text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100"
-                      >
-                        Preview
-                      </button>
-                      <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">{tpl.questions.length} Questions</span>
-                      <span className="text-[10px] font-bold bg-slate-700 text-slate-300 px-2 py-1 rounded">Anonymous</span>
-                    </div>
-                  </div>
+                  <TemplatePickCard
+                    key={i}
+                    title={tpl.title}
+                    description={tpl.description}
+                    questionCount={tpl.questions.length}
+                    extraPills={['Anonymous']}
+                    onUse={() => handleCreate(tpl)}
+                    onPreview={() => setPreview(tpl)}
+                    hoverBorderClass="hover:border-indigo-500"
+                    useClass="bg-indigo-500 hover:bg-indigo-400 text-white"
+                  />
                 ))}
               </div>
             </div>
