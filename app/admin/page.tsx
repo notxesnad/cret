@@ -399,6 +399,15 @@ export default function AdminPage() {
                                     {copied === `${row.email}-sms` ? 'Copied' : 'Copy text'}
                                   </button>
                                 ) : null}
+                                {row.editorUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void copyText(`${row.email}-short`, row.editorUrl || '')}
+                                    className="text-[11px] text-slate-500 hover:text-slate-200 break-all text-left"
+                                  >
+                                    {copied === `${row.email}-short` ? 'Copied' : (row.editorUrl || '').replace(/^https?:\/\//, '')}
+                                  </button>
+                                ) : null}
                                 {row.plainEmail ? (
                                   <>
                                     <button

@@ -55,9 +55,13 @@ export function outreachEditorHref(input: {
   via?: string
   bare?: boolean
 }) {
-  if (input.slug) return prettyEditorHref(input.slug, { bare: input.bare })
-  if (input.address) return prettyEditorHref(fallbackEditorSlug(input.address, input.listingId), { bare: input.bare })
+  const slug = input.slug || (input.address ? fallbackEditorSlug(input.address, input.listingId) : '')
+  if (slug) return prettyEditorHref(slug, { bare: input.bare })
   return editorHref(input.profileId, input.listingId, input.via ? { via: input.via } : undefined)
+}
+
+export function smsEditorHref(address: string, listingId: string, slug?: string | null) {
+  return prettyEditorHref(slug || fallbackEditorSlug(address, listingId), { bare: true })
 }
 
 export async function ensureEditorSlug(

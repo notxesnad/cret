@@ -7,7 +7,7 @@ import type { AdminAgentRow, AdminDashboard, AdminImportResultRow, AdminRecentVi
 import { TOOL_LABELS } from '@/app/lib/adminTypes'
 import { appTrialFields, billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
 import { reportHref } from '@/app/lib/editorLink'
-import { ensureEditorSlug, makeEditorSlug, outreachEditorHref } from '@/app/lib/editorSlug'
+import { ensureEditorSlug, makeEditorSlug, outreachEditorHref, smsEditorHref } from '@/app/lib/editorSlug'
 import { madeEmailHtml, madeEmailPlain, madeEmailSubject, madeSms } from '@/app/lib/madeEmails'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
@@ -629,14 +629,7 @@ export async function importSellerReportsFromCsv(input: {
           slug: editorSlug,
           via: 'html',
         })
-        const smsEditorUrl = outreachEditorHref({
-          profileId,
-          listingId,
-          address: emailAddress,
-          slug: editorSlug,
-          via: 'plain',
-          bare: true,
-        })
+        const smsEditorUrl = smsEditorHref(emailAddress, listingId, editorSlug)
         results.push({
           line: row.line,
           name: row.name,
@@ -647,6 +640,7 @@ export async function importSellerReportsFromCsv(input: {
           status: match ? 'exists' : createdAccount ? 'created' : 'added',
           reportUrl,
           editorUrl,
+          editorSlug: editorSlug || undefined,
           subject: madeEmailSubject(emailAddress),
           plainEmail: madeEmailPlain({
             name: row.name,
