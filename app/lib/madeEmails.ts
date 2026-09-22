@@ -21,7 +21,7 @@ export function madeSms(input: {
   editorUrl: string
 }) {
   const address = input.address.trim() || 'your listing'
-  return `${address} Seller Report
+  return `${address} Seller Report —
 Look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you here:
 
 ${input.editorUrl}`
