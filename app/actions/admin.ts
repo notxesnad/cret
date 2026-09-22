@@ -538,17 +538,33 @@ export async function importSellerReportsFromCsv(input: {
           }
         }
 
-        let listings = await db
+        type ListingRow = { id: string; address?: string | null; editor_slug?: string | null }
+        let listingRows: ListingRow[] = []
+        const listings = await db
           .from('listings')
           .select('id, address, editor_slug')
           .eq('profile_id', profileId)
-        if (listings.error && isMissingRelation(listings.error)) {
-          listings = await db
+        if (!listings.error) {
+          listingRows = listings.data || []
+        } else if (isMissingRelation(listings.error)) {
+          const retry = await db
             .from('listings')
             .select('id, address')
             .eq('profile_id', profileId)
-        }
-        if (listings.error && !isMissingRelation(listings.error)) {
+          if (retry.error && !isMissingRelation(retry.error)) {
+            results.push({
+              line: row.line,
+              name: row.name,
+              email: row.email,
+              phone: row.phone,
+              address: row.address,
+              status: 'error',
+              message: retry.error.message,
+            })
+            continue
+          }
+          listingRows = retry.data || []
+        } else {
           results.push({
             line: row.line,
             name: row.name,
@@ -561,7 +577,7 @@ export async function importSellerReportsFromCsv(input: {
           continue
         }
 
-        const match = (listings.data || []).find(
+        const match = listingRows.find(
           (listing) => normalizeAddress(listing.address || '') === normalizeAddress(row.address)
         )
         const listingId = match?.id || newId()
