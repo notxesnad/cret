@@ -159,7 +159,7 @@ export default function AdminPage() {
   const smsTexts = importRows.map((row) => row.plainSms).filter(Boolean) as string[]
   const importTsv = importRows
     .filter((row) => row.reportUrl)
-    .map((row) => [row.name, row.email, row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || '', row.plainSms || ''].join('\t'))
+    .map((row) => [row.name, row.email, row.phone || '', row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || '', row.plainSms || ''].join('\t'))
     .join('\n')
 
   const agents = useMemo(() => {
@@ -167,7 +167,7 @@ export default function AdminPage() {
     const needle = query.trim().toLowerCase()
     if (!needle) return data.agents
     return data.agents.filter((agent) =>
-      `${agent.name} ${agent.email}`.toLowerCase().includes(needle)
+      `${agent.name} ${agent.email} ${agent.phone}`.toLowerCase().includes(needle)
     )
   }, [data, query])
 
@@ -317,13 +317,22 @@ export default function AdminPage() {
                               <button
                                 type="button"
                                 onClick={() => void copyText(`${row.line}-email`, row.email)}
-                                className="text-xs text-slate-500 hover:text-slate-200"
+                                className="block text-xs text-slate-500 hover:text-slate-200"
                               >
                                 {copied === `${row.line}-email` ? 'Copied' : row.email}
                               </button>
                             ) : (
                               <div className="text-xs text-slate-500">Line {row.line}</div>
                             )}
+                            {row.phone ? (
+                              <button
+                                type="button"
+                                onClick={() => void copyText(`${row.line}-phone`, row.phone || '')}
+                                className="block text-xs text-slate-500 hover:text-slate-200"
+                              >
+                                {copied === `${row.line}-phone` ? 'Copied' : row.phone}
+                              </button>
+                            ) : null}
                           </td>
                           <td className="px-3 py-2">
                             <div>{row.address || '—'}</div>
@@ -540,7 +549,7 @@ export default function AdminPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search name or email"
+                  placeholder="Search name, email, or phone"
                   className="bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm w-full max-w-xs"
                 />
               </div>
@@ -569,7 +578,26 @@ export default function AdminPage() {
                       <tr key={agent.id} className="border-t border-slate-800 align-top">
                         <td className="px-3 py-2">
                           <div className="font-bold">{agent.name || '—'}</div>
-                          <div className="text-xs text-slate-500">{agent.email}</div>
+                          {agent.email ? (
+                            <button
+                              type="button"
+                              onClick={() => void copyText(`${agent.id}-email`, agent.email)}
+                              className="block text-xs text-slate-500 hover:text-slate-200"
+                            >
+                              {copied === `${agent.id}-email` ? 'Copied' : agent.email}
+                            </button>
+                          ) : (
+                            <div className="text-xs text-slate-500">—</div>
+                          )}
+                          {agent.phone ? (
+                            <button
+                              type="button"
+                              onClick={() => void copyText(`${agent.id}-phone`, agent.phone)}
+                              className="block text-xs text-slate-500 hover:text-slate-200"
+                            >
+                              {copied === `${agent.id}-phone` ? 'Copied' : agent.phone}
+                            </button>
+                          ) : null}
                           <div className="text-xs text-slate-600">{when(agent.createdAt)}</div>
                         </td>
                         <td className="px-3 py-2">{agent.billing}</td>

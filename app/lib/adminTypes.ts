@@ -16,6 +16,7 @@ export const TOOL_LABELS: Record<string, string> = {
 export type AdminAgentRow = {
   id: string
   email: string
+  phone: string
   name: string
   createdAt: string | null
   emailVerified: boolean
@@ -50,6 +51,7 @@ export type AdminImportResultRow = {
   line: number
   name: string
   email: string
+  phone?: string
   address: string
   casualAddress?: string
   status: 'created' | 'added' | 'exists' | 'error'
