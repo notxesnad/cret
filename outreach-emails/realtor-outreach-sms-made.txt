@@ -6,4 +6,6 @@ Uses Casual Address and the Updating report link.
 
 ---
 
-Hey Dan — look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you for 123 Oak: EDITOR_LINK
+Hey Dan — look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you for 123 Oak
+
+EDITOR_LINK

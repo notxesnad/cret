@@ -1,8 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { markImportedOpened, startEditorLogin } from '@/app/actions/openEditor'
+import { OpeningEditorSplash } from '@/app/components/OpeningEditorSplash'
+import { asEditorListing, editorLandingHref, stashOpenListing } from '@/app/lib/openListingCache'
 import { markAuthPersistPending, markAuthPersisted, supabase } from '@/utils/supabase'
+
+async function verifyEditorToken(tokenHash: string) {
+  let result = await supabase.auth.verifyOtp({
+    type: 'magiclink',
+    token_hash: tokenHash,
+  })
+  if (result.error) {
+    result = await supabase.auth.verifyOtp({
+      type: 'email',
+      token_hash: tokenHash,
+    })
+  }
+  return result
+}
 
 export function OpenEditorClient({
   profileId,
@@ -17,48 +34,59 @@ export function OpenEditorClient({
   next?: string
   via?: string
 }) {
+  const router = useRouter()
   const [message, setMessage] = useState('Opening your report editor…')
 
   useEffect(() => {
     let cancelled = false
+    const href = editorLandingHref(listingId, next, via)
+    router.prefetch(href)
+
+    const finish = (listing?: ReturnType<typeof asEditorListing> | null) => {
+      if (listing) stashOpenListing(listing)
+      markAuthPersisted()
+      window.location.replace(href)
+    }
+
     void (async () => {
-      const started = await startEditorLogin({ profileId, listingId, sig, next, via })
+      const loginP = startEditorLogin({ profileId, listingId, sig, next, via })
+      const { data } = await supabase.auth.getSession()
+      if (cancelled) return
+
+      if (data.session?.user?.id === profileId) {
+        markAuthPersistPending()
+        void markImportedOpened({ profileId, listingId, sig })
+        const { data: row } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('id', listingId)
+          .maybeSingle()
+        if (cancelled) return
+        finish(row ? asEditorListing(row) : null)
+        return
+      }
+
+      const started = await loginP
       if (cancelled) return
       if ('error' in started) {
         setMessage(started.error)
         return
       }
       markAuthPersistPending()
-      let result = await supabase.auth.verifyOtp({
-        type: 'magiclink',
-        token_hash: started.tokenHash,
-      })
-      if (result.error) {
-        result = await supabase.auth.verifyOtp({
-          type: 'email',
-          token_hash: started.tokenHash,
-        })
-      }
+      const result = await verifyEditorToken(started.tokenHash)
       if (cancelled) return
       if (result.error || !result.data.session) {
         setMessage(result.error?.message || 'Couldn’t open the editor. Try the link once more.')
         return
       }
-      markAuthPersisted()
-      await markImportedOpened({ profileId, listingId, sig })
-      window.location.replace(started.nextUrl)
+      void markImportedOpened({ profileId, listingId, sig })
+      finish(started.listing)
     })()
+
     return () => {
       cancelled = true
     }
-  }, [profileId, listingId, sig, next, via])
+  }, [profileId, listingId, sig, next, via, router])
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 text-center">
-      <div className="max-w-md">
-        <h1 className="text-2xl font-black mb-2">Cool Real Estate Tools</h1>
-        <p className="text-slate-400">{message}</p>
-      </div>
-    </div>
-  )
+  return <OpeningEditorSplash message={message} />
 }

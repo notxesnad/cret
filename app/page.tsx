@@ -14,6 +14,8 @@ import { isActive, isArchived } from '@/app/lib/archive'
 import { workspaceFromProfileJson, type WorkspaceData } from '@/app/lib/workspace'
 import { loadOrMigrateWorkspace, saveWorkspaceTables } from '@/app/lib/workspaceDb'
 import { isSellerDemoListing, withSellerDemoListing } from '@/app/lib/sellerDemo'
+import { takeOpenListing } from '@/app/lib/openListingCache'
+import { OpeningEditorSplash } from '@/app/components/OpeningEditorSplash'
 import { registerWithoutVerify } from '@/app/actions/auth'
 import { startCheckout, startPortal } from '@/app/actions/billing'
 import { appTrialFields, billingFromProfile, emptyBilling, hasShareAccess, isPaid, trialPeriodDays, type BillingState } from '@/app/lib/billing'
@@ -406,6 +408,15 @@ function HomeContent() {
 
   useEffect(() => {
     async function loadData() {
+        const openListingId = typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('listing')
+          : null
+        const seeded = takeOpenListing(openListingId)
+        if (seeded) {
+          listingsRef.current = [seeded]
+          setListings([seeded])
+        }
+
         const { data: { session } } = await supabase.auth.getSession()
       const currentUser = session?.user || null
       setUser(currentUser)
@@ -1377,6 +1388,9 @@ function HomeContent() {
   const showMyHomes = currentView === 'myhomes' || buriedParent === 'myhomes'
   const crmWide = ['myclients', 'mylistings', 'myshowing'].includes(currentView)
   const shellWidth = crmWide ? 'max-w-6xl' : 'max-w-xl'
+  const openListingId = searchParams.get('listing')
+  const sellerTrackerListings = propertyListings.filter((item) => isActive(item) || isSellerDemoListing(item))
+  const sellerTrackerReady = !openListingId || sellerTrackerListings.some((item) => item.id === openListingId) || sessionChecked
 
   return (
     <>
@@ -1540,19 +1554,23 @@ function HomeContent() {
             />
           )}
           {currentView === 'sellertracker' && (
-            <SellerTrackerView
-              listings={propertyListings.filter((item) => isActive(item) || isSellerDemoListing(item))}
-              updateListings={updateActivePropertyListings}
-              showCustomModal={showCustomModal}
-              switchView={switchView}
-              userId={user?.id}
-              persistWorkspace={persistIfSharingAllowed}
-              persistDemoShare={async () => {
-                if (!user) return true
-                return persistWorkspace()
-              }}
-              openListingId={searchParams.get('listing')}
-            />
+            sellerTrackerReady ? (
+              <SellerTrackerView
+                listings={sellerTrackerListings}
+                updateListings={updateActivePropertyListings}
+                showCustomModal={showCustomModal}
+                switchView={switchView}
+                userId={user?.id}
+                persistWorkspace={persistIfSharingAllowed}
+                persistDemoShare={async () => {
+                  if (!user) return true
+                  return persistWorkspace()
+                }}
+                openListingId={openListingId}
+              />
+            ) : (
+              <OpeningEditorSplash />
+            )
           )}
           {currentView === 'showingfeedback' && (
             <ShowingFeedbackView

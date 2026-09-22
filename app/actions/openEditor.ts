@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { editorSignature, publicOrigin } from '@/app/lib/editorLink'
+import { asEditorListing, editorLandingHref, type EditorListing } from '@/app/lib/openListingCache'
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -15,7 +16,7 @@ export async function startEditorLogin(input: {
   sig: string
   next?: string
   via?: string
-}): Promise<{ error: string } | { tokenHash: string; nextUrl: string }> {
+}): Promise<{ error: string } | { tokenHash: string; nextUrl: string; listing: EditorListing }> {
   const profileId = input.profileId.trim()
   const listingId = input.listingId.trim()
   const sig = input.sig.trim()
@@ -28,7 +29,7 @@ export async function startEditorLogin(input: {
 
   const listing = await db
     .from('listings')
-    .select('id')
+    .select('*')
     .eq('id', listingId)
     .eq('profile_id', profileId)
     .maybeSingle()
@@ -36,13 +37,7 @@ export async function startEditorLogin(input: {
 
   const next = input.next === 'profile' ? 'profile' : 'sellertracker'
   const via = input.via === 'html' ? 'html' : 'plain'
-  const dest = new URL(publicOrigin())
-  dest.searchParams.set('view', next)
-  if (next === 'sellertracker') dest.searchParams.set('listing', listingId)
-  dest.searchParams.set('utm_source', 'email')
-  dest.searchParams.set('utm_medium', via)
-  dest.searchParams.set('utm_campaign', 'realtors-st-made')
-  dest.searchParams.set('utm_content', next === 'profile' ? 'header' : 'editor')
+  const dest = new URL(editorLandingHref(listingId, next, via), publicOrigin())
 
   const { data, error } = await db.auth.admin.generateLink({
     type: 'magiclink',
@@ -55,7 +50,7 @@ export async function startEditorLogin(input: {
     return { error: 'Couldn’t open the editor. Try the link once more.' }
   }
 
-  return { tokenHash, nextUrl: dest.toString() }
+  return { tokenHash, nextUrl: dest.toString(), listing: asEditorListing(listing.data) }
 }
 
 export async function startEditorLoginByToken(input: {
@@ -63,7 +58,7 @@ export async function startEditorLoginByToken(input: {
   listingId: string
   next?: string
   via?: string
-}): Promise<{ error: string } | { tokenHash: string; nextUrl: string }> {
+}): Promise<{ error: string } | { tokenHash: string; nextUrl: string; listing: EditorListing }> {
   const token = input.token.trim()
   const listingId = input.listingId.trim()
   if (!token || !listingId) return { error: 'That link isn’t working.' }

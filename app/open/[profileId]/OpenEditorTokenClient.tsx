@@ -1,8 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { startEditorLoginByToken } from '@/app/actions/openEditor'
+import { OpeningEditorSplash } from '@/app/components/OpeningEditorSplash'
+import { editorLandingHref, stashOpenListing } from '@/app/lib/openListingCache'
 import { markAuthPersistPending, markAuthPersisted, supabase } from '@/utils/supabase'
+
+async function verifyEditorToken(tokenHash: string) {
+  let result = await supabase.auth.verifyOtp({
+    type: 'magiclink',
+    token_hash: tokenHash,
+  })
+  if (result.error) {
+    result = await supabase.auth.verifyOtp({
+      type: 'email',
+      token_hash: tokenHash,
+    })
+  }
+  return result
+}
 
 export function OpenEditorTokenClient({
   token,
@@ -15,10 +32,14 @@ export function OpenEditorTokenClient({
   next?: string
   via?: string
 }) {
+  const router = useRouter()
   const [message, setMessage] = useState('Opening your report editor…')
 
   useEffect(() => {
     let cancelled = false
+    const href = editorLandingHref(listingId, next, via)
+    router.prefetch(href)
+
     void (async () => {
       const started = await startEditorLoginByToken({ token, listingId, next, via })
       if (cancelled) return
@@ -27,35 +48,20 @@ export function OpenEditorTokenClient({
         return
       }
       markAuthPersistPending()
-      let result = await supabase.auth.verifyOtp({
-        type: 'magiclink',
-        token_hash: started.tokenHash,
-      })
-      if (result.error) {
-        result = await supabase.auth.verifyOtp({
-          type: 'email',
-          token_hash: started.tokenHash,
-        })
-      }
+      const result = await verifyEditorToken(started.tokenHash)
       if (cancelled) return
       if (result.error || !result.data.session) {
         setMessage(result.error?.message || 'Couldn’t open the editor. Try the link once more.')
         return
       }
+      stashOpenListing(started.listing)
       markAuthPersisted()
-      window.location.replace(started.nextUrl)
+      window.location.replace(href)
     })()
     return () => {
       cancelled = true
     }
-  }, [token, listingId, next, via])
+  }, [token, listingId, next, via, router])
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 text-center">
-      <div className="max-w-md">
-        <h1 className="text-2xl font-black mb-2">Cool Real Estate Tools</h1>
-        <p className="text-slate-400">{message}</p>
-      </div>
-    </div>
-  )
+  return <OpeningEditorSplash message={message} />
 }
