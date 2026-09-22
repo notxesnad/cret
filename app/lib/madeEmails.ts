@@ -20,9 +20,9 @@ export function madeSms(input: {
   address: string
   editorUrl: string
 }) {
-  const hi = firstNameFrom(input.name)
   const address = input.address.trim() || 'your listing'
-  return `Hey${hi ? ` ${hi}` : ''} — look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you for ${address}
+  return `${address} Seller Report
+Look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you here:
 
 ${input.editorUrl}`
 }
