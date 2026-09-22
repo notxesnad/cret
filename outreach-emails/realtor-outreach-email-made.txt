@@ -6,7 +6,7 @@ Admin import fills these in per agent. Re-upload the CSV to regenerate.
 Subject and body use Casual Address. The one link opens the Updating report page.
 
 Subject:
-Your seller at 123 Oak only sees the listing
+Seller Tracking Report for 123 Oak
 
 ---
 

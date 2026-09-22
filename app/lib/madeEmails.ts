@@ -12,7 +12,7 @@ function escapeHtml(value: string) {
 
 export function madeEmailSubject(address: string) {
   const trimmed = address.trim() || 'your listing'
-  return `Your seller at ${trimmed} only sees the listing`
+  return `Seller Tracking Report for ${trimmed}`
 }
 
 export function madeEmailPlain(input: {
@@ -48,7 +48,7 @@ export function madeEmailHtml(input: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your seller at ${address} only sees the listing</title>
+  <title>Seller Tracking Report for ${address}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#0f172a;margin:0;padding:0;">
@@ -63,10 +63,9 @@ export function madeEmailHtml(input: {
           <tr>
             <td style="background-color:#1e293b;border:1px solid #334155;border-radius:24px;padding:32px 28px;">
               <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#e2e8f0;">${hello}</p>
-              <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#e8ec00;">${address}</p>
-              <p style="margin:0 0 14px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">Your seller only sees the listing.</p>
+              <p style="margin:0 0 14px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">Seller Tracking Report for ${address}</p>
               <p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#94a3b8;">
-                Not the work behind it. Sellers want that information. I started a report you can text them so they see it.
+                Your seller only sees the listing — not the work behind it. Sellers want that information. I started a report you can text them so they see it.
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
                 <tr>

@@ -5,8 +5,8 @@ Just-listed send. Pair with realtor-outreach-email-st-justlisted.html.
 Not the previous seller-tracker A/B.
 
 Subject (pick one):
-your seller only sees the listing
-123 Oak — your seller only sees the listing
+Seller Tracking Report for your listing
+Seller Tracking Report for 123 Oak
 
 ---
 
