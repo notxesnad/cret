@@ -14,6 +14,7 @@ import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { SHOWING_FEEDBACK_KIND } from '@/app/lib/showingFeedback'
 import { PROSPECT_STORE_KIND } from '@/app/lib/prospects'
 import { getStripe } from '@/app/lib/stripe'
+import { isTwilioConfigured, sendTwilioSms, toE164 } from '@/app/lib/twilioSms'
 import { isMissingRelation } from '@/app/lib/workspace'
 
 function admin() {
@@ -236,6 +237,7 @@ export async function loadAdminDashboard(input: { accessToken: string }): Promis
       data: {
         you: user.email || '',
         tableReady,
+        smsReady: isTwilioConfigured(),
         totals: {
           agents: agents.length,
           agentsThisWeek: agents.filter((row) => row.createdAt && row.createdAt >= weekAgo).length,
@@ -700,4 +702,30 @@ export async function importSellerReportsFromCsv(input: {
     console.error('importSellerReportsFromCsv', err)
     return { error: 'Could not import that file.' }
   }
+}
+
+export async function sendAdminTexts(input: {
+  accessToken: string
+  messages: { key: string; phone: string; body: string }[]
+}): Promise<{ results: { key: string; ok: boolean; error?: string }[] } | { error: string }> {
+  const authed = await requireAdmin(input.accessToken)
+  if (!('user' in authed)) return { error: authed.error }
+  if (!isTwilioConfigured()) {
+    return { error: 'Twilio is not set up yet. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER.' }
+  }
+
+  const messages = input.messages.slice(0, 250)
+  const results: { key: string; ok: boolean; error?: string }[] = []
+  for (const message of messages) {
+    const key = message.key.trim()
+    if (!key) continue
+    if (!toE164(message.phone)) {
+      results.push({ key, ok: false, error: 'Missing or invalid phone number.' })
+      continue
+    }
+    const sent = await sendTwilioSms({ to: message.phone, body: message.body })
+    if ('error' in sent) results.push({ key, ok: false, error: sent.error })
+    else results.push({ key, ok: true })
+  }
+  return { results }
 }

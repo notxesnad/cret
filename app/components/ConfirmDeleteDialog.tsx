@@ -4,12 +4,14 @@ export function ConfirmDeleteDialog({
   message,
   confirmLabel = 'Delete',
   cancelLabel = 'Keep it',
+  confirmClass = 'bg-rose-500 hover:bg-rose-400 text-white',
   onCancel,
   onConfirm,
 }: {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  confirmClass?: string
   onCancel: () => void
   onConfirm: () => void
 }) {
@@ -28,7 +30,7 @@ export function ConfirmDeleteDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 bg-rose-500 hover:bg-rose-400 text-white font-black py-3 rounded-xl transition"
+            className={`flex-1 font-black py-3 rounded-xl transition ${confirmClass}`}
           >
             {confirmLabel}
           </button>

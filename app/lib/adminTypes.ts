@@ -68,6 +68,7 @@ export type AdminImportResultRow = {
 export type AdminDashboard = {
   you: string
   tableReady: boolean
+  smsReady: boolean
   totals: {
     agents: number
     agentsThisWeek: number

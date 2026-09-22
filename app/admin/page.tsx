@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deleteAdminUser, importSellerReportsFromCsv, loadAdminDashboard } from '@/app/actions/admin'
+import { deleteAdminUser, importSellerReportsFromCsv, loadAdminDashboard, sendAdminTexts } from '@/app/actions/admin'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { IMPORT_TEMPLATE_CSV } from '@/app/lib/adminCsv'
 import { TOOL_LABELS, type AdminAgentRow, type AdminDashboard, type AdminImportResultRow } from '@/app/lib/adminTypes'
@@ -43,6 +43,9 @@ export default function AdminPage() {
   const [importSummary, setImportSummary] = useState<{ created: number; added: number; exists: number; failed: number } | null>(null)
   const [importRows, setImportRows] = useState<AdminImportResultRow[]>([])
   const [copied, setCopied] = useState('')
+  const [smsState, setSmsState] = useState<Record<string, { status: 'sending' | 'sent' | 'error'; message?: string }>>({})
+  const [pendingSms, setPendingSms] = useState<{ mode: 'one' | 'all'; rows: AdminImportResultRow[] } | null>(null)
+  const [smsBusy, setSmsBusy] = useState(false)
 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) {
@@ -146,6 +149,7 @@ export default function AdminPage() {
         failed: result.failed,
       })
       setImportRows(result.rows)
+      setSmsState({})
       await refresh({ quiet: true })
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Could not import that file.')
@@ -157,6 +161,65 @@ export default function AdminPage() {
   const reportLinks = importRows.map((row) => row.reportUrl).filter(Boolean) as string[]
   const editorLinks = importRows.map((row) => row.editorUrl).filter(Boolean) as string[]
   const smsTexts = importRows.map((row) => row.plainSms).filter(Boolean) as string[]
+  const smsableRows = importRows.filter((row) => row.plainSms && row.phone && row.status !== 'error')
+  const smsKey = (row: AdminImportResultRow) => `${row.line}-${row.email}`
+
+  const sendTexts = async (rows: AdminImportResultRow[]) => {
+    if (smsBusy || !rows.length) return
+    setSmsBusy(true)
+    const keys = rows.map(smsKey)
+    setSmsState((prev) => {
+      const next = { ...prev }
+      for (const key of keys) next[key] = { status: 'sending' }
+      return next
+    })
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) {
+        setSmsState((prev) => {
+          const next = { ...prev }
+          for (const key of keys) next[key] = { status: 'error', message: 'Sign in first.' }
+          return next
+        })
+        return
+      }
+      const result = await sendAdminTexts({
+        accessToken: token,
+        messages: rows.map((row) => ({
+          key: smsKey(row),
+          phone: row.phone || '',
+          body: row.plainSms || '',
+        })),
+      })
+      if ('error' in result) {
+        setSmsState((prev) => {
+          const next = { ...prev }
+          for (const key of keys) next[key] = { status: 'error', message: result.error }
+          return next
+        })
+        return
+      }
+      setSmsState((prev) => {
+        const next = { ...prev }
+        for (const item of result.results) {
+          next[item.key] = item.ok ? { status: 'sent' } : { status: 'error', message: item.error }
+        }
+        return next
+      })
+    } catch (err) {
+      setSmsState((prev) => {
+        const next = { ...prev }
+        for (const key of keys) {
+          next[key] = { status: 'error', message: err instanceof Error ? err.message : 'Could not send.' }
+        }
+        return next
+      })
+    } finally {
+      setSmsBusy(false)
+      setPendingSms(null)
+    }
+  }
   const importTsv = importRows
     .filter((row) => row.reportUrl)
     .map((row) => [row.name, row.email, row.phone || '', row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || '', row.plainSms || ''].join('\t'))
@@ -225,7 +288,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. Listing Address is what the report shows. Casual Address is what goes in the email, text, subject, and body. No welcome email. After import, copy the text, the plain email, or open the HTML and paste it into Messages or Gmail for that agent.
+                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. Listing Address is what the report shows. Casual Address is what goes in the email, text, subject, and body. No welcome email. After import, send the text from here, or copy the email into Gmail.
                   </p>
                 </div>
                 <button
@@ -251,6 +314,11 @@ export default function AdminPage() {
                 />
               </label>
               {importFileName ? <p className="text-xs text-slate-500 mt-2">{importFileName}</p> : null}
+              {data && !data.smsReady ? (
+                <p className="text-sm text-amber-300 mt-3">
+                  Texts copy, but send is off until Twilio is on Vercel: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER.
+                </p>
+              ) : null}
               {importError ? <p className="text-sm text-rose-300 mt-3">{importError}</p> : null}
               {importSummary ? (
                 <p className="text-sm text-slate-300 mt-3">
@@ -282,6 +350,20 @@ export default function AdminPage() {
                       className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
                     >
                       {copied === 'sms' ? 'Copied' : 'Copy all texts'}
+                    </button>
+                  ) : null}
+                  {smsableRows.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rows = smsableRows.filter((row) => smsState[smsKey(row)]?.status !== 'sent')
+                        if (!rows.length) return
+                        setPendingSms({ mode: 'all', rows })
+                      }}
+                      disabled={smsBusy || !data?.smsReady || smsableRows.every((row) => smsState[smsKey(row)]?.status === 'sent')}
+                      className="text-xs font-bold bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 px-4 py-2 rounded-full"
+                    >
+                      {smsBusy ? 'Sending…' : 'Send all texts'}
                     </button>
                   ) : null}
                   {importTsv ? (
@@ -394,10 +476,29 @@ export default function AdminPage() {
                                   <button
                                     type="button"
                                     onClick={() => void copyText(`${row.email}-sms`, row.plainSms || '')}
-                                    className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                    className="text-xs font-bold text-slate-400 hover:text-slate-200"
                                   >
                                     {copied === `${row.email}-sms` ? 'Copied' : 'Copy text'}
                                   </button>
+                                ) : null}
+                                {row.plainSms && row.phone && row.status !== 'error' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingSms({ mode: 'one', rows: [row] })}
+                                    disabled={smsBusy || !data?.smsReady || smsState[smsKey(row)]?.status === 'sending'}
+                                    className="text-xs font-bold text-emerald-400 hover:text-emerald-300 disabled:text-slate-600"
+                                  >
+                                    {smsState[smsKey(row)]?.status === 'sending'
+                                      ? 'Sending…'
+                                      : smsState[smsKey(row)]?.status === 'sent'
+                                        ? 'Sent'
+                                        : 'Send text'}
+                                  </button>
+                                ) : row.plainSms && !row.phone ? (
+                                  <span className="text-[11px] text-amber-300">No phone</span>
+                                ) : null}
+                                {smsState[smsKey(row)]?.status === 'error' ? (
+                                  <span className="text-[11px] text-rose-300">{smsState[smsKey(row)]?.message}</span>
                                 ) : null}
                                 {row.editorUrl ? (
                                   <button
@@ -654,6 +755,26 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      {pendingSms && (
+        <ConfirmDeleteDialog
+          message={
+            pendingSms.mode === 'one'
+              ? `Text ${pendingSms.rows[0]?.name || 'this agent'} at ${pendingSms.rows[0]?.phone}?`
+              : `Send ${pendingSms.rows.length} text${pendingSms.rows.length === 1 ? '' : 's'} now?`
+          }
+          confirmLabel={smsBusy ? 'Sending…' : pendingSms.mode === 'one' ? 'Send text' : 'Send all'}
+          cancelLabel="Not yet"
+          confirmClass="bg-emerald-500 hover:bg-emerald-400 text-slate-950"
+          onCancel={() => {
+            if (smsBusy) return
+            setPendingSms(null)
+          }}
+          onConfirm={() => {
+            if (smsBusy) return
+            void sendTexts(pendingSms.rows)
+          }}
+        />
+      )}
       {pendingDelete && (
         <ConfirmDeleteDialog
           message={
