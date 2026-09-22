@@ -23,7 +23,7 @@ interface QuestionnaireProps {
   description?: string
   questions: Question[]
   onSubmit: (answers: Record<string, string | number>) => Promise<void>
-  accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky' | 'navy'
+  accentColor?: 'fuchsia' | 'emerald' | 'indigo' | 'rose' | 'amber' | 'cyan' | 'orange' | 'blue' | 'sky' | 'navy' | 'teal'
   theme?: QuizTheme
   captureLead?: {
     title: string
@@ -67,6 +67,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     blue: 'bg-blue-500',
     sky: 'bg-sky-500',
     navy: 'bg-blue-900',
+    teal: 'bg-teal-500',
   }
   const bgClass = colorMap[accentColor]
   const isDark = theme === 'dark'

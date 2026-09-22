@@ -10,6 +10,7 @@ import { ToolTile } from '@/app/components/ToolTile'
 import { HowToTour, type HowToPage } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { RegistrationExperience } from '@/app/components/RegistrationForm'
+import { TemplateDivider } from '@/app/components/TemplateDivider'
 import {
   OPENHOUSE_REGISTRATION_KIND,
   STANDARD_REGISTRATION_QUESTIONS,
@@ -499,11 +500,7 @@ export function OpenHouseRegistrationView({
                   <p className="text-sm text-indigo-300/70">Keep the standard sign-in fields, then add extra questions</p>
                 </div>
 
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-400"></div>
-                  <span className="flex-shrink-0 mx-4 text-white text-xs font-bold uppercase tracking-widest">Or choose template</span>
-                  <div className="flex-grow border-t border-slate-400"></div>
-                </div>
+                <TemplateDivider />
 
                 <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-indigo-500 transition cursor-pointer" onClick={handleCreateStandard}>
                   <h3 className="text-lg font-bold text-white mb-2">{STANDARD_TEMPLATE.title}</h3>

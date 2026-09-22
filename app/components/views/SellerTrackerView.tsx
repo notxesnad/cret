@@ -277,7 +277,7 @@ export function SellerTrackerView({
         {hub === 'work' && (
           <div className="flex-1 mx-4 bg-slate-800 rounded-full h-3 overflow-hidden">
             <div
-              className="bg-amber-500 h-full rounded-full transition-all duration-500 ease-out"
+              className="bg-teal-500 h-full rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(step / 3) * 100}%` }}
             ></div>
           </div>
@@ -289,19 +289,19 @@ export function SellerTrackerView({
         <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar bg-slate-900">
           <ToolLanding
             kicker="Seller Tools"
-            kickerClass="text-amber-500"
+            kickerClass="text-teal-500"
             title="Seller Tracking Report"
             titleClass="font-seller"
             blurb="A living report of everything you’ve done for the listing — so they stop asking what’s happening."
             primaryLabel="My Tracking Reports"
             primaryEmoji="📋"
-            primaryClass="group relative bg-amber-500 hover:bg-amber-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
+            primaryClass="group relative bg-teal-500 hover:bg-teal-400 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden"
             onPrimary={() => setHub('work')}
             onHow={() => {
               setHowPage(0)
               setHub('how')
             }}
-            howClass="group relative bg-amber-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-amber-300"
+            howClass="group relative bg-teal-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-teal-300"
           />
         </div>
       ) : hub === 'how' ? (
@@ -315,7 +315,7 @@ export function SellerTrackerView({
               setHub('menu')
             }}
             doneLabel="Got it"
-            accent="amber"
+            accent="teal"
             titleClass="font-seller"
           />
         </div>
@@ -327,12 +327,12 @@ export function SellerTrackerView({
           {/* --- STEP 1: Listings --- */}
           <div className="w-[33.333333%] flex-shrink-0 px-6 py-6 h-full overflow-y-auto hide-scrollbar">
             <div className="text-center mb-8">
-              <span className="text-xs font-bold tracking-widest text-amber-500 uppercase font-seller">Tracker Report</span>
+              <span className="text-xs font-bold tracking-widest text-teal-500 uppercase font-seller">Tracker Report</span>
               <h3 className="text-2xl font-black text-white mt-1">My Active Listings</h3>
             </div>
 
             {isAddingListing ? (
-              <div className="bg-slate-800 p-4 rounded-xl border border-amber-500/50 mb-6">
+              <div className="bg-slate-800 p-4 rounded-xl border border-teal-500/50 mb-6">
                 <input 
                   type="text" 
                   autoFocus
@@ -340,17 +340,17 @@ export function SellerTrackerView({
                   value={newListingAddress}
                   onChange={e => setNewListingAddress(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && confirmAddListing()}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-amber-500 mb-3"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-teal-500 mb-3"
                 />
                 <div className="flex gap-2">
-                  <button onClick={confirmAddListing} className="flex-1 bg-amber-500 text-slate-950 font-bold py-2 rounded-lg">Save</button>
+                  <button onClick={confirmAddListing} className="flex-1 bg-teal-500 text-slate-950 font-bold py-2 rounded-lg">Save</button>
                   <button onClick={() => {setIsAddingListing(false); setNewListingAddress('');}} className="flex-1 bg-slate-700 text-white font-bold py-2 rounded-lg">Cancel</button>
                 </div>
               </div>
             ) : (
               <button 
                 onClick={() => setIsAddingListing(true)}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
+                className="w-full bg-slate-800 hover:bg-slate-700 text-teal-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2 mb-6"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                 Add My Listing
@@ -368,13 +368,13 @@ export function SellerTrackerView({
                 <div 
                   key={listing.id}
                   onClick={() => handleOpenListing(listing.id)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-amber-500/50 transition"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-teal-500/50 transition"
                 >
                   <div>
                     <h4 className="font-bold text-white text-lg">{listing.address}</h4>
                     <p className="text-xs text-slate-400 mt-0.5">{listing.activities.length} activities logged</p>
                   </div>
-                  <div className="text-slate-500 group-hover:text-amber-500 transition">
+                  <div className="text-slate-500 group-hover:text-teal-500 transition">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                   </div>
                 </div>
@@ -383,14 +383,14 @@ export function SellerTrackerView({
                 <div 
                   key={listing.id}
                   onClick={() => handleOpenListing(listing.id)}
-                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-amber-500/50 transition"
+                  className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex justify-between items-center group cursor-pointer hover:border-teal-500/50 transition"
                 >
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">Demo</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-teal-400 bg-teal-400/10 px-2 py-0.5 rounded">Demo</span>
                     <h4 className="font-bold text-white text-lg mt-1">{listing.address}</h4>
                     <p className="text-xs text-slate-400 mt-0.5">{listing.activities.length} activities logged</p>
                   </div>
-                  <div className="text-slate-500 group-hover:text-amber-500 transition">
+                  <div className="text-slate-500 group-hover:text-teal-500 transition">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                   </div>
                 </div>
@@ -412,7 +412,7 @@ export function SellerTrackerView({
                     type="button"
                     aria-expanded={showActivityBank}
                     onClick={() => setShowActivityBank(open => !open)}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2"
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-teal-400 border border-slate-700 font-black py-4 rounded-xl transition shadow flex items-center justify-center gap-2"
                   >
                     <svg className={`w-5 h-5 transition-transform duration-300 ${showActivityBank ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                     Add New Activity
@@ -428,11 +428,11 @@ export function SellerTrackerView({
                             value={customActivity}
                             onChange={(e) => setCustomActivity(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddActivity(customActivity)}
-                            className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                            className="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-teal-500 transition-colors"
                           />
                           <button
                             onClick={() => handleAddActivity(customActivity)}
-                            className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
+                            className="bg-teal-500 hover:bg-teal-400 active:scale-95 text-slate-950 font-bold px-4 py-2 rounded-xl transition-all duration-150"
                           >
                             Add
                           </button>
@@ -444,7 +444,7 @@ export function SellerTrackerView({
                             <button
                               key={preset}
                               onClick={() => handleAddActivity(preset)}
-                              className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-amber-500 active:text-amber-950 border border-slate-700 p-3 rounded-lg transition"
+                              className="w-full text-left bg-slate-900 hover:bg-slate-700 active:bg-teal-500 active:text-teal-950 border border-slate-700 p-3 rounded-lg transition"
                             >
                               <p className="text-sm font-bold text-slate-200">{preset}</p>
                             </button>
@@ -459,7 +459,7 @@ export function SellerTrackerView({
                 <div className="space-y-3 scroll-mt-6" ref={activityLogRef}>
                   <h3 className="text-sm font-bold text-white flex items-center justify-between" ref={activityLogHeaderRef}>
                     Activity Log
-                    <span className="bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">{activeListing.activities.length} total</span>
+                    <span className="bg-teal-500/20 text-teal-500 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">{activeListing.activities.length} total</span>
                   </h3>
                   
                   {activeListing.activities.length === 0 ? (
@@ -470,7 +470,7 @@ export function SellerTrackerView({
                         <div 
                           key={act.id} 
                           onClick={() => handleOpenActivity(act)}
-                          className={`bg-slate-800 border ${act.status === 'pending' ? 'border-amber-500/50 border-dashed' : act.status === 'upcoming' ? 'border-cyan-500/50' : 'border-slate-700'} rounded-xl p-3 flex justify-between items-start group cursor-pointer hover:border-amber-400 transition-colors`}
+                          className={`bg-slate-800 border ${act.status === 'pending' ? 'border-amber-500/50 border-dashed' : act.status === 'upcoming' ? 'border-cyan-500/50' : 'border-slate-700'} rounded-xl p-3 flex justify-between items-start group cursor-pointer hover:border-teal-400 transition-colors`}
                         >
                           <div>
                             <div className="flex gap-2 mb-1">
@@ -483,7 +483,7 @@ export function SellerTrackerView({
                             {act.notes && <p className="text-sm text-slate-400 mt-1 line-clamp-1">{act.notes}</p>}
                           </div>
                           <span
-                            className="text-slate-400 group-hover:text-amber-400 p-1 ml-3 transition"
+                            className="text-slate-400 group-hover:text-teal-400 p-1 ml-3 transition"
                             title="Edit activity"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 00.707-.293l9.414-9.414a2 2 0 000-2.828l-2.172-2.172a2 2 0 00-2.828 0L4.586 14.707A1 1 0 004 15.414V20z"></path></svg>
@@ -513,7 +513,7 @@ export function SellerTrackerView({
                       type="text" 
                       value={editActivityForm.label || ''}
                       onChange={(e) => setEditActivityForm({...editActivityForm, label: e.target.value})}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-amber-500 transition-colors" 
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-teal-500 transition-colors" 
                     />
                   </div>
                   
@@ -524,7 +524,7 @@ export function SellerTrackerView({
                       onChange={date => setEditActivityForm({ ...editActivityForm, date })}
                       placeholder="Select a date"
                       className="bg-slate-800 border-slate-700"
-                      accent="amber"
+                      accent="teal"
                     />
                   </div>
 
@@ -558,7 +558,7 @@ export function SellerTrackerView({
                       placeholder="Add any internal notes..."
                       value={editActivityForm.notes || ''}
                       onChange={(e) => setEditActivityForm({...editActivityForm, notes: e.target.value})}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors min-h-[100px]" 
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500 transition-colors min-h-[100px]" 
                     />
                   </div>
                 </div>
@@ -575,7 +575,7 @@ export function SellerTrackerView({
           <SharePreviewButtons
             url={shareUrl}
             copyLabel="Copy Seller Link"
-            accentClass="bg-amber-500 hover:bg-amber-400 text-slate-950"
+            accentClass="bg-teal-500 hover:bg-teal-400 text-slate-950"
             onCopy={handleShareLink}
             onNeedAuth={!userId && !sharingDemo ? () => showCustomModal('', true) : undefined}
             beforeShare={async () => {
@@ -603,7 +603,7 @@ export function SellerTrackerView({
             </button>
             <button 
               onClick={handleUpdateActivity}
-              className="flex-[2] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-xl transition shadow"
+              className="flex-[2] bg-teal-500 hover:bg-teal-400 text-slate-950 font-black py-4 rounded-xl transition shadow"
             >
               Save Changes
             </button>

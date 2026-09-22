@@ -25,7 +25,7 @@ export function ShowingFeedbackClient({ profileId, campaignId, campaign }: {
       description={campaign.description}
       questions={campaign.questions}
       onSubmit={handleSubmit}
-      accentColor="amber"
+      accentColor="teal"
       theme="light"
       doneTitle="Thanks for the notes."
       doneBody="The listing agent will use this to keep the seller informed. You can close this page."

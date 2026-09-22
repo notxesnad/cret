@@ -7,7 +7,7 @@ export type HowToPage = {
   body: string
 }
 
-export type HowToAccent = 'indigo' | 'rose' | 'amber' | 'sky' | 'emerald'
+export type HowToAccent = 'indigo' | 'rose' | 'amber' | 'sky' | 'emerald' | 'teal'
 
 const ACCENT = {
   indigo: {
@@ -39,6 +39,12 @@ const ACCENT = {
     kicker: 'text-emerald-400',
     dot: 'bg-emerald-400',
     btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-950',
+  },
+  teal: {
+    bar: 'bg-teal-500',
+    kicker: 'text-teal-400',
+    dot: 'bg-teal-400',
+    btn: 'bg-teal-500 hover:bg-teal-400 text-slate-950',
   },
 } as const
 

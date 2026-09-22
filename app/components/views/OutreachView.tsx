@@ -9,6 +9,7 @@ import { ClientThemeToggle } from '@/app/components/ClientThemeToggle'
 import { HowToTour } from '@/app/components/HowToTour'
 import { OverlayNavButton } from '@/app/components/OverlayNavButton'
 import { ToolLanding } from '@/app/components/ToolLanding'
+import { TemplateDivider } from '@/app/components/TemplateDivider'
 import { OUTREACH_TOUR } from '@/app/lib/toolTours'
 import { normalizeQuizTheme, type QuizTheme } from '@/app/lib/quizTheme'
 
@@ -277,11 +278,7 @@ export function OutreachView({ campaigns, updateCampaigns, switchView, showCusto
                   <p className="text-sm text-sky-300/70">Create a completely custom questionnaire</p>
                 </div>
 
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-slate-400"></div>
-                  <span className="flex-shrink-0 mx-4 text-white text-xs font-bold uppercase tracking-widest">Or choose template</span>
-                  <div className="flex-grow border-t border-slate-400"></div>
-                </div>
+                <TemplateDivider />
 
                 {templates.map((tpl, i) => (
                   <div key={i} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-sky-500 transition cursor-pointer" onClick={() => handleCreate(tpl)}>
