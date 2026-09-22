@@ -12,7 +12,7 @@ function escapeHtml(value: string) {
 
 export function madeEmailSubject(address: string) {
   const trimmed = address.trim() || 'your listing'
-  return `Seller Tracking Report for ${trimmed}`
+  return `Your seller at ${trimmed} only sees the listing`
 }
 
 export function madeEmailPlain(input: {
@@ -22,9 +22,13 @@ export function madeEmailPlain(input: {
 }) {
   const hi = firstNameFrom(input.name)
   const address = input.address.trim() || 'your listing'
-  return `Hey${hi ? ` ${hi}` : ''} — I started a Seller Tracking Report for ${address}.
+  return `Hey${hi ? ` ${hi}` : ''} —
 
-It’s a dated log of the work you’ve done for ${address}. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
+Your seller at ${address} sees the sign go up. Maybe a showing. That’s about it.
+
+They don’t see the photos, the MLS work, the broker open, the follow-up. When it’s quiet, it looks like you vanished. Sellers love more information. They just never get it.
+
+This is how you get credit for the work in the background. I started a Seller Tracking Report for ${address}. Add the next things — photos, broker open, showings — then text them the link. They finally see what you’ve been doing.
 
 Preview the seller report:
 ${input.editorUrl}
@@ -39,6 +43,8 @@ export function madeEmailHtml(input: {
   address: string
   editorUrl: string
 }) {
+  const hi = firstNameFrom(input.name)
+  const hello = hi ? `Hey ${escapeHtml(hi)} —` : 'Hey —'
   const address = escapeHtml(input.address.trim() || 'your listing')
   const editorUrl = escapeHtml(input.editorUrl)
   return `<!DOCTYPE html>
@@ -46,7 +52,7 @@ export function madeEmailHtml(input: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seller Tracking Report for ${address}</title>
+  <title>Your seller at ${address} only sees the listing</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#0f172a;margin:0;padding:0;">
@@ -60,10 +66,17 @@ export function madeEmailHtml(input: {
           </tr>
           <tr>
             <td style="background-color:#1e293b;border:1px solid #334155;border-radius:24px;padding:32px 28px;">
-              <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24;">${address}</p>
-              <p style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">I started a Seller Tracking Report for your listing.</p>
+              <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#e2e8f0;">${hello}</p>
+              <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#e8ec00;">${address}</p>
+              <p style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">Your seller only sees the listing.</p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#94a3b8;">
+                The sign. Maybe a showing. That’s about it. They don’t see the photos, the MLS work, the broker open, the follow-up. When it’s quiet, it looks like you vanished.
+              </p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#94a3b8;">
+                Sellers love more information. They just never get it. This is how you get credit for the work in the background.
+              </p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#94a3b8;">
-                It’s a dated log of the work you’ve done for ${address}. We’ve started the report for you, go in and add the next activities — photos, broker open, showings — then text your seller a link to the report so they can see what you’ve done.
+                I started a Seller Tracking Report for ${address}. Add the next things — photos, broker open, showings — then text them the link. They finally see what you’ve been doing.
               </p>
               <p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#e2e8f0;font-weight:700;">
                 Takes about a minute. Costs you nothing to try.

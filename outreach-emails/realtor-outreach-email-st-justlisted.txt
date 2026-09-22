@@ -5,14 +5,16 @@ Just-listed send. Pair with realtor-outreach-email-st-justlisted.html.
 Not the previous seller-tracker A/B.
 
 Subject (pick one):
-your listing just went live
-123 Oak just went live
+your seller only sees the listing
+123 Oak — your seller only sees the listing
 
 ---
 
-Hey — your listing just went live. Your seller is already watching.
+Hey — your seller sees the sign go up. Maybe a showing. That’s about it.
 
-I built a free report you can text them. Photos, broker open, showings, offers — dated, in order, with your header on it. Start it this week so the quiet days don’t look like nothing.
+They don’t see the photos, the MLS work, the broker open, the follow-up. When it’s quiet, it looks like you vanished. Sellers love more information. They just never get it.
+
+This is a dated log you text them so they see the work in the background. Photos, broker open, showings — in order. Takes about a minute. Costs you nothing to try.
 
 If you want it:
 coolrealestatetools.com/start-report
