@@ -14,7 +14,7 @@ const pickerInputClass =
 const accentFocus = {
   rose: 'focus:border-rose-500',
   amber: 'focus:border-amber-500',
-  teal: 'focus:border-teal-500',
+  teal: 'focus:border-seller',
 } as const
 
 export function DateField({

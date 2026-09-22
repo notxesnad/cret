@@ -10,6 +10,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-seller: lab(92 -17.38 104.42 / 0.97);
+  --color-seller-hover: lab(84 -16 96);
+  --color-seller-soft: lab(96 -5.2 31.3);
+  --color-seller-deep: lab(42 -9.5 57);
 }
 
 @media (prefers-color-scheme: dark) {

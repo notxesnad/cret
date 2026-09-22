@@ -84,8 +84,8 @@ export function OpenHouseFeedbackReportView({
     : 'Print the QR sign, leave it out at the open house, and check back after visitors come through.'
   const everyLabel = showing ? 'Every showing, one by one' : 'Every visitor, one by one'
   const personWord = showing ? 'Showing' : 'Visitor'
-  const accentText = showing ? 'text-teal-500' : 'text-indigo-500'
-  const accentChip = showing ? 'bg-teal-50 text-teal-700' : 'bg-indigo-50 text-indigo-700'
+  const accentText = showing ? 'text-seller-deep' : 'text-indigo-500'
+  const accentChip = showing ? 'bg-seller-soft text-seller-deep' : 'bg-indigo-50 text-indigo-700'
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20">
@@ -220,7 +220,7 @@ function QuestionSummary({
   tone?: 'indigo' | 'amber' | 'teal'
 }) {
   const answered = values.filter((value): value is string | number => !isBlank(value))
-  const kickerClass = tone === 'teal' ? 'text-teal-500' : tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
+  const kickerClass = tone === 'teal' ? 'text-seller-deep' : tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
 
   return (
     <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl print-break-inside-avoid">
@@ -245,8 +245,8 @@ function RatingSummary({ values, max, tone = 'indigo' }: { values: Array<string 
   const avg = nums.reduce((sum, n) => sum + n, 0) / nums.length
   const rounded = Math.round(avg)
   const display = Number.isInteger(avg) ? String(avg) : avg.toFixed(1)
-  const avgClass = tone === 'teal' ? 'text-teal-600' : tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
-  const starOn = tone === 'teal' ? 'text-teal-500' : tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
+  const avgClass = tone === 'teal' ? 'text-seller-deep' : tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
+  const starOn = tone === 'teal' ? 'text-seller' : tone === 'amber' ? 'text-amber-500' : 'text-indigo-500'
 
   return (
     <div className="mt-6 text-center">
@@ -272,8 +272,8 @@ function ChoiceSummary({ options, values, tone = 'indigo' }: { options: string[]
     if (!labels.includes(label)) labels.push(label)
   }
   const total = values.length
-  const countClass = tone === 'teal' ? 'text-teal-600' : tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
-  const barClass = tone === 'teal' ? 'bg-teal-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-indigo-500'
+  const countClass = tone === 'teal' ? 'text-seller-deep' : tone === 'amber' ? 'text-amber-600' : 'text-indigo-600'
+  const barClass = tone === 'teal' ? 'bg-seller' : tone === 'amber' ? 'bg-amber-500' : 'bg-indigo-500'
 
   return (
     <div className="mt-6 space-y-3">
@@ -302,7 +302,7 @@ function TextSummary({ values, tone = 'indigo' }: { values: Array<string | numbe
     return <p className="text-slate-400 italic mt-4">Nobody wrote extra comments.</p>
   }
   const quoteClass = tone === 'teal'
-    ? 'bg-teal-50 border-l-4 border-teal-400'
+    ? 'bg-seller-soft border-l-4 border-seller'
     : tone === 'amber'
     ? 'bg-amber-50 border-l-4 border-amber-400'
     : 'bg-indigo-50 border-l-4 border-indigo-400'

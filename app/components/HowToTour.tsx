@@ -41,10 +41,10 @@ const ACCENT = {
     btn: 'bg-emerald-500 hover:bg-emerald-400 text-slate-950',
   },
   teal: {
-    bar: 'bg-teal-500',
-    kicker: 'text-teal-400',
-    dot: 'bg-teal-400',
-    btn: 'bg-teal-500 hover:bg-teal-400 text-slate-950',
+    bar: 'bg-seller',
+    kicker: 'text-seller',
+    dot: 'bg-seller',
+    btn: 'bg-seller hover:bg-seller-hover text-slate-950',
   },
 } as const
 

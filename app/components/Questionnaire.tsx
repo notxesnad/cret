@@ -67,9 +67,10 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
     blue: 'bg-blue-500',
     sky: 'bg-sky-500',
     navy: 'bg-blue-900',
-    teal: 'bg-teal-500',
+    teal: 'bg-seller',
   }
   const bgClass = colorMap[accentColor]
+  const accentInk = accentColor === 'teal' ? 'text-slate-950' : 'text-white'
   const isDark = theme === 'dark'
 
   const shellClasses = isDark ? 'bg-slate-950' : 'bg-slate-50'
@@ -148,7 +149,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
       <div className={`flex flex-col h-full min-h-0 ${shellClasses}`} style={{ paddingBottom: keyboardInset }}>
         <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
           <div className="p-6 md:p-10 text-center animate-fade-in-up">
-            <div className={`w-16 h-16 ${bgClass} text-white rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
+            <div className={`w-16 h-16 ${bgClass} ${accentInk} rounded-full flex items-center justify-center mb-6 shadow-lg mx-auto`}>
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
             <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>{doneTitle || 'Thank you!'}</h2>
@@ -200,7 +201,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             <button
               onClick={handleLeadSubmit}
               disabled={leadStatus === 'saving' || (!leadEmail.trim() && !leadPhone.trim())}
-              className={`w-full py-4 rounded-xl font-black text-white transition-all ${!leadEmail.trim() && !leadPhone.trim() ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass}`}
+              className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all ${!leadEmail.trim() && !leadPhone.trim() ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass}`}
             >
               {leadStatus === 'saving' ? 'Saving...' : captureLead.cta}
             </button>
@@ -217,7 +218,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           <button
             type="button"
             onClick={doneAction.onClick}
-            className={`w-full py-4 rounded-xl font-black text-white transition-all ${bgClass}`}
+            className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all ${bgClass}`}
           >
             {doneAction.label}
           </button>
@@ -268,7 +269,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
                       disabled={isSubmitting}
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all font-bold active:scale-[0.98] ${
                         selected
-                          ? `${bgClass} border-transparent text-white`
+                          ? `${bgClass} border-transparent ${accentInk}`
                           : choiceBtnClasses
                       } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
@@ -351,7 +352,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           type="button"
           onClick={() => choicePick !== null && handleAnswer(choicePick)}
           disabled={choicePick === null || isSubmitting}
-          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${choicePick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${choicePick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>
@@ -362,7 +363,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           type="button"
           onClick={() => ratingPick !== null && handleAnswer(ratingPick)}
           disabled={ratingPick === null || isSubmitting}
-          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${ratingPick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${ratingPick === null ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Next'}
         </button>
@@ -372,7 +373,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
         <button
           onClick={submitText}
           disabled={!canContinueText || isSubmitting}
-          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!canContinueText ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${!canContinueText ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>
@@ -383,7 +384,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
           type="button"
           onClick={submitContact}
           disabled={!canContinueContact || isSubmitting}
-          className={`w-full py-4 rounded-xl font-black text-white transition-all active:scale-95 ${!canContinueContact ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all active:scale-95 ${!canContinueContact ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-200 text-slate-400') : bgClass} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isSubmitting ? 'Submitting...' : 'Continue'}
         </button>
