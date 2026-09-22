@@ -1,27 +1,33 @@
 import { OpenEditorClient } from '@/app/components/OpenEditorClient'
+import { editorSignature } from '@/app/lib/editorLink'
+import { asEditorListing } from '@/app/lib/openListingCache'
+import { adminClient } from '@/app/lib/workspacePublic'
 
 export const dynamic = 'force-dynamic'
 
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value
-}
-
 export default async function OpenSignedEditorPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ profileId: string; listingId: string; sig: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { profileId, listingId, sig } = await params
-  const query = await searchParams
+  if (sig !== editorSignature(profileId, listingId)) {
+    return <OpenEditorClient profileId={profileId} listingId={listingId} sig={sig} />
+  }
+
+  const listing = await adminClient()
+    .from('listings')
+    .select('*')
+    .eq('id', listingId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+
   return (
     <OpenEditorClient
       profileId={profileId}
       listingId={listingId}
       sig={sig}
-      next={first(query.next)}
-      via={first(query.via)}
+      listing={listing.data?.id ? asEditorListing(listing.data) : undefined}
     />
   )
 }
