@@ -16,10 +16,16 @@ create table if not exists public.listings (
   client_id text,
   archived boolean not null default false,
   activities jsonb not null default '[]'::jsonb,
+  editor_slug text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index if not exists listings_profile_id_idx on public.listings (profile_id);
+alter table public.listings
+  add column if not exists editor_slug text;
+create unique index if not exists listings_editor_slug_idx
+  on public.listings (editor_slug)
+  where editor_slug is not null;
 
 create table if not exists public.net_sheets (
   id text primary key,

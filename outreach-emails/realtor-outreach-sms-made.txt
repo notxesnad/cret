@@ -2,11 +2,11 @@ Paste this in Messages. One tap. No query strings.
 
 Imported / 1:1 send. Pair with realtor-outreach-email-made.txt.
 Admin import fills these in per agent. Re-upload the CSV to regenerate.
-Uses Casual Address and the Updating report link.
+Uses Casual Address and a short address link (coolrealestatetools.com/123-oak-k7m2).
 
 ---
 
 123 Oak Seller Report —
 Look like a pro. Let your seller see the work you've done before they ask. We started a seller report for you here:
 
-EDITOR_LINK
+coolrealestatetools.com/123-oak-k7m2

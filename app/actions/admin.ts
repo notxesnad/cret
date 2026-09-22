@@ -6,7 +6,8 @@ import { normalizeAddress, parseImportCsv, starterActivities } from '@/app/lib/a
 import type { AdminAgentRow, AdminDashboard, AdminImportResultRow, AdminRecentVisit } from '@/app/lib/adminTypes'
 import { TOOL_LABELS } from '@/app/lib/adminTypes'
 import { appTrialFields, billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
-import { editorHref, reportHref } from '@/app/lib/editorLink'
+import { reportHref } from '@/app/lib/editorLink'
+import { ensureEditorSlug, makeEditorSlug, outreachEditorHref } from '@/app/lib/editorSlug'
 import { madeEmailHtml, madeEmailPlain, madeEmailSubject, madeSms } from '@/app/lib/madeEmails'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
@@ -537,10 +538,16 @@ export async function importSellerReportsFromCsv(input: {
           }
         }
 
-        const listings = await db
+        let listings = await db
           .from('listings')
-          .select('id, address')
+          .select('id, address, editor_slug')
           .eq('profile_id', profileId)
+        if (listings.error && isMissingRelation(listings.error)) {
+          listings = await db
+            .from('listings')
+            .select('id, address')
+            .eq('profile_id', profileId)
+        }
         if (listings.error && !isMissingRelation(listings.error)) {
           results.push({
             line: row.line,
@@ -558,15 +565,39 @@ export async function importSellerReportsFromCsv(input: {
           (listing) => normalizeAddress(listing.address || '') === normalizeAddress(row.address)
         )
         const listingId = match?.id || newId()
+        const emailAddress = row.casualAddress || row.address
+        let editorSlug = (match as { editor_slug?: string | null } | undefined)?.editor_slug || null
         if (!match) {
+          const starterSlug = makeEditorSlug(emailAddress)
           const inserted = await db.from('listings').insert({
             id: listingId,
             profile_id: profileId,
             address: row.address,
             activities: starterActivities(row.listedOn),
+            editor_slug: starterSlug,
             updated_at: new Date().toISOString(),
           })
-          if (inserted.error) {
+          if (inserted.error && isMissingRelation(inserted.error)) {
+            const retry = await db.from('listings').insert({
+              id: listingId,
+              profile_id: profileId,
+              address: row.address,
+              activities: starterActivities(row.listedOn),
+              updated_at: new Date().toISOString(),
+            })
+            if (retry.error) {
+              results.push({
+                line: row.line,
+                name: row.name,
+                email: row.email,
+                phone: row.phone,
+                address: row.address,
+                status: 'error',
+                message: retry.error.message,
+              })
+              continue
+            }
+          } else if (inserted.error) {
             results.push({
               line: row.line,
               name: row.name,
@@ -577,13 +608,35 @@ export async function importSellerReportsFromCsv(input: {
               message: inserted.error.message,
             })
             continue
+          } else {
+            editorSlug = starterSlug
           }
         }
 
+        editorSlug = await ensureEditorSlug(db, listingId, emailAddress, editorSlug)
         const reportUrl = reportHref(profileId, listingId)
-        const editorUrl = editorHref(profileId, listingId, { via: 'plain' })
-        const htmlEditorUrl = editorHref(profileId, listingId, { via: 'html' })
-        const emailAddress = row.casualAddress || row.address
+        const editorUrl = outreachEditorHref({
+          profileId,
+          listingId,
+          address: emailAddress,
+          slug: editorSlug,
+          via: 'plain',
+        })
+        const htmlEditorUrl = outreachEditorHref({
+          profileId,
+          listingId,
+          address: emailAddress,
+          slug: editorSlug,
+          via: 'html',
+        })
+        const smsEditorUrl = outreachEditorHref({
+          profileId,
+          listingId,
+          address: emailAddress,
+          slug: editorSlug,
+          via: 'plain',
+          bare: true,
+        })
         results.push({
           line: row.line,
           name: row.name,
@@ -608,7 +661,7 @@ export async function importSellerReportsFromCsv(input: {
           plainSms: madeSms({
             name: row.name,
             address: emailAddress,
-            editorUrl,
+            editorUrl: smsEditorUrl,
           }),
           message: match ? 'Already had this listing.' : undefined,
         })
