@@ -7,7 +7,7 @@ import type { AdminAgentRow, AdminDashboard, AdminImportResultRow, AdminRecentVi
 import { TOOL_LABELS } from '@/app/lib/adminTypes'
 import { appTrialFields, billingFromProfile, billingLabel, hasShareAccess, isPaid } from '@/app/lib/billing'
 import { editorHref, reportHref } from '@/app/lib/editorLink'
-import { madeEmailHtml, madeEmailPlain, madeEmailSubject } from '@/app/lib/madeEmails'
+import { madeEmailHtml, madeEmailPlain, madeEmailSubject, madeSms } from '@/app/lib/madeEmails'
 import { OPENHOUSE_FEEDBACK_KIND } from '@/app/lib/openhouseFeedback'
 import { OPENHOUSE_REGISTRATION_KIND } from '@/app/lib/openhouseRegistration'
 import { SHOWING_FEEDBACK_KIND } from '@/app/lib/showingFeedback'
@@ -596,6 +596,11 @@ export async function importSellerReportsFromCsv(input: {
             name: row.name,
             address: emailAddress,
             editorUrl: htmlEditorUrl,
+          }),
+          plainSms: madeSms({
+            name: row.name,
+            address: emailAddress,
+            editorUrl,
           }),
           message: match ? 'Already had this listing.' : undefined,
         })

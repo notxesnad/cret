@@ -15,6 +15,16 @@ export function madeEmailSubject(address: string) {
   return `Seller Tracking Report for ${trimmed}`
 }
 
+export function madeSms(input: {
+  name: string
+  address: string
+  editorUrl: string
+}) {
+  const hi = firstNameFrom(input.name)
+  const address = input.address.trim() || 'your listing'
+  return `Hey${hi ? ` ${hi}` : ''} — your seller at ${address} only sees the listing, not the work. I started a report you can text them so they see it: ${input.editorUrl}`
+}
+
 export function madeEmailPlain(input: {
   name: string
   address: string

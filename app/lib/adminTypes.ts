@@ -58,6 +58,7 @@ export type AdminImportResultRow = {
   subject?: string
   plainEmail?: string
   htmlEmail?: string
+  plainSms?: string
   message?: string
 }
 

@@ -1,0 +1,9 @@
+Paste this in Messages. One tap. No query strings.
+
+Imported / 1:1 send. Pair with realtor-outreach-email-made.txt.
+Admin import fills these in per agent. Re-upload the CSV to regenerate.
+Uses Casual Address and the Updating report link.
+
+---
+
+Hey Dan — your seller at 123 Oak only sees the listing, not the work. I started a report you can text them so they see it: EDITOR_LINK

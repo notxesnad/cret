@@ -156,9 +156,10 @@ export default function AdminPage() {
 
   const reportLinks = importRows.map((row) => row.reportUrl).filter(Boolean) as string[]
   const editorLinks = importRows.map((row) => row.editorUrl).filter(Boolean) as string[]
+  const smsTexts = importRows.map((row) => row.plainSms).filter(Boolean) as string[]
   const importTsv = importRows
     .filter((row) => row.reportUrl)
-    .map((row) => [row.name, row.email, row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || ''].join('\t'))
+    .map((row) => [row.name, row.email, row.address, row.casualAddress || '', row.reportUrl, row.editorUrl || '', row.plainSms || ''].join('\t'))
     .join('\n')
 
   const agents = useMemo(() => {
@@ -224,7 +225,7 @@ export default function AdminPage() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wider text-slate-400">Make reports</h2>
                   <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. Listing Address is what the report shows. Casual Address is what goes in the email subject and body. No welcome email. After import, copy the plain email or open the HTML and paste it into Gmail for that agent.
+                    Upload a CSV. Each row gets an account, Stark Monochrome header, and a listing. Listing Address is what the report shows. Casual Address is what goes in the email, text, subject, and body. No welcome email. After import, copy the text, the plain email, or open the HTML and paste it into Messages or Gmail for that agent.
                   </p>
                 </div>
                 <button
@@ -274,6 +275,15 @@ export default function AdminPage() {
                       {copied === 'editors' ? 'Copied' : 'Copy editor links'}
                     </button>
                   ) : null}
+                  {smsTexts.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyText('sms', smsTexts.join('\n\n'))}
+                      className="text-xs font-bold bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-full border border-slate-700"
+                    >
+                      {copied === 'sms' ? 'Copied' : 'Copy all texts'}
+                    </button>
+                  ) : null}
                   {importTsv ? (
                     <button
                       type="button"
@@ -295,7 +305,7 @@ export default function AdminPage() {
                         <th className="px-3 py-2 font-bold">Status</th>
                         <th className="px-3 py-2 font-bold">Report</th>
                         <th className="px-3 py-2 font-bold">Editor</th>
-                        <th className="px-3 py-2 font-bold">Email</th>
+                        <th className="px-3 py-2 font-bold">Send</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -369,29 +379,42 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="px-3 py-2">
-                            {row.plainEmail ? (
+                            {row.plainEmail || row.plainSms ? (
                               <div className="flex flex-col items-start gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => void copyText(`${row.email}-subject`, row.subject || '')}
-                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
-                                >
-                                  {copied === `${row.email}-subject` ? 'Copied' : 'Copy subject'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void copyText(`${row.email}-plain`, row.plainEmail || '')}
-                                  className="text-xs font-bold text-slate-400 hover:text-slate-200"
-                                >
-                                  {copied === `${row.email}-plain` ? 'Copied' : 'Copy plain'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => previewHtml(row.htmlEmail || '')}
-                                  className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                                >
-                                  Open HTML
-                                </button>
+                                {row.plainSms ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void copyText(`${row.email}-sms`, row.plainSms || '')}
+                                    className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                                  >
+                                    {copied === `${row.email}-sms` ? 'Copied' : 'Copy text'}
+                                  </button>
+                                ) : null}
+                                {row.plainEmail ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => void copyText(`${row.email}-subject`, row.subject || '')}
+                                      className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                    >
+                                      {copied === `${row.email}-subject` ? 'Copied' : 'Copy subject'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void copyText(`${row.email}-plain`, row.plainEmail || '')}
+                                      className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                    >
+                                      {copied === `${row.email}-plain` ? 'Copied' : 'Copy plain'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => previewHtml(row.htmlEmail || '')}
+                                      className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                                    >
+                                      Open HTML
+                                    </button>
+                                  </>
+                                ) : null}
                               </div>
                             ) : (
                               <span className="text-slate-600">—</span>
