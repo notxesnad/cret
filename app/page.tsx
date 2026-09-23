@@ -708,10 +708,25 @@ function HomeContent() {
     if (error) {
       const { show_custom_header: _c, headshot_shape: _s, workspace_version: _v, ...rest } = payload
       const retry = await supabase.from('profiles').upsert(rest)
-      if (retry.error) return retry.error
+      if (retry.error) console.error('Could not save profile after signup:', retry.error)
     }
-    const tableError = await saveWorkspaceTables(supabase, userId, currentWorkspace())
+    const workspace = {
+      ...currentWorkspace(),
+      listings: currentWorkspace().listings.filter((item) => !isSellerDemoListing(item)),
+    }
+    const hasWork = Boolean(
+      workspace.listings.length ||
+      workspace.neighborhoods.length ||
+      workspace.outreachCampaigns.length ||
+      workspace.clients.length ||
+      workspace.homes.length
+    )
+    const tableError = await saveWorkspaceTables(supabase, userId, workspace)
     tablesReadyRef.current = !tableError
+    if (tableError) {
+      console.error('Could not save workspace after signup:', tableError)
+      if (!hasWork) return null
+    }
     return tableError
   }
 
@@ -722,7 +737,16 @@ function HomeContent() {
       profile: { ...profile, email: trimmed }
     }))
 
-    const result = await registerWithoutVerify(trimmed, typeof window !== 'undefined' ? window.location.origin : undefined)
+    const result = await registerWithoutVerify(
+      trimmed,
+      typeof window !== 'undefined' ? window.location.origin : undefined,
+      {
+        full_name: profile.full_name,
+        phone: profile.phone,
+        brokerage: profile.brokerage,
+        pdf_look: profile.pdf_look,
+      }
+    )
     if (result.error) return { status: 'error' as const, message: result.error }
 
     if (result.exists) {
@@ -764,7 +788,13 @@ function HomeContent() {
     const saveError = await saveAccountWork(newUser.id, trimmed)
     if (saveError) return { status: 'error' as const, message: 'Account created, but we could not save your work. Try Save again.' }
 
+    const seeded = seedSellerDemo({
+      ...currentWorkspace(),
+      listings: currentWorkspace().listings.filter((item) => !isSellerDemoListing(item)),
+    }, newUser.id)
+    applyWorkspace(seeded.workspace)
     localStorage.removeItem('crt_pending_data')
+    try { localStorage.removeItem('crt_seller_demo_id') } catch {}
     return { status: 'new' as const }
   }
 

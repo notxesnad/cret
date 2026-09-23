@@ -59,7 +59,11 @@ async function sendWelcomeEmail(email: string, redirectTo?: string) {
   if (otpError) console.error('Supabase welcome email fallback failed', otpError)
 }
 
-export async function registerWithoutVerify(email: string, redirectTo?: string) {
+export async function registerWithoutVerify(
+  email: string,
+  redirectTo?: string,
+  details?: { full_name?: string; phone?: string; brokerage?: string; pdf_look?: string }
+) {
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return { error: 'Enter your email.' }
 
@@ -86,9 +90,16 @@ export async function registerWithoutVerify(email: string, redirectTo?: string) 
 
   if (!data.user?.id) return { error: 'Could not create your account.' }
   const trial = appTrialFields()
+  const extras = {
+    full_name: (details?.full_name || '').trim(),
+    phone: (details?.phone || '').trim(),
+    brokerage: (details?.brokerage || '').trim(),
+    pdf_look: details?.pdf_look || 'look14',
+  }
   const { error: profileError } = await admin().from('profiles').upsert({
     id: data.user.id,
     email: trimmed,
+    ...extras,
     ...trial,
     workspace_version: 2,
     updated_at: new Date().toISOString(),

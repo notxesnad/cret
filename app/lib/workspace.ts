@@ -14,6 +14,7 @@ import {
   unpackTourData,
   type TourHome,
 } from '@/app/lib/tourHomes'
+import { isSellerDemoListing } from '@/app/lib/sellerDemo'
 
 export const WORKSPACE_VERSION = 2
 
@@ -202,18 +203,20 @@ export function decomposeWorkspace(profileId: string, workspace: WorkspaceData) 
   const netSheets = (workspace.listings || []).filter(isNetSheet)
   const { people, prospects } = unpackTourData(workspace.clients)
 
-  const listingRows = propertyListings.map((listing: any) => ({
-    id: listing.id,
-    profile_id: profileId,
-    address: listing.address || '',
-    city: listing.city || null,
-    state: listing.state || null,
-    county: listing.county || null,
-    client_id: listing.clientId || null,
-    archived: listing.archived === true,
-    activities: Array.isArray(listing.activities) ? listing.activities : [],
-    updated_at: new Date().toISOString(),
-  }))
+  const listingRows = propertyListings
+    .filter((listing: { id?: string }) => !isSellerDemoListing(listing))
+    .map((listing: any) => ({
+      id: listing.id,
+      profile_id: profileId,
+      address: listing.address || '',
+      city: listing.city || null,
+      state: listing.state || null,
+      county: listing.county || null,
+      client_id: listing.clientId || null,
+      archived: listing.archived === true,
+      activities: Array.isArray(listing.activities) ? listing.activities : [],
+      updated_at: new Date().toISOString(),
+    }))
 
   const netSheetRows = netSheets.map((sheet) => ({
     id: sheet.id,

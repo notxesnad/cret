@@ -19,6 +19,11 @@ function isMissingColumn(error: { code?: string; message?: string } | null | und
   )
 }
 
+function isDuplicateKey(error: { code?: string; message?: string } | null | undefined) {
+  if (!error) return false
+  return error.code === '23505' || /duplicate key/i.test(error.message || '')
+}
+
 function withoutNewCrmColumns(row: Record<string, unknown>) {
   const { archived, client_id, ...rest } = row
   return rest
@@ -48,6 +53,13 @@ async function syncRows(
     if (error && isMissingColumn(error)) {
       const stripped = rows.map((row) => withoutNewCrmColumns(row as Record<string, unknown>))
       const retry = await supabase.from(table).upsert(stripped)
+      if (retry.error) return retry.error
+    } else if (error && isDuplicateKey(error)) {
+      const existingIds = new Set((existing || []).map((row: { id: string }) => row.id))
+      const reminted = rows.map((row) => (
+        existingIds.has(row.id) ? row : { ...row, id: crypto.randomUUID() }
+      ))
+      const retry = await supabase.from(table).upsert(reminted)
       if (retry.error) return retry.error
     } else if (error) {
       return error
