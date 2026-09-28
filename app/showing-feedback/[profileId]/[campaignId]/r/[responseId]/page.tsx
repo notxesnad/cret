@@ -3,7 +3,7 @@ import { AgentHeaderFrame, PREVIEW_LINK_HEADER_CTA } from '@/app/components/Agen
 import { billingFromProfile, hasShareAccess } from '@/app/lib/billing'
 import { ShareUnavailable } from '@/app/components/ShareUnavailable'
 import { adminClient, findPublicCampaign } from '@/app/lib/workspacePublic'
-import { withShowingAgentQuestion } from '@/app/lib/showingFeedback'
+import { SHOWING_LOOP_COPY, showingLoopHref, withShowingAgentQuestion } from '@/app/lib/showingFeedback'
 import type { Question } from '@/app/components/Questionnaire'
 
 export const dynamic = 'force-dynamic'
@@ -96,6 +96,17 @@ export default async function ShowingFeedbackOnePage({
               <p className="text-base text-slate-800 leading-relaxed">{formatValue(question, answers)}</p>
             </div>
           ))}
+        </div>
+        <div className="bg-white border border-slate-200 shadow-sm p-6 md:p-8 rounded-2xl text-center">
+          <h2 className="text-2xl font-black text-slate-900 leading-tight">Use this on your listings</h2>
+          <p className="text-base text-slate-500 mt-3 leading-relaxed">{SHOWING_LOOP_COPY.doneBody}</p>
+          <a
+            href={showingLoopHref('notes')}
+            className="mt-6 inline-block w-full bg-seller hover:bg-seller-hover text-slate-950 font-black py-4 rounded-xl transition"
+          >
+            {SHOWING_LOOP_COPY.cta}
+          </a>
+          <p className="text-sm font-bold text-slate-700 mt-4">{SHOWING_LOOP_COPY.hint}</p>
         </div>
       </div>
     </div>

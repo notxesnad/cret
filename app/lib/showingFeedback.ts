@@ -12,6 +12,19 @@ export const SHOWING_AGENT_QUESTION: Question = {
   text: 'Your name and email',
 }
 
+export const SHOWING_LOOP_PATH = '/start-showing'
+
+export const SHOWING_LOOP_COPY = {
+  doneTitle: 'Thanks. They’ve got your notes.',
+  doneBody: 'If you’ve got a listing getting showings, send this after. Buyers tell you things they won’t tell the listing agent.',
+  cta: 'Make one for your listings',
+  hint: 'Takes a minute. Free to try.',
+}
+
+export function showingLoopHref(content: 'quiz' | 'email' | 'notes') {
+  return `${SHOWING_LOOP_PATH}?utm_content=${content}`
+}
+
 export function isShowingFeedback(kind?: string | null) {
   return kind === SHOWING_FEEDBACK_KIND
 }

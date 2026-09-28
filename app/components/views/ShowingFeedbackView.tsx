@@ -13,6 +13,8 @@ import { TemplatePickCard } from '@/app/components/TemplatePickCard'
 import {
   SHOWING_FEEDBACK_KIND,
   SHOWING_FEEDBACK_TEMPLATES,
+  SHOWING_LOOP_COPY,
+  showingLoopHref,
   withShowingAgentQuestion,
 } from '@/app/lib/showingFeedback'
 import { SHOWING_FEEDBACK_TOUR } from '@/app/lib/toolTours'
@@ -305,8 +307,10 @@ export function ShowingFeedbackView({
               onSubmit={async () => {}}
               accentColor="teal"
               theme="light"
-              doneTitle="Thanks for the notes."
-              doneBody="The listing agent will use this to keep the seller informed. You can close this page."
+              doneTitle={SHOWING_LOOP_COPY.doneTitle}
+              doneBody={SHOWING_LOOP_COPY.doneBody}
+              doneHint={SHOWING_LOOP_COPY.hint}
+              doneAction={{ label: SHOWING_LOOP_COPY.cta, href: showingLoopHref('quiz') }}
             />
           </div>
         </div>

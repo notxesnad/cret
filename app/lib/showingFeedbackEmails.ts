@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { publicOrigin } from '@/app/lib/editorLink'
-import { showingAgentFromAnswers } from '@/app/lib/showingFeedback'
+import { SHOWING_LOOP_COPY, showingAgentFromAnswers, showingLoopHref } from '@/app/lib/showingFeedback'
 import type { Question } from '@/app/components/Questionnaire'
 
 function escapeHtml(value: string) {
@@ -109,6 +109,7 @@ Parker`
   }
 
   if (showing.email) {
+    const tryUrl = `${origin}${showingLoopHref('email')}`
     const subject = `Your notes on ${address}`
     const hello = showing.name ? `Hey ${firstNameFrom(showing.name)} —` : 'Hey —'
     const text = `${hello} here’s a copy of what you sent the listing agent for ${address}.
@@ -116,16 +117,27 @@ Parker`
 See your answers:
 ${answersUrl}
 
-If you tour buyers all week, CoolRealEstateTools.com has a driving itinerary that lines up the stops so you’re not criss-crossing town. Free to try.
+If you’ve got a listing getting showings, send this same quiz after. Buyers tell you things they won’t tell the listing agent.
+
+${SHOWING_LOOP_COPY.cta}:
+${tryUrl}
+
+${SHOWING_LOOP_COPY.hint}
 
 Parker`
     const html = wrapEmail(subject, `
       <p style="margin:0 0 8px;font-size:16px;line-height:1.5;color:#e2e8f0;">${escapeHtml(hello)}</p>
       <p style="margin:0 0 14px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.03em;color:#f8fafc;">Your notes on ${escapeHtml(address)}</p>
-      <p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#94a3b8;">Here’s a copy of what you sent the listing agent.</p>
-      ${ctaButton(answersUrl, 'See your answers')}
-      <p style="margin:22px 0 0;font-size:16px;line-height:1.6;color:#94a3b8;">
-        If you tour buyers all week, <a href="https://coolrealestatetools.com" style="color:#34d399;font-weight:700;">CoolRealEstateTools.com</a> has a driving itinerary that lines up the stops so you’re not criss-crossing town. Free to try.
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#94a3b8;">Here’s a copy of what you sent the listing agent.</p>
+      <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#94a3b8;">
+        <a href="${escapeHtml(answersUrl)}" style="color:#34d399;font-weight:700;">See your answers</a>
+      </p>
+      <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#94a3b8;">
+        If you’ve got a listing getting showings, send this same quiz after. Buyers tell you things they won’t tell the listing agent.
+      </p>
+      ${ctaButton(tryUrl, SHOWING_LOOP_COPY.cta)}
+      <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#94a3b8;">
+        ${escapeHtml(SHOWING_LOOP_COPY.hint)}
       </p>
     `)
     await sendMail(showing.email, subject, html, text)

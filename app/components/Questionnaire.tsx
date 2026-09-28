@@ -33,10 +33,11 @@ interface QuestionnaireProps {
   }
   doneTitle?: string
   doneBody?: string
-  doneAction?: { label: string; onClick: () => void }
+  doneHint?: string
+  doneAction?: { label: string; href?: string; onClick?: () => void }
 }
 
-export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'dark', captureLead, doneTitle, doneBody, doneAction }: QuestionnaireProps) {
+export function Questionnaire({ title, description, questions, onSubmit, accentColor = 'indigo', theme = 'dark', captureLead, doneTitle, doneBody, doneHint, doneAction }: QuestionnaireProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string | number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -168,6 +169,7 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
             </div>
             <h2 className={`text-2xl font-black mb-2 ${titleClasses}`}>{doneTitle || 'Thank you!'}</h2>
             <p className={descClasses}>{doneBody || 'Your answers were submitted. I really appreciate your time.'}</p>
+            {doneHint ? <p className={`mt-4 text-sm font-bold ${titleClasses}`}>{doneHint}</p> : null}
 
             {showLeadForm && (
               <div className="mt-8 text-left space-y-3">
@@ -229,13 +231,22 @@ export function Questionnaire({ title, description, questions, onSubmit, accentC
         )}
 
         {!showLeadForm && doneAction && footer(
-          <button
-            type="button"
-            onClick={doneAction.onClick}
-            className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all ${bgClass}`}
-          >
-            {doneAction.label}
-          </button>
+          doneAction.href ? (
+            <a
+              href={doneAction.href}
+              className={`block w-full py-4 rounded-xl font-black text-center ${accentInk} transition-all ${bgClass}`}
+            >
+              {doneAction.label}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={doneAction.onClick}
+              className={`w-full py-4 rounded-xl font-black ${accentInk} transition-all ${bgClass}`}
+            >
+              {doneAction.label}
+            </button>
+          )
         )}
       </div>
     )
