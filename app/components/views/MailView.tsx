@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState, type ChangeEvent } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { PostcardMail } from '@/app/components/views/PostcardMail'
 import { mailStatus, sendOneMail } from '@/app/actions/mail'
 import { ConfirmDeleteDialog } from '@/app/components/ConfirmDeleteDialog'
 import { OverlayNavButton, ToolOverlay } from '@/app/components/OverlayNavButton'
@@ -41,10 +43,11 @@ export function MailView({
   signedIn: boolean
   profileName: string
 }) {
+  const router = useRouter()
+  const postcardOrder = useSearchParams().get('postcard_order')
   const [kind, setKind] = useState<MailKind | null>(null)
   const [from, setFrom] = useState<MailAddress>(() => emptyAddress())
   const [fromReady, setFromReady] = useState(false)
-  const [headline, setHeadline] = useState('')
   const [message, setMessage] = useState('')
   const [recipients, setRecipients] = useState<MailAddress[]>([emptyAddress()])
   const [pasteOpen, setPasteOpen] = useState(false)
@@ -74,7 +77,21 @@ export function MailView({
     localStorage.setItem(FROM_KEY, JSON.stringify(from))
   }, [from, fromReady])
 
-  const noun = kind === 'letter' ? 'letter' : 'postcard'
+  if (kind === 'postcard' || postcardOrder) {
+    return (
+      <PostcardMail
+        onBack={() => {
+          setKind(null)
+          if (postcardOrder) router.replace('/?view=mail', { scroll: false })
+        }}
+        showCustomModal={showCustomModal}
+        signedIn={signedIn}
+        profileName={profileName}
+      />
+    )
+  }
+
+  const noun = 'letter'
   const readyRecipients = recipients.filter((item) => !addressError(item))
   const count = readyRecipients.length
 
@@ -110,7 +127,7 @@ export function MailView({
       return
     }
     if (!message.trim()) {
-      showCustomModal(kind === 'postcard' ? 'Write the note on the back.' : 'Write the letter.')
+      showCustomModal('Write the letter.')
       return
     }
     const bad = recipients.find((item) => (item.name.trim() || item.line1.trim()) && addressError(item))
@@ -138,7 +155,7 @@ export function MailView({
       return
     }
     if (!message.trim()) {
-      showCustomModal(kind === 'postcard' ? 'Write the note on the back.' : 'Write the letter.')
+      showCustomModal('Write the letter.')
       return
     }
     const bad = recipients.find((item) => (item.name.trim() || item.line1.trim()) && addressError(item))
@@ -172,7 +189,7 @@ export function MailView({
         kind,
         from,
         to: queue[i],
-        headline,
+        headline: '',
         message,
       })
       setResults((prev) => (prev || []).map((item, index) => {
@@ -195,7 +212,7 @@ export function MailView({
           onClick={() => setKind('postcard')}
           className="bg-amber-300 hover:bg-amber-200 text-slate-950 p-6 rounded-3xl shadow-xl min-h-[120px] flex flex-col justify-end"
         >
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">4×6</span>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">6×9 · $1.00</span>
           <h2 className="text-3xl font-black mt-1">Postcard</h2>
         </ToolTile>
         <ToolTile
@@ -248,29 +265,18 @@ export function MailView({
     <ToolOverlay id="view-mail" nav={<OverlayNavButton kind="back" label="Mail" onClick={() => setKind(null)} />}>
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{noun}</p>
-        <h1 className="text-3xl font-black mt-1">{kind === 'postcard' ? 'Write the card' : 'Write the letter'}</h1>
+        <h1 className="text-3xl font-black mt-1">Write the letter</h1>
       </div>
 
       <AddressFields label="Your return address" address={from} onChange={setFrom} />
 
-      {kind === 'postcard' ? (
-        <label className="block">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Front headline</span>
-          <input
-            value={headline}
-            onChange={(event) => setHeadline(event.target.value)}
-            placeholder="Just listed on Oak"
-            className={fieldClass}
-          />
-        </label>
-      ) : null}
       <label className="block">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{kind === 'postcard' ? 'Note on the back' : 'Letter'}</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Letter</span>
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
-          rows={kind === 'postcard' ? 5 : 8}
-          placeholder={kind === 'postcard' ? 'A short note they can read at the mailbox.' : 'Dear …'}
+          rows={8}
+          placeholder="Dear …"
           className={fieldClass}
         />
       </label>

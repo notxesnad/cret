@@ -1,6 +1,6 @@
 'use server'
 
-import { letterHtml, normalizeAddress, postcardHtml, addressError, type MailAddress, type MailKind } from '@/app/lib/lobMail'
+import { letterHtml, normalizeAddress, addressError, type MailAddress, type MailKind } from '@/app/lib/lobMail'
 import { createClient } from '@supabase/supabase-js'
 
 function lobKey() {
@@ -51,47 +51,33 @@ export async function sendOneMail(input: {
   const user = await userFromToken(input.accessToken)
   if (!user) return { error: 'Sign in first.' }
 
-  const kind = input.kind === 'letter' ? 'letter' : 'postcard'
+  if (input.kind === 'postcard') return { error: 'Pick a 6×9 postcard, look at the proof, and pay before it mails.' }
   const fromError = addressError(input.from)
   if (fromError) return { error: `Return address: ${fromError}` }
   const toError = addressError(input.to)
   if (toError) return { error: toError }
 
   const message = input.message.trim()
-  const headline = input.headline.trim()
-  if (!message) return { error: kind === 'postcard' ? 'Write the note on the back.' : 'Write the letter.' }
-  if (kind === 'postcard' && message.length > 500) return { error: 'Keep the postcard note under 500 characters.' }
-  if (kind === 'letter' && message.length > 4000) return { error: 'Keep the letter under 4000 characters.' }
+  if (!message) return { error: 'Write the letter.' }
+  if (message.length > 4000) return { error: 'Keep the letter under 4000 characters.' }
 
   const from = lobAddress(input.from)
   const to = lobAddress(input.to)
-  const description = kind === 'postcard' ? 'Agent postcard' : 'Agent letter'
-  const body = kind === 'postcard'
-    ? {
-        description,
-        to,
-        from,
-        size: '4x6',
-        mail_type: 'usps_first_class',
-        use_type: 'marketing',
-        ...postcardHtml({ headline, message, fromName: from.name }),
-        metadata: { profile_id: user.id },
-      }
-    : {
-        description,
-        to,
-        from,
-        file: letterHtml({ message, fromName: from.name }),
-        color: true,
-        double_sided: false,
-        address_placement: 'top_first_page',
-        mail_type: 'usps_first_class',
-        use_type: 'marketing',
-        metadata: { profile_id: user.id },
-      }
+  const body = {
+    description: 'Agent letter',
+    to,
+    from,
+    file: letterHtml({ message, fromName: from.name }),
+    color: true,
+    double_sided: false,
+    address_placement: 'top_first_page',
+    mail_type: 'usps_first_class',
+    use_type: 'marketing',
+    metadata: { profile_id: user.id },
+  }
 
   const auth = Buffer.from(`${key}:`).toString('base64')
-  const res = await fetch(`https://api.lob.com/v1/${kind === 'postcard' ? 'postcards' : 'letters'}`, {
+  const res = await fetch('https://api.lob.com/v1/letters', {
     method: 'POST',
     headers: {
       Authorization: `Basic ${auth}`,

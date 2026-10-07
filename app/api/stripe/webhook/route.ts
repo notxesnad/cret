@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
+import { sendPaidPostcardOrder } from '@/app/actions/postcards'
 import {
   getStripe,
   promoCodeFrom,
@@ -84,6 +85,17 @@ export async function POST(req: Request) {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
+      if (session.metadata?.kind === 'postcard') {
+        const mailed = await sendPaidPostcardOrder(session)
+        if (mailed.error) {
+          console.error('Postcard mail failed', mailed.error)
+          if (/not found|does not match|Not a postcard/.test(mailed.error)) {
+            return NextResponse.json({ received: true })
+          }
+          return NextResponse.json({ error: mailed.error }, { status: 500 })
+        }
+        return NextResponse.json({ received: true })
+      }
       if (session.mode !== 'subscription' || !session.subscription) {
         return NextResponse.json({ received: true })
       }

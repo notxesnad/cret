@@ -105,7 +105,7 @@ export function HomeView({
 
         <ToolTile onClick={() => switchView('mail')} className="group relative bg-amber-300 hover:bg-amber-200 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">✉️</div>
-          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Postcards and letters</span>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">6×9 postcards, $1</span>
           <h2 className="text-3xl md:text-4xl font-black mt-1">Send Mail</h2>
         </ToolTile>
 
