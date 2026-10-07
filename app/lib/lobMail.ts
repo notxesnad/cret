@@ -112,8 +112,18 @@ export function letterHtml(input: { message: string; fromName: string }) {
   const message = escapeHtml(input.message.trim())
   const fromName = escapeHtml(input.fromName.trim())
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-    body { margin: 0; color: #111; font-family: Georgia, serif; }
-    .sheet { width: 8.5in; padding: 2.9in 0.85in 0.8in; font-size: 12pt; line-height: 1.5; white-space: pre-wrap; }
-    .sign { margin-top: 1.2em; }
-  </style></head><body><div class="sheet">${message}<div class="sign">${fromName}</div></div></body></html>`
+    * { box-sizing: border-box; }
+    body { width: 8.5in; margin: 0; padding: 0; background: #fff; color: #111; font-family: Helvetica, Arial, sans-serif; }
+    .page { position: relative; width: 8.5in; min-height: 11in; }
+    .letter {
+      position: absolute;
+      left: 0.7in;
+      top: 3.15in;
+      width: 7.1in;
+      font-size: 12pt;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .sign { margin-top: 1.1em; }
+  </style></head><body><div class="page"><div class="letter">${message}<div class="sign">${fromName}</div></div></div></body></html>`
 }
