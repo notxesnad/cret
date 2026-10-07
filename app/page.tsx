@@ -41,6 +41,7 @@ import {
   HomesHubView,
   ListingsManageView,
   ShowingHomesView,
+  MailView,
 } from './components/views'
 import { TrackLanding } from './components/TrackLanding'
 
@@ -58,7 +59,7 @@ function mergeById(dbArr: any[], pendingArr: any[] | undefined) {
 const VALID_VIEWS = [
   'home', 'signin', 'money', 'openhouse', 'ohfeedback', 'ohregistration', 'seller', 'netsheet',
   'sellertracker', 'showingfeedback', 'driving', 'buyer', 'sellercall', 'profile', 'neighborhoods', 'outreach',
-  'contact', 'account', 'myclients', 'myhomes', 'mylistings', 'myshowing',
+  'contact', 'account', 'myclients', 'myhomes', 'mylistings', 'myshowing', 'mail',
 ] as const
 
 const VIEW_PARENT: Record<string, string> = {
@@ -74,7 +75,7 @@ const VIEW_PARENT: Record<string, string> = {
 const OVERLAY_VIEWS = new Set([
   'profile', 'sellertracker', 'netsheet', 'money', 'driving',
   'neighborhoods', 'outreach', 'ohfeedback', 'ohregistration', 'showingfeedback',
-  'myclients', 'myhomes', 'mylistings', 'myshowing',
+  'myclients', 'myhomes', 'mylistings', 'myshowing', 'mail',
 ])
 
 function parentOf(view: string) {
@@ -1436,7 +1437,7 @@ function HomeContent() {
           .font-sellercall { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -1px; }
           .app-view { display: none; }
           .app-view.active { display: block; }
-          #view-profile.active, #view-sellertracker.active, #view-showingfeedback.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active, #view-myclients.active, #view-myhomes.active, #view-mylistings.active, #view-myshowing.active { display: flex !important; flex-direction: column !important; }
+          #view-profile.active, #view-sellertracker.active, #view-showingfeedback.active, #view-neighborhoods.active, #view-outreach.active, #view-driving.active, #view-ohfeedback.active, #view-ohregistration.active, #view-netsheet.active, #view-myclients.active, #view-myhomes.active, #view-mylistings.active, #view-myshowing.active, #view-mail.active { display: flex !important; flex-direction: column !important; }
           .tool-tile { -webkit-tap-highlight-color: transparent; }
           
           .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -1621,6 +1622,14 @@ function HomeContent() {
                   {renderAgentHeader(profile)}
                 </AgentHeaderFrame>
               }
+            />
+          )}
+          {currentView === 'mail' && (
+            <MailView
+              switchView={switchView}
+              showCustomModal={showCustomModal}
+              signedIn={!!user}
+              profileName={profile.full_name || ''}
             />
           )}
           {currentView === 'driving' && (

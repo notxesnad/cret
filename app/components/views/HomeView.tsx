@@ -103,6 +103,12 @@ export function HomeView({
           <h2 className="font-openhouse text-2xl md:text-3xl tracking-wide mt-1">Open House Tools</h2>
         </ToolTile>
 
+        <ToolTile onClick={() => switchView('mail')} className="group relative bg-amber-300 hover:bg-amber-200 text-slate-950 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden">
+          <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:-rotate-6">✉️</div>
+          <span className="text-xs font-bold tracking-wider uppercase opacity-70">Postcards and letters</span>
+          <h2 className="text-3xl md:text-4xl font-black mt-1">Send Mail</h2>
+        </ToolTile>
+
         <ToolTile onClick={() => switchView('outreach')} className="group relative bg-sky-100 hover:bg-white text-slate-900 p-6 rounded-3xl shadow-xl flex flex-col justify-between min-h-[120px] overflow-hidden border-2 border-transparent hover:border-sky-300">
           <div className="absolute right-6 top-6 text-3xl opacity-20 group-hover:opacity-40 transition transform group-hover:scale-110">🤝</div>
           <span className="text-xs font-bold tracking-wider uppercase opacity-70">Collect Advice & Feedback</span>
