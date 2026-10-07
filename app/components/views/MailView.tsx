@@ -94,6 +94,37 @@ export function MailView({
     setPasteOpen(false)
   }
 
+  const prepareSend = async () => {
+    if (!signedIn) {
+      showCustomModal('Sign in to send mail.', true)
+      return
+    }
+    const status = await mailStatus()
+    setMode(status)
+    if (!status.configured) {
+      showCustomModal('The server still can’t see a Lob key named LOB_API_KEY.')
+      return
+    }
+    if (addressError(from)) {
+      showCustomModal(`Return address: ${addressError(from)}`)
+      return
+    }
+    if (!message.trim()) {
+      showCustomModal(kind === 'postcard' ? 'Write the note on the back.' : 'Write the letter.')
+      return
+    }
+    const bad = recipients.find((item) => (item.name.trim() || item.line1.trim()) && addressError(item))
+    if (bad) {
+      showCustomModal(addressError(bad))
+      return
+    }
+    if (!count) {
+      showCustomModal('Add at least one address.')
+      return
+    }
+    setConfirming(true)
+  }
+
   const startSend = async () => {
     if (!kind || sending) return
     setConfirming(false)
@@ -297,37 +328,18 @@ export function MailView({
 
       <button
         type="button"
-        disabled={sending || mode?.configured === false}
-        onClick={() => {
-          if (!signedIn) {
-            showCustomModal('Sign in to send mail.', true)
-            return
-          }
-          if (addressError(from)) {
-            showCustomModal(`Return address: ${addressError(from)}`)
-            return
-          }
-          if (!message.trim()) {
-            showCustomModal(kind === 'postcard' ? 'Write the note on the back.' : 'Write the letter.')
-            return
-          }
-          const bad = recipients.find((item) => (item.name.trim() || item.line1.trim()) && addressError(item))
-          if (bad) {
-            showCustomModal(addressError(bad))
-            return
-          }
-          if (!count) {
-            showCustomModal('Add at least one address.')
-            return
-          }
-          setConfirming(true)
-        }}
+        disabled={sending}
+        onClick={() => { void prepareSend() }}
         className="w-full bg-amber-300 hover:bg-amber-200 disabled:opacity-50 text-slate-950 font-black py-4 rounded-xl"
       >
         {count > 1 ? `Send ${count} ${noun}s` : `Send this ${noun}`}
       </button>
       <p className="text-sm text-slate-400 text-center">
-        {mode?.test ? 'Test mode. Nothing gets mailed.' : 'Lob prints these and mails them.'}
+        {mode && !mode.configured
+          ? 'The Lob key is not on the server yet.'
+          : mode?.test
+            ? 'Test mode. Nothing gets mailed.'
+            : 'Lob prints these and mails them.'}
       </p>
 
       {confirming ? (

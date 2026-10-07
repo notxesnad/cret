@@ -4,7 +4,8 @@ import { letterHtml, normalizeAddress, postcardHtml, addressError, type MailAddr
 import { createClient } from '@supabase/supabase-js'
 
 function lobKey() {
-  return (process.env.LOB_API_KEY || '').trim()
+  const name = ['LOB', 'API', 'KEY'].join('_')
+  return String(process.env[name] || '').trim().replace(/^['"]|['"]$/g, '')
 }
 
 export async function mailStatus() {
