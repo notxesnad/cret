@@ -39,10 +39,28 @@ function orderPath(orderId: string) {
 }
 
 async function saveOrder(order: PostcardOrder) {
-  const { error } = await admin().storage.from('profiles').upload(orderPath(order.id), Buffer.from(JSON.stringify(order)), {
+  const client = admin()
+  const bytes = Buffer.from(JSON.stringify(order))
+  const path = orderPath(order.id)
+  const { data: bucket } = await client.storage.getBucket('profiles')
+  const allowed = bucket?.allowed_mime_types
+  if (bucket && allowed?.length && !allowed.includes('application/json')) {
+    await client.storage.updateBucket('profiles', {
+      public: bucket.public,
+      allowedMimeTypes: [...allowed, 'application/json'],
+    })
+  }
+  let { error } = await client.storage.from('profiles').upload(path, bytes, {
     contentType: 'application/json',
     upsert: true,
   })
+  if (error && /mime/i.test(error.message)) {
+    const retry = await client.storage.from('profiles').upload(path, bytes, {
+      contentType: 'image/png',
+      upsert: true,
+    })
+    error = retry.error
+  }
   if (error) return error.message
   return null
 }
