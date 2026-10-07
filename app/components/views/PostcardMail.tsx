@@ -19,12 +19,16 @@ import {
   POSTCARD_MAX,
   POSTCARD_PRICE_CENTS,
   POSTCARD_TEMPLATES,
+  emptyListingPostcard,
+  listingPostcardReady,
+  type ListingPostcard,
 } from '@/app/lib/postcardDesigns'
+import { ListingPostcardWizard } from '@/app/components/views/ListingPostcardWizard'
 import { supabase } from '@/utils/supabase'
 
 const FROM_KEY = 'crt_mail_from'
 
-type Phase = 'pick' | 'pictures' | 'who' | 'proof' | 'mailing' | 'done'
+type Phase = 'build' | 'pick' | 'pictures' | 'who' | 'proof' | 'mailing' | 'done'
 type Proof = { name: string; url: string; thumb: string }
 
 function money(cents: number) {
@@ -48,12 +52,18 @@ export function PostcardMail({
   signedIn,
   profileName,
   headshotUrl,
+  brokerage,
+  phone,
+  logoUrl,
 }: {
   onBack: () => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   signedIn: boolean
   profileName: string
   headshotUrl: string
+  brokerage: string
+  phone: string
+  logoUrl: string
 }) {
   const params = useSearchParams()
   const orderFromUrl = params.get('postcard_order') || ''
@@ -62,7 +72,9 @@ export function PostcardMail({
   const uploadSide = useRef<'front' | 'back'>('front')
   const startedReturn = useRef(false)
 
-  const [phase, setPhase] = useState<Phase>(orderFromUrl ? 'mailing' : 'pick')
+  const [phase, setPhase] = useState<Phase>(orderFromUrl ? 'mailing' : 'build')
+  const [design, setDesign] = useState<ListingPostcard>(() => emptyListingPostcard())
+  const [buildStep, setBuildStep] = useState<'photo' | 'front' | 'back'>('photo')
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [frontUrl, setFrontUrl] = useState<string | null>(null)
   const [backUrl, setBackUrl] = useState<string | null>(null)
@@ -97,6 +109,17 @@ export function PostcardMail({
   }, [profileName])
 
   useEffect(() => {
+    setDesign((prev) => ({
+      ...prev,
+      agentName: prev.agentName || profileName,
+      brokerage: prev.brokerage || brokerage,
+      phone: prev.phone || phone,
+      headshotUrl: headshotUrl || prev.headshotUrl,
+      logoUrl: logoUrl || prev.logoUrl,
+    }))
+  }, [profileName, brokerage, phone, headshotUrl, logoUrl])
+
+  useEffect(() => {
     if (!fromReady) return
     localStorage.setItem(FROM_KEY, JSON.stringify(from))
   }, [from, fromReady])
@@ -108,7 +131,7 @@ export function PostcardMail({
       const token = await accessToken()
       if (!token) {
         showCustomModal('Sign in to see this postcard.', true)
-        setPhase('pick')
+        setPhase('build')
         return
       }
       if (sessionFromUrl) {
@@ -128,7 +151,7 @@ export function PostcardMail({
             setOrderId(saved.orderId)
             setPhase(saved.status === 'sent' ? 'done' : 'proof')
           } else {
-            setPhase('pick')
+            setPhase('build')
           }
           return
         }
@@ -142,7 +165,7 @@ export function PostcardMail({
       const saved = orderFromLoad(loaded)
       if (!saved) {
         showCustomModal('error' in loaded && loaded.error ? loaded.error : 'That postcard order was not found.')
-        setPhase('pick')
+        setPhase('build')
         return
       }
       setProofs(saved.proofs)
@@ -223,9 +246,17 @@ export function PostcardMail({
       showCustomModal('Sign in to mail a postcard.', true)
       return
     }
-    if (!templateId && !frontUrl) {
-      showCustomModal('Pick a postcard or add your pictures first.')
-      setPhase('pick')
+    const useDesign = Boolean(design.photoUrl) && !frontUrl
+    if (useDesign) {
+      const problem = listingPostcardReady(design)
+      if (problem) {
+        showCustomModal(problem)
+        setPhase('build')
+        return
+      }
+    } else if (!templateId && !frontUrl) {
+      showCustomModal('Add the house photo first.')
+      setPhase('build')
       return
     }
     if (frontUrl && !backUrl) {
@@ -265,11 +296,12 @@ export function PostcardMail({
       accessToken: token,
       from,
       recipients: ready,
-      templateId,
-      frontUrl,
-      backUrl,
-      headshotUrl: useHeadshot ? headshotUrl : null,
-      line,
+      templateId: useDesign ? null : templateId,
+      frontUrl: useDesign ? null : frontUrl,
+      backUrl: useDesign ? null : backUrl,
+      headshotUrl: useDesign ? null : (useHeadshot ? headshotUrl : null),
+      line: useDesign ? '' : line,
+      design: useDesign ? design : null,
     })
     setWorking(false)
     if ('error' in result && result.error) {
@@ -316,11 +348,21 @@ export function PostcardMail({
   const back = () => {
     if (working) return
     if (phase === 'pictures') {
-      setPhase('pick')
+      setPhase('build')
+      setBuildStep('photo')
       return
     }
     if (phase === 'who') {
-      setPhase(frontUrl ? 'pictures' : 'pick')
+      if (frontUrl) {
+        setPhase('pictures')
+        return
+      }
+      if (design.photoUrl) {
+        setPhase('build')
+        setBuildStep('back')
+        return
+      }
+      setPhase('build')
       return
     }
     if (phase === 'proof' && !orderFromUrl) {
@@ -330,7 +372,26 @@ export function PostcardMail({
     onBack()
   }
 
-  const stepLabel = phase === 'pick' || phase === 'pictures' ? 'Step 1 of 3' : phase === 'who' ? 'Step 2 of 3' : 'Step 3 of 3'
+  const builtCard = Boolean(design.photoUrl) && !frontUrl
+  const stepLabel = builtCard && phase === 'who'
+    ? 'Step 4 of 4'
+    : phase === 'pick' || phase === 'pictures' ? 'Step 1 of 3' : phase === 'who' ? 'Step 2 of 3' : 'Step 3 of 3'
+
+  if (phase === 'build') {
+    return (
+      <ListingPostcardWizard
+        design={design}
+        onChange={setDesign}
+        step={buildStep}
+        onStep={setBuildStep}
+        onDone={() => setPhase('who')}
+        onUploadOwn={() => setPhase('pictures')}
+        onBack={onBack}
+        signedIn={signedIn}
+        showCustomModal={showCustomModal}
+      />
+    )
+  }
 
   return (
     <ToolOverlay id="view-mail" nav={<OverlayNavButton kind="back" label="Back" onClick={back} />}>
@@ -420,7 +481,11 @@ export function PostcardMail({
             <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
             <h1 className="text-3xl font-black mt-1">Who gets it</h1>
             <p className="text-base text-slate-300 mt-2">
-              {frontUrl ? 'Your pictures are the front and the back.' : `${template?.name || 'This card'} is the front.`} Next you will see the real proof.
+              {builtCard
+                ? `The front says ${design.headline || 'Just Sold'}. Next you will see the real proof.`
+                : frontUrl
+                  ? 'Your pictures are the front and the back. Next you will see the real proof.'
+                  : `${template?.name || 'This card'} is the front. Next you will see the real proof.`}
             </p>
           </div>
           {frontUrl ? (
@@ -440,7 +505,7 @@ export function PostcardMail({
               <p className="text-lg mt-3" style={{ color: template.accent }}>{line || template.line}</p>
             </div>
           ) : null}
-          <HeadshotChoice url={headshotUrl} on={useHeadshot} onChange={setUseHeadshot} />
+          {builtCard ? null : <HeadshotChoice url={headshotUrl} on={useHeadshot} onChange={setUseHeadshot} />}
           {template ? (
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">The line on the card</span>

@@ -6,8 +6,13 @@ import { addressError, normalizeAddress, type MailAddress } from '@/app/lib/lobM
 import {
   POSTCARD_MAX,
   POSTCARD_PRICE_CENTS,
+  listingBackHtml,
+  listingFrontHtml,
+  listingPostcardReady,
   postcardBackHtml,
+  postcardColor,
   postcardFrontHtml,
+  type ListingPostcard,
   type PostcardOrder,
   type PostcardProof,
 } from '@/app/lib/postcardDesigns'
@@ -117,6 +122,31 @@ function allowedPicture(url: string) {
   return Boolean(base) && url.startsWith(base) && url.includes('/storage/')
 }
 
+function cleanListing(input: ListingPostcard): ListingPostcard {
+  const photoUrl = allowedPicture(input.photoUrl) ? input.photoUrl : ''
+  const headshotUrl = allowedPicture(input.headshotUrl) ? input.headshotUrl : ''
+  const logoUrl = allowedPicture(input.logoUrl) ? input.logoUrl : ''
+  return {
+    photoUrl,
+    headline: input.headline.trim().slice(0, 28),
+    propertyAddress: input.propertyAddress.trim().slice(0, 42),
+    detail: input.detail.trim().slice(0, 36),
+    agentName: input.agentName.trim().slice(0, 36),
+    brokerage: input.brokerage.trim().slice(0, 36),
+    barColor: postcardColor(input.barColor, '#111111'),
+    backColor: postcardColor(input.backColor, '#1b2a4a'),
+    message: input.message.trim().slice(0, 320),
+    phone: input.phone.trim().slice(0, 24),
+    website: input.website.trim().slice(0, 48),
+    title: input.title.trim().slice(0, 32),
+    license: input.license.trim().slice(0, 24),
+    headshotUrl,
+    logoUrl,
+    useHeadshot: Boolean(input.useHeadshot && headshotUrl),
+    useLogo: Boolean(input.useLogo && logoUrl),
+  }
+}
+
 function plainLobError(message: string | undefined, fallback: string) {
   if (!message) return fallback
   if (/scheduled mailings/i.test(message)) return 'The proof could not be made. Try again.'
@@ -131,7 +161,20 @@ function postcardBody(input: {
   backUrl: string | null
   headshotUrl: string | null
   line: string
+  design?: ListingPostcard | null
 }) {
+  if (input.design?.photoUrl) {
+    return {
+      description: '6x9 postcard',
+      to: lobAddress(input.to),
+      from: lobAddress(input.from),
+      size: '6x9',
+      mail_type: 'usps_first_class',
+      use_type: 'marketing',
+      front: listingFrontHtml(input.design),
+      back: listingBackHtml(input.design),
+    }
+  }
   const front = postcardFrontHtml({
     templateId: input.templateId || 'just-listed',
     line: input.line,
@@ -170,6 +213,7 @@ export async function createPostcardProofs(input: {
   backUrl: string | null
   headshotUrl: string | null
   line: string
+  design?: ListingPostcard | null
 }) {
   if (!lobKey()) return { error: 'Mail is not connected yet.' }
   const user = await userFromToken(input.accessToken)
@@ -178,12 +222,18 @@ export async function createPostcardProofs(input: {
   const recipients = input.recipients.filter((item) => !addressError(item)).map(normalizeAddress)
   if (!recipients.length) return { error: 'Add at least one address.' }
   if (recipients.length > POSTCARD_MAX) return { error: `Send up to ${POSTCARD_MAX} at a time.` }
-  if (input.line.trim().length > 80) return { error: 'Keep that line under 80 characters.' }
-  if (input.frontUrl && !input.backUrl) return { error: 'Add the back picture too.' }
-  if (input.frontUrl && !allowedPicture(input.frontUrl)) return { error: 'Upload the front picture again.' }
-  if (input.backUrl && !allowedPicture(input.backUrl)) return { error: 'Upload the back picture again.' }
-  if (input.headshotUrl && !allowedPicture(input.headshotUrl)) return { error: 'Add your picture from your profile again.' }
-  if (!input.frontUrl && !input.templateId) return { error: 'Pick a postcard first.' }
+  const design = input.design?.photoUrl ? cleanListing(input.design) : null
+  if (design) {
+    const problem = listingPostcardReady(design)
+    if (problem) return { error: problem }
+  } else {
+    if (input.line.trim().length > 80) return { error: 'Keep that line under 80 characters.' }
+    if (input.frontUrl && !input.backUrl) return { error: 'Add the back picture too.' }
+    if (input.frontUrl && !allowedPicture(input.frontUrl)) return { error: 'Upload the front picture again.' }
+    if (input.backUrl && !allowedPicture(input.backUrl)) return { error: 'Upload the back picture again.' }
+    if (input.headshotUrl && !allowedPicture(input.headshotUrl)) return { error: 'Add your picture from your profile again.' }
+    if (!input.frontUrl && !input.templateId) return { error: 'Pick a postcard first.' }
+  }
 
   const from = normalizeAddress(input.from)
   const created: { id: string; name: string; url: string; thumb: string }[] = []
@@ -197,6 +247,7 @@ export async function createPostcardProofs(input: {
         backUrl: input.backUrl,
         headshotUrl: input.headshotUrl,
         line: input.line,
+        design,
       }),
     })
     const id = String(result.payload?.id || '')
@@ -232,6 +283,7 @@ export async function createPostcardProofs(input: {
     backUrl: input.backUrl,
     headshotUrl: input.headshotUrl,
     line: input.line.trim(),
+    design,
     status: 'unpaid',
     proofs: created.map(({ name, url, thumb }) => ({ name, url, thumb })),
     lobIds: [],
@@ -310,6 +362,7 @@ export async function sendPaidPostcardOrder(session: Stripe.Checkout.Session) {
     return { proofs: mailedProofs(order), test: lobKey().startsWith('test_') }
   }
 
+  const design = order.design?.photoUrl ? cleanListing(order.design) : null
   const lobIds = [...order.lobIds]
   for (let i = lobIds.length; i < order.recipients.length; i++) {
     const result = await lobSend('/postcards', {
@@ -322,6 +375,7 @@ export async function sendPaidPostcardOrder(session: Stripe.Checkout.Session) {
         backUrl: order.backUrl || null,
         headshotUrl: order.headshotUrl || null,
         line: order.line,
+        design,
       }),
     })
     const id = String(result.payload?.id || '')

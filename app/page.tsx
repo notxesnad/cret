@@ -1631,6 +1631,9 @@ function HomeContent() {
               signedIn={!!user}
               profileName={profile.full_name || ''}
               headshotUrl={profile.headshot_url || ''}
+              brokerage={profile.brokerage || ''}
+              phone={profile.phone || ''}
+              logoUrl={profile.logo_url || ''}
             />
           )}
           {currentView === 'driving' && (
