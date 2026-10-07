@@ -32,6 +32,8 @@ export type PostcardOrder = {
   recipients: MailAddress[]
   templateId: string | null
   frontUrl: string | null
+  backUrl: string | null
+  headshotUrl: string | null
   line: string
   status: 'unpaid' | 'sent'
   proofs: PostcardProof[]
@@ -69,12 +71,21 @@ export function postcardFrontHtml(input: { templateId: string; line: string; fro
   </style></head><body><div class="safe"><h1>${name}</h1><p>${line}</p></div></body></html>`
 }
 
-export function postcardBackHtml(input: { line: string; fromName: string }) {
+export function postcardBackHtml(input: { line: string; fromName: string; backUrl?: string; headshotUrl?: string }) {
   const line = escapeHtml(input.line.trim())
   const fromName = escapeHtml(input.fromName.trim())
+  const backUrl = input.backUrl ? escapeHtml(input.backUrl) : ''
+  const headshotUrl = input.headshotUrl ? escapeHtml(input.headshotUrl) : ''
+  const photo = backUrl ? `<img class="bleed" src="${backUrl}" alt="">` : ''
+  const head = headshotUrl ? `<img class="head" src="${headshotUrl}" alt="">` : ''
+  const note = backUrl
+    ? ''
+    : `<div class="note">${line ? `<div>${line}</div>` : ''}<div class="from">${fromName}</div></div>`
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     ${pageCss('background: #ffffff; color: #111; font-family: Helvetica, Arial, sans-serif;')}
-    .note { position: absolute; left: 0.4in; top: 0.5in; width: 4.2in; font-size: 22px; line-height: 1.35; }
+    img.bleed { position: absolute; left: 0; top: 0; width: 9.25in; height: 6.25in; object-fit: cover; }
+    img.head { position: absolute; left: 0.45in; bottom: 0.4in; width: 1.6in; height: 1.6in; object-fit: cover; border-radius: 50%; border: 4px solid #fff; }
+    .note { position: absolute; left: 0.45in; top: 0.5in; width: 4in; font-size: 22px; line-height: 1.35; }
     .from { margin-top: 0.35in; font-size: 16px; font-weight: 700; }
-  </style></head><body><div class="note">${line ? `<div>${line}</div>` : ''}<div class="from">${fromName}</div></div></body></html>`
+  </style></head><body>${photo}${head}${note}</body></html>`
 }

@@ -94,9 +94,15 @@ function thumbFrom(payload: Record<string, unknown> | null) {
   return thumbs.large || thumbs.medium || thumbs.small || thumbs.front?.large || thumbs.front?.medium || ''
 }
 
-function allowedFront(url: string) {
+function allowedPicture(url: string) {
   const base = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
   return Boolean(base) && url.startsWith(base) && url.includes('/storage/')
+}
+
+function plainLobError(message: string | undefined, fallback: string) {
+  if (!message) return fallback
+  if (/scheduled mailings/i.test(message)) return 'The proof could not be made. Try again.'
+  return message
 }
 
 function postcardBody(input: {
@@ -104,8 +110,9 @@ function postcardBody(input: {
   to: MailAddress
   templateId: string | null
   frontUrl: string | null
+  backUrl: string | null
+  headshotUrl: string | null
   line: string
-  hold: boolean
 }) {
   const front = postcardFrontHtml({
     templateId: input.templateId || 'just-listed',
@@ -120,8 +127,12 @@ function postcardBody(input: {
     mail_type: 'usps_first_class',
     use_type: 'marketing',
     front,
-    back: postcardBackHtml({ line: input.line, fromName: input.from.name }),
-    send_date: input.hold ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() : undefined,
+    back: postcardBackHtml({
+      line: input.line,
+      fromName: input.from.name,
+      backUrl: input.backUrl || undefined,
+      headshotUrl: input.headshotUrl || undefined,
+    }),
   }
 }
 
@@ -138,6 +149,8 @@ export async function createPostcardProofs(input: {
   recipients: MailAddress[]
   templateId: string | null
   frontUrl: string | null
+  backUrl: string | null
+  headshotUrl: string | null
   line: string
 }) {
   if (!lobKey()) return { error: 'Mail is not connected yet.' }
@@ -148,7 +161,10 @@ export async function createPostcardProofs(input: {
   if (!recipients.length) return { error: 'Add at least one address.' }
   if (recipients.length > POSTCARD_MAX) return { error: `Send up to ${POSTCARD_MAX} at a time.` }
   if (input.line.trim().length > 80) return { error: 'Keep that line under 80 characters.' }
-  if (input.frontUrl && !allowedFront(input.frontUrl)) return { error: 'Upload the picture again.' }
+  if (input.frontUrl && !input.backUrl) return { error: 'Add the back picture too.' }
+  if (input.frontUrl && !allowedPicture(input.frontUrl)) return { error: 'Upload the front picture again.' }
+  if (input.backUrl && !allowedPicture(input.backUrl)) return { error: 'Upload the back picture again.' }
+  if (input.headshotUrl && !allowedPicture(input.headshotUrl)) return { error: 'Add your picture from your profile again.' }
   if (!input.frontUrl && !input.templateId) return { error: 'Pick a postcard first.' }
 
   const from = normalizeAddress(input.from)
@@ -160,15 +176,16 @@ export async function createPostcardProofs(input: {
         to,
         templateId: input.templateId,
         frontUrl: input.frontUrl,
+        backUrl: input.backUrl,
+        headshotUrl: input.headshotUrl,
         line: input.line,
-        hold: true,
       }),
     })
     const id = String(result.payload?.id || '')
     if (!result.ok || !id) {
       await Promise.all(created.map((item) => cancelPostcard(item.id)))
       const message = (result.payload?.error as { message?: string } | undefined)?.message
-      return { error: message || 'Could not make the proof.' }
+      return { error: plainLobError(message, 'Could not make the proof.') }
     }
     created.push({
       id,
@@ -194,6 +211,8 @@ export async function createPostcardProofs(input: {
     recipients,
     templateId: input.templateId,
     frontUrl: input.frontUrl,
+    backUrl: input.backUrl,
+    headshotUrl: input.headshotUrl,
     line: input.line.trim(),
     status: 'unpaid',
     proofs: created.map(({ name, url, thumb }) => ({ name, url, thumb })),
@@ -282,15 +301,16 @@ export async function sendPaidPostcardOrder(session: Stripe.Checkout.Session) {
         to: order.recipients[i],
         templateId: order.templateId,
         frontUrl: order.frontUrl,
+        backUrl: order.backUrl || null,
+        headshotUrl: order.headshotUrl || null,
         line: order.line,
-        hold: false,
       }),
     })
     const id = String(result.payload?.id || '')
     if (!result.ok || !id) {
       await rememberIds(order.id, lobIds, false)
       const message = (result.payload?.error as { message?: string } | undefined)?.message
-      return { error: message || 'Payment went through, but the postcard did not mail. Do not pay again.' }
+      return { error: plainLobError(message, 'Payment went through, but the postcard did not mail. Do not pay again.') }
     }
     lobIds[i] = id
     await rememberIds(order.id, lobIds, false)

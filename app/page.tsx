@@ -1630,6 +1630,7 @@ function HomeContent() {
               showCustomModal={showCustomModal}
               signedIn={!!user}
               profileName={profile.full_name || ''}
+              headshotUrl={profile.headshot_url || ''}
             />
           )}
           {currentView === 'driving' && (

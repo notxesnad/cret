@@ -24,7 +24,7 @@ import { supabase } from '@/utils/supabase'
 
 const FROM_KEY = 'crt_mail_from'
 
-type Phase = 'pick' | 'who' | 'proof' | 'mailing' | 'done'
+type Phase = 'pick' | 'pictures' | 'who' | 'proof' | 'mailing' | 'done'
 type Proof = { name: string; url: string; thumb: string }
 
 function money(cents: number) {
@@ -47,21 +47,26 @@ export function PostcardMail({
   showCustomModal,
   signedIn,
   profileName,
+  headshotUrl,
 }: {
   onBack: () => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   signedIn: boolean
   profileName: string
+  headshotUrl: string
 }) {
   const params = useSearchParams()
   const orderFromUrl = params.get('postcard_order') || ''
   const sessionFromUrl = params.get('session_id') || ''
   const fileRef = useRef<HTMLInputElement>(null)
+  const uploadSide = useRef<'front' | 'back'>('front')
   const startedReturn = useRef(false)
 
   const [phase, setPhase] = useState<Phase>(orderFromUrl ? 'mailing' : 'pick')
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [frontUrl, setFrontUrl] = useState<string | null>(null)
+  const [backUrl, setBackUrl] = useState<string | null>(null)
+  const [useHeadshot, setUseHeadshot] = useState(false)
   const [line, setLine] = useState('')
   const [from, setFrom] = useState<MailAddress>(() => emptyAddress())
   const [fromReady, setFromReady] = useState(false)
@@ -153,6 +158,7 @@ export function PostcardMail({
     if (!next) return
     setTemplateId(next.id)
     setFrontUrl(null)
+    setBackUrl(null)
     setLine(next.line)
     setAgreed(false)
     setPhase('who')
@@ -161,7 +167,7 @@ export function PostcardMail({
   const uploadPicture = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
-    if (!file) return
+    if (!file || uploading) return
     if (!signedIn) {
       showCustomModal('Sign in to upload a picture.', true)
       return
@@ -183,7 +189,7 @@ export function PostcardMail({
       return
     }
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-    const fileName = `${userId}/postcard-${Date.now()}.${ext}`
+    const fileName = `${userId}/postcard-${uploadSide.current}-${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('profiles').upload(fileName, file, {
       upsert: true,
       contentType: file.type,
@@ -195,10 +201,9 @@ export function PostcardMail({
     }
     const publicUrl = supabase.storage.from('profiles').getPublicUrl(fileName).data.publicUrl
     setTemplateId(null)
-    setFrontUrl(publicUrl)
-    setLine('')
+    if (uploadSide.current === 'back') setBackUrl(publicUrl)
+    else setFrontUrl(publicUrl)
     setAgreed(false)
-    setPhase('who')
   }
 
   const addPasted = () => {
@@ -219,8 +224,13 @@ export function PostcardMail({
       return
     }
     if (!templateId && !frontUrl) {
-      showCustomModal('Pick a postcard or upload a picture first.')
+      showCustomModal('Pick a postcard or add your pictures first.')
       setPhase('pick')
+      return
+    }
+    if (frontUrl && !backUrl) {
+      showCustomModal('Add the back picture too.')
+      setPhase('pictures')
       return
     }
     if (templateId && !line.trim()) {
@@ -257,6 +267,8 @@ export function PostcardMail({
       recipients: ready,
       templateId,
       frontUrl,
+      backUrl,
+      headshotUrl: useHeadshot ? headshotUrl : null,
       line,
     })
     setWorking(false)
@@ -303,8 +315,12 @@ export function PostcardMail({
 
   const back = () => {
     if (working) return
-    if (phase === 'who') {
+    if (phase === 'pictures') {
       setPhase('pick')
+      return
+    }
+    if (phase === 'who') {
+      setPhase(frontUrl ? 'pictures' : 'pick')
       return
     }
     if (phase === 'proof' && !orderFromUrl) {
@@ -314,10 +330,11 @@ export function PostcardMail({
     onBack()
   }
 
-  const stepLabel = phase === 'pick' ? 'Step 1 of 3' : phase === 'who' ? 'Step 2 of 3' : 'Step 3 of 3'
+  const stepLabel = phase === 'pick' || phase === 'pictures' ? 'Step 1 of 3' : phase === 'who' ? 'Step 2 of 3' : 'Step 3 of 3'
 
   return (
     <ToolOverlay id="view-mail" nav={<OverlayNavButton kind="back" label="Back" onClick={back} />}>
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { void uploadPicture(event) }} />
       {phase === 'pick' ? (
         <>
           <div>
@@ -325,15 +342,14 @@ export function PostcardMail({
             <h1 className="text-3xl font-black mt-1">Pick a postcard</h1>
             <p className="text-base text-slate-300 mt-2">6×9. {money(POSTCARD_PRICE_CENTS)} each. First class mail.</p>
           </div>
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { void uploadPicture(event) }} />
           <button
             type="button"
-            onClick={() => { if (!uploading) fileRef.current?.click() }}
+            onClick={() => setPhase('pictures')}
             className="w-full border-2 border-dashed border-slate-500 text-white font-black py-4 rounded-2xl"
           >
-            {uploading ? 'Uploading your picture…' : 'Use my own picture'}
+            Use my own pictures
           </button>
-          <p className="text-sm text-slate-400 text-center">A wide photo works best. We put the address on the back.</p>
+          <p className="text-sm text-slate-400 text-center">Add a front and a back. Wide photos work best.</p>
           <p className="text-sm font-bold text-center">Or tap one of these.</p>
           <div className="grid grid-cols-2 gap-3">
             {POSTCARD_TEMPLATES.map((item) => (
@@ -352,23 +368,79 @@ export function PostcardMail({
         </>
       ) : null}
 
+      {phase === 'pictures' ? (
+        <>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
+            <h1 className="text-3xl font-black mt-1">Add your pictures</h1>
+            <p className="text-base text-slate-300 mt-2">One for the front. One for the back. Leave the right side of the back empty. The address goes there.</p>
+          </div>
+          <PictureSlot
+            label="Front"
+            url={frontUrl}
+            busy={uploading && uploadSide.current === 'front'}
+            onPick={() => {
+              uploadSide.current = 'front'
+              fileRef.current?.click()
+            }}
+          />
+          <PictureSlot
+            label="Back"
+            url={backUrl}
+            busy={uploading && uploadSide.current === 'back'}
+            onPick={() => {
+              uploadSide.current = 'back'
+              fileRef.current?.click()
+            }}
+          />
+          <HeadshotChoice url={headshotUrl} on={useHeadshot} onChange={setUseHeadshot} />
+          <button
+            type="button"
+            onClick={() => {
+              if (!frontUrl) {
+                showCustomModal('Add the front picture.')
+                return
+              }
+              if (!backUrl) {
+                showCustomModal('Add the back picture.')
+                return
+              }
+              setPhase('who')
+            }}
+            className="w-full bg-amber-300 hover:bg-amber-200 text-slate-950 font-black py-4 rounded-xl"
+          >
+            Next
+          </button>
+        </>
+      ) : null}
+
       {phase === 'who' ? (
         <>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
             <h1 className="text-3xl font-black mt-1">Who gets it</h1>
             <p className="text-base text-slate-300 mt-2">
-              {frontUrl ? 'Your picture is the front.' : `${template?.name || 'This card'} is the front.`} Next you will see the real proof.
+              {frontUrl ? 'Your pictures are the front and the back.' : `${template?.name || 'This card'} is the front.`} Next you will see the real proof.
             </p>
           </div>
           {frontUrl ? (
-            <img src={frontUrl} alt="Your postcard picture" className="w-full h-40 object-cover rounded-2xl bg-slate-800" />
+            <div className="grid grid-cols-2 gap-3">
+              <figure>
+                <img src={frontUrl} alt="Front of the postcard" className="w-full h-28 object-cover rounded-2xl bg-slate-800" />
+                <figcaption className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-2">Front</figcaption>
+              </figure>
+              <figure>
+                <img src={backUrl || ''} alt="Back of the postcard" className="w-full h-28 object-cover rounded-2xl bg-slate-800" />
+                <figcaption className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-2">Back</figcaption>
+              </figure>
+            </div>
           ) : template ? (
             <div className="rounded-2xl p-5 min-h-[140px] flex flex-col justify-end" style={{ background: template.bg, color: template.ink }}>
               <p className="text-3xl font-black leading-none">{template.name}</p>
               <p className="text-lg mt-3" style={{ color: template.accent }}>{line || template.line}</p>
             </div>
           ) : null}
+          <HeadshotChoice url={headshotUrl} on={useHeadshot} onChange={setUseHeadshot} />
           {template ? (
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">The line on the card</span>
@@ -379,17 +451,7 @@ export function PostcardMail({
                 className={fieldClass}
               />
             </label>
-          ) : (
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Note on the back, if you want one</span>
-              <input
-                value={line}
-                onChange={(event) => setLine(event.target.value.slice(0, 80))}
-                placeholder="Open house Saturday"
-                className={fieldClass}
-              />
-            </label>
-          )}
+          ) : null}
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black">Send it to</h2>
             <button type="button" onClick={() => setPasteOpen((open) => !open)} className="text-sm font-bold text-amber-300">
@@ -523,6 +585,55 @@ function orderFromLoad(value: {
     orderId: value.orderId,
     status: value.status,
   }
+}
+
+function HeadshotChoice({
+  url,
+  on,
+  onChange,
+}: {
+  url: string
+  on: boolean
+  onChange: (next: boolean) => void
+}) {
+  if (!url) return null
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!on)}
+      className={`w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left ${on ? 'border-amber-300 bg-slate-800' : 'border-slate-700'}`}
+    >
+      <img src={url} alt="Your picture" className="h-16 w-16 rounded-full object-cover bg-slate-800" />
+      <span className="text-lg font-black leading-snug">
+        {on ? 'Your picture will be on the back. Tap to take it off.' : 'Add my picture on the back'}
+      </span>
+    </button>
+  )
+}
+
+function PictureSlot({
+  label,
+  url,
+  busy,
+  onPick,
+}: {
+  label: string
+  url: string | null
+  busy: boolean
+  onPick: () => void
+}) {
+  return (
+    <button type="button" onClick={onPick} className="w-full rounded-2xl border-2 border-dashed border-slate-500 overflow-hidden text-left">
+      {url ? (
+        <img src={url} alt={label} className="w-full h-36 object-cover bg-slate-800" />
+      ) : (
+        <span className="flex items-center justify-center h-36 text-xl font-black">{busy ? 'Uploading…' : `Add the ${label.toLowerCase()}`}</span>
+      )}
+      <span className="block px-4 py-3 text-sm font-bold uppercase tracking-wider text-amber-300">
+        {url ? `${label} · tap to change` : label}
+      </span>
+    </button>
+  )
 }
 
 async function accessToken() {

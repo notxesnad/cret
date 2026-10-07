@@ -37,11 +37,13 @@ export function MailView({
   showCustomModal,
   signedIn,
   profileName,
+  headshotUrl,
 }: {
   switchView: (view: string) => void
   showCustomModal: (msg: string, requireAuth?: boolean) => void
   signedIn: boolean
   profileName: string
+  headshotUrl: string
 }) {
   const router = useRouter()
   const postcardOrder = useSearchParams().get('postcard_order')
@@ -87,6 +89,7 @@ export function MailView({
         showCustomModal={showCustomModal}
         signedIn={signedIn}
         profileName={profileName}
+        headshotUrl={headshotUrl}
       />
     )
   }
