@@ -13,8 +13,10 @@ import {
   isSlotLayout,
   listingPostcardReady,
   normalizeSlot,
-  photoTransform,
+  photoPaint,
+  photoPanLimit,
   slotColor,
+  slotTextCqw,
   type FrontLayout,
   type ListingPostcard,
   type PostcardSlot,
@@ -134,7 +136,7 @@ export function ListingPostcardWizard({
     const publicUrl = supabase.storage.from('profiles').getPublicUrl(fileName).data.publicUrl
     const next = (face === 'front' ? fitSlots(layout, design.slots) : fitBackSlots(design.backSlots)).slice()
     const current = next[index] || emptySlot()
-    next[index] = normalizeSlot({ ...current, kind: 'photo', photoUrl: publicUrl, heading: '', subheading: '', body: '', zoom: 1, rotate: 0, panX: 0, panY: 0 })
+    next[index] = normalizeSlot({ ...current, kind: 'photo', photoUrl: publicUrl, photoWidth: 0, photoHeight: 0, heading: '', subheading: '', body: '', zoom: 1, rotate: 0, panX: 0, panY: 0 })
     writeSlots(next)
     setSelected(index)
     setSheet(null)
@@ -171,7 +173,7 @@ export function ListingPostcardWizard({
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>, index: number) => {
     const slot = slots[index]
-    if (!slot || slot.kind !== 'photo' || slot.zoom <= 1) return
+    if (!slot || slot.kind !== 'photo' || !slot.photoUrl) return
     dragRef.current = { x: event.clientX, y: event.clientY, panX: slot.panX, panY: slot.panY, pointer: event.pointerId }
     try { event.currentTarget.setPointerCapture(event.pointerId) } catch { /* pointer already gone */ }
   }
@@ -182,9 +184,16 @@ export function ListingPostcardWizard({
     const rect = event.currentTarget.getBoundingClientRect()
     if (!rect.width || !rect.height) return
     const slot = slots[index]
-    const limit = ((slot?.zoom || 1) - 1) * 40
-    const panX = Math.min(limit, Math.max(-limit, drag.panX + ((event.clientX - drag.x) / rect.width) * 100))
-    const panY = Math.min(limit, Math.max(-limit, drag.panY + ((event.clientY - drag.y) / rect.height) * 100))
+    const frame = frames[index]
+    if (!slot || !frame) return
+    const limit = photoPanLimit(slot, frame)
+    const dx = ((event.clientX - drag.x) / rect.width) * 100
+    const dy = ((event.clientY - drag.y) / rect.height) * 100
+    const rad = (-slot.rotate * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    const panX = Math.min(limit.x, Math.max(-limit.x, drag.panX + dx * cos - dy * sin))
+    const panY = Math.min(limit.y, Math.max(-limit.y, drag.panY + dx * sin + dy * cos))
     updateSlot(index, { panX, panY })
   }
 
@@ -255,6 +264,11 @@ export function ListingPostcardWizard({
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
+              onPhotoSize={(index, width, height) => {
+                const current = slots[index]
+                if (!current || current.photoWidth === width && current.photoHeight === height) return
+                updateSlot(index, { photoWidth: width, photoHeight: height })
+              }}
             />
             {active?.kind === 'photo' && active.photoUrl && sheet == null ? (
               <div className="absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-stretch overflow-hidden rounded-2xl bg-white shadow-lg">
@@ -399,6 +413,7 @@ function CardCanvas({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onPhotoSize,
 }: {
   frames: SlotFrame[]
   slots: PostcardSlot[]
@@ -410,12 +425,13 @@ function CardCanvas({
   onPointerDown?: (event: PointerEvent<HTMLDivElement>, index: number) => void
   onPointerMove?: (event: PointerEvent<HTMLDivElement>, index: number) => void
   onPointerUp?: (event: PointerEvent<HTMLDivElement>) => void
+  onPhotoSize?: (index: number, width: number, height: number) => void
 }) {
   return (
-    <div className="relative aspect-[9.25/6.25] w-full overflow-hidden bg-black">
+    <div className="relative aspect-[9.25/6.25] w-full overflow-hidden bg-black" style={{ containerType: 'inline-size' }}>
       {frames.map((frame, index) => {
         const slot = slots[index] || emptySlot()
-        const zoomed = slot.kind === 'photo' && slot.zoom > 1
+        const photo = slot.kind === 'photo' && Boolean(slot.photoUrl)
         return (
           <div
             key={`${frame.left}-${frame.top}`}
@@ -427,14 +443,20 @@ function CardCanvas({
               height: `${frame.height}%`,
               background: slot.bg || '#000000',
               color: slot.color || '#ffffff',
-              touchAction: zoomed ? 'none' : 'auto',
+              touchAction: photo ? 'none' : 'auto',
             }}
             onClick={onSlot ? () => onSlot(index) : undefined}
             onPointerDown={onPointerDown ? (event) => onPointerDown(event, index) : undefined}
             onPointerMove={onPointerMove ? (event) => onPointerMove(event, index) : undefined}
             onPointerUp={onPointerUp}
           >
-            <SlotFill slot={slot} busy={busyIndex === index} quiet={quiet} />
+            <SlotFill
+              slot={slot}
+              frame={frame}
+              busy={busyIndex === index}
+              quiet={quiet}
+              onPhotoSize={onPhotoSize ? (width, height) => onPhotoSize(index, width, height) : undefined}
+            />
           </div>
         )
       })}
@@ -450,24 +472,54 @@ function CardCanvas({
   )
 }
 
-function SlotFill({ slot, busy, quiet }: { slot: PostcardSlot; busy?: boolean; quiet?: boolean }) {
+function SlotFill({
+  slot,
+  frame,
+  busy,
+  quiet,
+  onPhotoSize,
+}: {
+  slot: PostcardSlot
+  frame: SlotFrame
+  busy?: boolean
+  quiet?: boolean
+  onPhotoSize?: (width: number, height: number) => void
+}) {
   if (busy) return <span className="flex h-full items-center justify-center text-xs font-bold">Adding…</span>
   if (slot.kind === 'photo' && slot.photoUrl) {
+    const paint = photoPaint(slot, frame)
     return (
-      <img
-        src={slot.photoUrl}
-        alt=""
-        className="absolute left-1/2 top-1/2 h-full w-full object-cover"
-        style={{ transform: photoTransform(slot), transformOrigin: 'center' }}
-      />
+      <>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("${slot.photoUrl.replace(/"/g, '')}")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: paint.size,
+            backgroundPosition: paint.position,
+            transform: paint.transform,
+            WebkitTransform: paint.transform,
+            transformOrigin: 'center center',
+          }}
+        />
+        <img
+          src={slot.photoUrl}
+          alt=""
+          className="hidden"
+          onLoad={(event) => {
+            const img = event.currentTarget
+            if (img.naturalWidth > 0) onPhotoSize?.(img.naturalWidth, img.naturalHeight)
+          }}
+        />
+      </>
     )
   }
   if (slot.kind === 'text' && (slot.heading || slot.subheading || slot.body)) {
     return (
-      <span className="flex h-full w-full flex-col items-center justify-center px-1 text-center">
-        {slot.heading ? <span className="text-[11px] font-black leading-tight">{slot.heading}</span> : null}
-        {slot.subheading ? <span className="text-[9px] leading-tight">{slot.subheading}</span> : null}
-        {slot.body ? <span className="line-clamp-3 text-[8px] leading-tight">{slot.body}</span> : null}
+      <span className="flex h-full w-full flex-col items-center justify-center px-[2%] text-center">
+        {slot.heading ? <span className="font-black leading-tight" style={{ fontSize: slotTextCqw('heading') }}>{slot.heading}</span> : null}
+        {slot.subheading ? <span className="leading-tight" style={{ fontSize: slotTextCqw('subheading') }}>{slot.subheading}</span> : null}
+        {slot.body ? <span className="line-clamp-4 leading-tight" style={{ fontSize: slotTextCqw('body') }}>{slot.body}</span> : null}
       </span>
     )
   }

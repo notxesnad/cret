@@ -28,9 +28,17 @@ export function postcardColor(value: string, fallback: string) {
 
 export type FrontLayout = 'full' | 'split' | 'trio'
 
+export const CARD_WIDTH_IN = 9.25
+export const CARD_HEIGHT_IN = 6.25
+
+// Same size on the card and on the printed proof. Tuned to the on-screen card.
+export const SLOT_TEXT_IN = { heading: 0.29, subheading: 0.24, body: 0.21 }
+
 export type PostcardSlot = {
   kind: 'empty' | 'photo' | 'text'
   photoUrl: string
+  photoWidth: number
+  photoHeight: number
   heading: string
   subheading: string
   body: string
@@ -52,21 +60,27 @@ export function slotColor(value: string | undefined, fallback: string) {
   return /^#[0-9a-f]{6}$/.test(hex) ? hex : fallback
 }
 
+function photoPixels(value: unknown) {
+  const n = Math.round(Number(value))
+  return Number.isFinite(n) && n > 0 && n <= 16000 ? n : 0
+}
+
 export function normalizeSlot(slot: Partial<PostcardSlot> | undefined): PostcardSlot {
   const zoomRaw = Number(slot?.zoom)
   const zoom = Number.isFinite(zoomRaw) ? Math.min(4, Math.max(1, zoomRaw)) : 1
   const rotateRaw = Number(slot?.rotate)
   const rotate = [0, 90, 180, 270].includes(rotateRaw) ? rotateRaw : 0
-  const panLimit = (zoom - 1) * 40
   const pan = (value: unknown) => {
     const n = Number(value)
-    if (!Number.isFinite(n) || zoom <= 1) return 0
-    return Math.min(panLimit, Math.max(-panLimit, n))
+    if (!Number.isFinite(n)) return 0
+    return Math.min(200, Math.max(-200, n))
   }
   const kind = slot?.kind === 'photo' || slot?.kind === 'text' ? slot.kind : 'empty'
   return {
     kind,
     photoUrl: slot?.photoUrl || '',
+    photoWidth: photoPixels(slot?.photoWidth),
+    photoHeight: photoPixels(slot?.photoHeight),
     heading: (slot?.heading || '').slice(0, 40),
     subheading: (slot?.subheading || '').slice(0, 60),
     body: (slot?.body || '').slice(0, 220),
@@ -115,8 +129,67 @@ export function backFrames(): { slots: SlotFrame[]; address: SlotFrame } {
   }
 }
 
-export function photoTransform(slot: PostcardSlot) {
-  return `translate(${slot.panX}%, ${slot.panY}%) rotate(${slot.rotate}deg) scale(${slot.zoom}) translate(-50%, -50%)`
+export type PhotoBox = { left: number; top: number; width: number; height: number }
+
+function slotInches(frame: SlotFrame) {
+  return {
+    width: (frame.width / 100) * CARD_WIDTH_IN,
+    height: (frame.height / 100) * CARD_HEIGHT_IN,
+  }
+}
+
+function coveredBox(slot: PostcardSlot, slotW: number, slotH: number) {
+  const nw = slot.photoWidth
+  const nh = slot.photoHeight
+  if (!nw || !nh || !slotW || !slotH) {
+    return { boxW: slotW * slot.zoom, boxH: slotH * slot.zoom }
+  }
+  const scale = Math.max(slotW / nw, slotH / nh) * slot.zoom
+  return { boxW: nw * scale, boxH: nh * scale }
+}
+
+export function photoPanLimit(slot: PostcardSlot, frame: SlotFrame) {
+  const slotSize = slotInches(frame)
+  const { boxW, boxH } = coveredBox(slot, slotSize.width, slotSize.height)
+  return {
+    x: slotSize.width ? Math.max(0, ((boxW - slotSize.width) / 2 / slotSize.width) * 100) : 0,
+    y: slotSize.height ? Math.max(0, ((boxH - slotSize.height) / 2 / slotSize.height) * 100) : 0,
+  }
+}
+
+export function photoBox(slot: PostcardSlot, frame: SlotFrame): PhotoBox {
+  const slotSize = slotInches(frame)
+  const { boxW, boxH } = coveredBox(slot, slotSize.width, slotSize.height)
+  const limit = photoPanLimit(slot, frame)
+  const panX = Math.min(limit.x, Math.max(-limit.x, slot.panX))
+  const panY = Math.min(limit.y, Math.max(-limit.y, slot.panY))
+  const centerX = slotSize.width / 2 + (panX / 100) * slotSize.width
+  const centerY = slotSize.height / 2 + (panY / 100) * slotSize.height
+  return {
+    left: slotSize.width ? ((centerX - boxW / 2) / slotSize.width) * 100 : 0,
+    top: slotSize.height ? ((centerY - boxH / 2) / slotSize.height) * 100 : 0,
+    width: slotSize.width ? (boxW / slotSize.width) * 100 : 100,
+    height: slotSize.height ? (boxH / slotSize.height) * 100 : 100,
+  }
+}
+
+export function photoPaint(slot: PostcardSlot, frame: SlotFrame) {
+  const place = photoBox(slot, frame)
+  const axis = (offset: number, size: number) => (Math.abs(size - 100) < 0.01 ? 50 : (-offset / (size - 100)) * 100)
+  const slotSize = slotInches(frame)
+  const turn = slot.rotate === 90 || slot.rotate === 270
+  const cover = !turn || !slotSize.width || !slotSize.height
+    ? 1
+    : Math.max(slotSize.width / slotSize.height, slotSize.height / slotSize.width)
+  return {
+    size: `${place.width.toFixed(3)}% ${place.height.toFixed(3)}%`,
+    position: `${axis(place.left, place.width).toFixed(3)}% ${axis(place.top, place.height).toFixed(3)}%`,
+    transform: `rotate(${slot.rotate}deg) scale(${cover.toFixed(4)})`,
+  }
+}
+
+export function slotTextCqw(kind: keyof typeof SLOT_TEXT_IN) {
+  return `${(SLOT_TEXT_IN[kind] / CARD_WIDTH_IN) * 100}cqw`
 }
 
 export function slotCount(layout: FrontLayout) {
@@ -306,49 +379,43 @@ function displaySite(value: string) {
 }
 
 function frameStyle(frame: SlotFrame) {
-  const left = (frame.left / 100) * 9.25
-  const top = (frame.top / 100) * 6.25
-  const width = (frame.width / 100) * 9.25
-  const height = (frame.height / 100) * 6.25
+  const left = (frame.left / 100) * CARD_WIDTH_IN
+  const top = (frame.top / 100) * CARD_HEIGHT_IN
+  const width = (frame.width / 100) * CARD_WIDTH_IN
+  const height = (frame.height / 100) * CARD_HEIGHT_IN
   return `left:${left.toFixed(3)}in;top:${top.toFixed(3)}in;width:${width.toFixed(3)}in;height:${height.toFixed(3)}in`
 }
 
-function slotMarkup(slot: PostcardSlot, big: boolean) {
+function slotMarkup(slot: PostcardSlot, frame: SlotFrame) {
   const bg = slotColor(slot.bg, '#000000')
   const ink = slotColor(slot.color, '#ffffff')
+  const box = `position:absolute;${frameStyle(frame)};overflow:hidden;background:${bg};color:${ink}`
   if (slot.kind === 'photo' && slot.photoUrl) {
-    return `<div class="slot" style="${''}background:${bg}"><img src="${escapeHtml(slot.photoUrl)}" alt="" style="transform:${photoTransform(slot)}"></div>`
+    const paint = photoPaint(slot, frame)
+    const image = escapeHtml(slot.photoUrl).replace(/'/g, '%27')
+    return `<div class="slot" style="${box}"><div style="position:absolute;left:0;top:0;width:100%;height:100%;background-image:url('${image}');background-repeat:no-repeat;background-size:${paint.size};background-position:${paint.position};-webkit-transform:${paint.transform};transform:${paint.transform};-webkit-transform-origin:center center;transform-origin:center center"></div></div>`
   }
   const heading = escapeHtml(slot.heading.trim())
   const subheading = escapeHtml(slot.subheading.trim())
   const body = escapeHtml(slot.body.trim())
-  const titleSize = big ? 28 : 16
-  const subSize = big ? 16 : 12
-  const bodySize = big ? 13 : 11
-  return `<div class="slot" style="background:${bg};color:${ink}"><table><tr><td>
-    ${heading ? `<div class="h" style="font-size:${titleSize}px">${heading}</div>` : ''}
-    ${subheading ? `<div class="s" style="font-size:${subSize}px">${subheading}</div>` : ''}
-    ${body ? `<div class="b" style="font-size:${bodySize}px">${body}</div>` : ''}
-  </td></tr></table></div>`
+    const line = (text: string, kind: keyof typeof SLOT_TEXT_IN, weight: number) => (
+    text ? `<div style="font-size:${SLOT_TEXT_IN[kind]}in;font-weight:${weight};line-height:1.15;margin-top:${kind === 'heading' ? '0' : '0.06in'}${kind === 'body' ? ';white-space:pre-wrap' : ''}">${text}</div>` : ''
+  )
+  return `<div class="slot" style="${box}"><table><tr><td>${line(heading, 'heading', 700)}${line(subheading, 'subheading', 400)}${line(body, 'body', 400)}</td></tr></table></div>`
 }
 
 function placedSlots(frames: SlotFrame[], slots: PostcardSlot[]) {
-  return frames.map((frame, index) => {
-    const slot = slots[index] || emptySlot()
-    const big = frame.width >= 50 && frame.height >= 80
-    return slotMarkup(slot, big).replace('class="slot" style="', `class="slot" style="${frameStyle(frame)};`)
-  }).join('')
+  return frames.map((frame, index) => slotMarkup(slots[index] || emptySlot(), frame)).join('')
 }
 
 const slotPageCss = `* { box-sizing: border-box; }
-    body { width: 9.25in; height: 6.25in; margin: 0; position: relative; overflow: hidden; background: #000; }
-    .slot { position: absolute; overflow: hidden; }
-    .slot img { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; object-fit: cover; transform-origin: center center; }
+    @page { size: ${CARD_WIDTH_IN}in ${CARD_HEIGHT_IN}in; margin: 0; }
+    html, body { width: ${CARD_WIDTH_IN}in; height: ${CARD_HEIGHT_IN}in; margin: 0; padding: 0; overflow: hidden; }
+    body { position: relative; background: #000; }
+    .slot { position: absolute; }
+    img { max-width: none; border: 0; }
     table { width: 100%; height: 100%; border-collapse: collapse; }
-    td { vertical-align: middle; text-align: center; padding: 0.12in; font-family: Helvetica, Arial, sans-serif; }
-    .h { font-weight: 700; line-height: 1.15; }
-    .s { margin-top: 0.06in; line-height: 1.25; }
-    .b { margin-top: 0.08in; line-height: 1.35; white-space: pre-wrap; }`
+    td { vertical-align: middle; text-align: center; padding: 0.1in; font-family: Helvetica, Arial, sans-serif; }`
 
 function slotFrontHtml(input: ListingPostcard) {
   const layout = isSlotLayout(input.layout) ? input.layout : 'full'
