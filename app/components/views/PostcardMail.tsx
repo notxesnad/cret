@@ -21,6 +21,7 @@ import {
   POSTCARD_TEMPLATES,
   emptyListingPostcard,
   listingPostcardReady,
+  isSlotLayout,
   type ListingPostcard,
 } from '@/app/lib/postcardDesigns'
 import { ListingPostcardWizard } from '@/app/components/views/ListingPostcardWizard'
@@ -74,7 +75,7 @@ export function PostcardMail({
 
   const [phase, setPhase] = useState<Phase>(orderFromUrl ? 'mailing' : 'build')
   const [design, setDesign] = useState<ListingPostcard>(() => emptyListingPostcard())
-  const [buildStep, setBuildStep] = useState<'photo' | 'front' | 'back'>('photo')
+  const [buildStep, setBuildStep] = useState<'layout' | 'front' | 'back'>('layout')
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [frontUrl, setFrontUrl] = useState<string | null>(null)
   const [backUrl, setBackUrl] = useState<string | null>(null)
@@ -246,7 +247,7 @@ export function PostcardMail({
       showCustomModal('Sign in to mail a postcard.', true)
       return
     }
-    const useDesign = Boolean(design.photoUrl) && !frontUrl
+    const useDesign = isSlotLayout(design.layout) && !frontUrl
     if (useDesign) {
       const problem = listingPostcardReady(design)
       if (problem) {
@@ -255,7 +256,7 @@ export function PostcardMail({
         return
       }
     } else if (!templateId && !frontUrl) {
-      showCustomModal('Add the house photo first.')
+      showCustomModal('Pick a layout first.')
       setPhase('build')
       return
     }
@@ -349,7 +350,7 @@ export function PostcardMail({
     if (working) return
     if (phase === 'pictures') {
       setPhase('build')
-      setBuildStep('photo')
+      setBuildStep('layout')
       return
     }
     if (phase === 'who') {
@@ -357,7 +358,7 @@ export function PostcardMail({
         setPhase('pictures')
         return
       }
-      if (design.photoUrl) {
+      if (isSlotLayout(design.layout)) {
         setPhase('build')
         setBuildStep('back')
         return
@@ -372,7 +373,7 @@ export function PostcardMail({
     onBack()
   }
 
-  const builtCard = Boolean(design.photoUrl) && !frontUrl
+  const builtCard = isSlotLayout(design.layout) && !frontUrl
   const stepLabel = builtCard && phase === 'who'
     ? 'Step 4 of 4'
     : phase === 'pick' || phase === 'pictures' ? 'Step 1 of 3' : phase === 'who' ? 'Step 2 of 3' : 'Step 3 of 3'
@@ -482,7 +483,7 @@ export function PostcardMail({
             <h1 className="text-3xl font-black mt-1">Who gets it</h1>
             <p className="text-base text-slate-300 mt-2">
               {builtCard
-                ? `The front says ${design.headline || 'Just Sold'}. Next you will see the real proof.`
+                ? 'Your card is ready. Next you will see the real proof.'
                 : frontUrl
                   ? 'Your pictures are the front and the back. Next you will see the real proof.'
                   : `${template?.name || 'This card'} is the front. Next you will see the real proof.`}

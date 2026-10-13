@@ -4,13 +4,25 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import { OverlayNavButton, ToolOverlay } from '@/app/components/OverlayNavButton'
 import {
   POSTCARD_BAR_COLORS,
-  POSTCARD_HEADLINES,
+  emptySlot,
+  fitSlots,
+  frontSlotsReady,
+  isSlotLayout,
   listingPostcardReady,
+  type FrontLayout,
   type ListingPostcard,
+  type PostcardSlot,
 } from '@/app/lib/postcardDesigns'
 import { supabase } from '@/utils/supabase'
 
-type Step = 'photo' | 'front' | 'back'
+type Step = 'layout' | 'front' | 'back'
+type Sheet = 'choose' | 'text' | null
+
+const LAYOUTS: { id: FrontLayout; name: string }[] = [
+  { id: 'full', name: 'Full picture' },
+  { id: 'split', name: 'One big, two small' },
+  { id: 'trio', name: 'One big, three small' },
+]
 
 export function ListingPostcardWizard({
   design,
@@ -34,14 +46,45 @@ export function ListingPostcardWizard({
   showCustomModal: (msg: string, requireAuth?: boolean) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const slotRef = useRef(0)
   const [uploading, setUploading] = useState(false)
+  const [activeSlot, setActiveSlot] = useState<number | null>(null)
+  const [sheet, setSheet] = useState<Sheet>(null)
   const set = <K extends keyof ListingPostcard>(key: K, value: ListingPostcard[K]) => {
     onChange({ ...design, [key]: value })
+  }
+  const layout: FrontLayout = isSlotLayout(design.layout) ? design.layout : 'full'
+  const slots = fitSlots(layout, design.slots)
+
+  const writeSlots = (next: PostcardSlot[]) => {
+    onChange({ ...design, layout, slots: next })
+  }
+
+  const chooseLayout = (nextLayout: FrontLayout) => {
+    onChange({ ...design, layout: nextLayout, slots: fitSlots(nextLayout, design.slots) })
+    setSheet(null)
+    setActiveSlot(null)
+    onStep('front')
+  }
+
+  const openSlot = (index: number) => {
+    if (uploading) return
+    slotRef.current = index
+    setActiveSlot(index)
+    setSheet(slots[index]?.kind === 'text' ? 'text' : 'choose')
+  }
+
+  const updateActive = (slot: PostcardSlot) => {
+    if (activeSlot == null) return
+    const next = slots.slice()
+    next[activeSlot] = slot
+    writeSlots(next)
   }
 
   const uploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
+    const index = slotRef.current
     if (!file || uploading) return
     if (!signedIn) {
       showCustomModal('Sign in to add a photo.', true)
@@ -64,7 +107,7 @@ export function ListingPostcardWizard({
       return
     }
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-    const fileName = `${userId}/postcard-house-${Date.now()}.${ext}`
+    const fileName = `${userId}/postcard-slot-${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('profiles').upload(fileName, file, {
       upsert: true,
       contentType: file.type,
@@ -75,13 +118,22 @@ export function ListingPostcardWizard({
       return
     }
     const publicUrl = supabase.storage.from('profiles').getPublicUrl(fileName).data.publicUrl
-    onChange({ ...design, photoUrl: publicUrl })
+    const next = fitSlots(layout, design.slots)
+    next[index] = { kind: 'photo', photoUrl: publicUrl, heading: '', subheading: '', body: '' }
+    onChange({ ...design, layout, slots: next })
+    setSheet(null)
+    setActiveSlot(null)
   }
 
   const back = () => {
     if (uploading) return
+    if (sheet) {
+      setSheet(null)
+      setActiveSlot(null)
+      return
+    }
     if (step === 'front') {
-      onStep('photo')
+      onStep('layout')
       return
     }
     if (step === 'back') {
@@ -92,16 +144,9 @@ export function ListingPostcardWizard({
   }
 
   const nextFromFront = () => {
-    if (!design.headline.trim()) {
-      showCustomModal('Add the words for the top bar. Just Sold is fine.')
-      return
-    }
-    if (!design.propertyAddress.trim()) {
-      showCustomModal('Add the property address.')
-      return
-    }
-    if (!design.agentName.trim()) {
-      showCustomModal('Add your name.')
+    const problem = frontSlotsReady({ ...design, layout, slots })
+    if (problem) {
+      showCustomModal(problem)
       return
     }
     onStep('back')
@@ -116,44 +161,30 @@ export function ListingPostcardWizard({
     onDone()
   }
 
-  const stepLabel = step === 'photo' ? 'Step 1 of 4' : step === 'front' ? 'Step 2 of 4' : 'Step 3 of 4'
+  const stepLabel = step === 'layout' ? 'Step 1 of 4' : step === 'front' ? 'Step 2 of 4' : 'Step 3 of 4'
+  const active = activeSlot == null ? null : slots[activeSlot] || emptySlot()
 
   return (
     <ToolOverlay id="view-mail" nav={<OverlayNavButton kind="back" label="Back" onClick={back} />}>
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { void uploadPhoto(event) }} />
-      {step === 'photo' ? (
+      {step === 'layout' ? (
         <>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
-            <h1 className="text-3xl font-black mt-1">Add the house photo</h1>
-            <p className="text-base text-slate-300 mt-2">A wide photo works best. You will add the words next.</p>
+            <h1 className="text-3xl font-black mt-1">Pick a layout</h1>
+            <p className="text-base text-slate-300 mt-2">Tap one. You can change it later.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => { if (!uploading) fileRef.current?.click() }}
-            className="w-full overflow-hidden rounded-2xl border-2 border-dashed border-slate-500 text-left"
-          >
-            {design.photoUrl ? (
-              <img src={design.photoUrl} alt="House" className="h-48 w-full object-cover" />
-            ) : (
-              <span className="flex h-48 items-center justify-center text-xl font-black">
-                {uploading ? 'Uploading…' : 'Tap to add a photo'}
-              </span>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!design.photoUrl) {
-                showCustomModal('Add the house photo first.')
-                return
-              }
-              onStep('front')
-            }}
-            className="w-full bg-amber-300 text-slate-950 font-black py-4 rounded-xl"
-          >
-            Next
-          </button>
+          {LAYOUTS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => chooseLayout(item.id)}
+              className={`w-full rounded-3xl bg-white p-3 text-left shadow-lg ${design.layout === item.id ? 'ring-4 ring-amber-300' : ''}`}
+            >
+              <LayoutFace layout={item.id} slots={fitSlots(item.id, design.layout === item.id ? design.slots : [])} />
+              <span className="mt-2 block text-center text-sm font-black text-slate-700">{item.name}</span>
+            </button>
+          ))}
           <button type="button" onClick={onUploadOwn} className="w-full text-sm font-bold text-slate-400">
             I already have the front and the back
           </button>
@@ -164,43 +195,30 @@ export function ListingPostcardWizard({
         <>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
-            <h1 className="text-3xl font-black mt-1">Words on the front</h1>
-            <p className="text-base text-slate-300 mt-2">The top bar and the bottom bar. You will check the real proof before you pay.</p>
+            <h1 className="text-3xl font-black mt-1">The front</h1>
+            <p className="text-base text-slate-300 mt-2">Tap a +. Add a photo or a few words.</p>
           </div>
-          <FrontPreview design={design} />
-          <div className="flex flex-wrap gap-2">
-            {POSTCARD_HEADLINES.map((item) => (
+          <div className="rounded-3xl bg-white p-3 shadow-lg">
+            <LayoutFace
+              layout={layout}
+              slots={slots}
+              busyIndex={uploading ? slotRef.current : null}
+              onSlot={openSlot}
+            />
+          </div>
+          <div className="flex gap-2">
+            {LAYOUTS.map((item) => (
               <button
-                key={item}
+                key={item.id}
                 type="button"
-                onClick={() => set('headline', item)}
-                className={`rounded-full px-3 py-2 text-sm font-bold ${design.headline === item ? 'bg-amber-300 text-slate-950' : 'bg-slate-800 text-white'}`}
+                aria-label={item.name}
+                onClick={() => chooseLayout(item.id)}
+                className={`flex-1 rounded-2xl bg-white p-1.5 ${layout === item.id ? 'ring-4 ring-amber-300' : ''}`}
               >
-                {item}
+                <LayoutFace layout={item.id} slots={[]} />
               </button>
             ))}
           </div>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Top bar</span>
-            <input value={design.headline} onChange={(event) => set('headline', event.target.value.slice(0, 28))} className={fieldClass} />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Address on the bottom bar</span>
-            <input value={design.propertyAddress} onChange={(event) => set('propertyAddress', event.target.value.slice(0, 42))} placeholder="123 Oak Street" className={fieldClass} />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Line under the address</span>
-            <input value={design.detail} onChange={(event) => set('detail', event.target.value.slice(0, 36))} placeholder="$450,000" className={fieldClass} />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Your name</span>
-            <input value={design.agentName} onChange={(event) => set('agentName', event.target.value.slice(0, 36))} placeholder="Your name" className={fieldClass} />
-          </label>
-          <label className="block">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Brokerage</span>
-            <input value={design.brokerage} onChange={(event) => set('brokerage', event.target.value.slice(0, 36))} placeholder="Brokerage name" className={fieldClass} />
-          </label>
-          <ColorRow label="Bar color" value={design.barColor} onChange={(hex) => set('barColor', hex)} />
           <button type="button" onClick={nextFromFront} className="w-full bg-amber-300 text-slate-950 font-black py-4 rounded-xl">
             Next
           </button>
@@ -216,6 +234,14 @@ export function ListingPostcardWizard({
           </div>
           <BackPreview design={design} />
           <ColorRow label="Back color" value={design.backColor} onChange={(hex) => set('backColor', hex)} />
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Your name</span>
+            <input value={design.agentName} onChange={(event) => set('agentName', event.target.value.slice(0, 36))} placeholder="Your name" className={fieldClass} />
+          </label>
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Brokerage</span>
+            <input value={design.brokerage} onChange={(event) => set('brokerage', event.target.value.slice(0, 36))} placeholder="Brokerage name" className={fieldClass} />
+          </label>
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Short note</span>
             <textarea
@@ -268,7 +294,165 @@ export function ListingPostcardWizard({
           </button>
         </>
       ) : null}
+
+      {sheet && active ? (
+        <div className="fixed inset-0 z-[80] flex items-end bg-slate-950/70" onClick={() => { setSheet(null); setActiveSlot(null) }}>
+          <div className="w-full rounded-t-3xl bg-white p-5 pb-8 text-slate-950 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            {sheet === 'choose' ? (
+              <div className="space-y-3">
+                <p className="text-lg font-black">What goes here?</p>
+                <button
+                  type="button"
+                  onClick={() => { if (!uploading) fileRef.current?.click() }}
+                  className="w-full rounded-2xl bg-[#1493a3] py-4 text-lg font-black text-white"
+                >
+                  {active.kind === 'photo' ? 'Change the photo' : 'Add a photo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSheet('text')}
+                  className="w-full rounded-2xl border-2 border-slate-200 py-4 text-lg font-black"
+                >
+                  {active.kind === 'photo' ? 'Use words instead' : 'Add text'}
+                </button>
+                {active.kind !== 'empty' ? (
+                  <button
+                    type="button"
+                    onClick={() => { updateActive(emptySlot()); setSheet(null); setActiveSlot(null) }}
+                    className="w-full py-3 text-base font-bold text-slate-500"
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <TextSheet
+                slot={active.kind === 'text' ? active : emptySlot()}
+                onChange={updateActive}
+                onPhoto={() => { if (!uploading) fileRef.current?.click() }}
+                onRemove={() => { updateActive(emptySlot()); setSheet(null); setActiveSlot(null) }}
+                onDone={() => { setSheet(null); setActiveSlot(null) }}
+              />
+            )}
+          </div>
+        </div>
+      ) : null}
     </ToolOverlay>
+  )
+}
+
+function TextSheet({
+  slot,
+  onChange,
+  onPhoto,
+  onRemove,
+  onDone,
+}: {
+  slot: PostcardSlot
+  onChange: (slot: PostcardSlot) => void
+  onPhoto: () => void
+  onRemove: () => void
+  onDone: () => void
+}) {
+  const setField = (key: 'heading' | 'subheading' | 'body', value: string, limit: number) => {
+    onChange({ ...slot, kind: 'text', photoUrl: '', [key]: value.slice(0, limit) })
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-lg font-black">Add text</p>
+      <label className="block">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Heading</span>
+        <input value={slot.heading} onChange={(event) => setField('heading', event.target.value, 40)} placeholder="Just sold" className={sheetField} />
+      </label>
+      <label className="block">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Subheading</span>
+        <input value={slot.subheading} onChange={(event) => setField('subheading', event.target.value, 60)} placeholder="123 Oak Street" className={sheetField} />
+      </label>
+      <label className="block">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Text</span>
+        <textarea value={slot.body} onChange={(event) => setField('body', event.target.value, 220)} rows={3} placeholder="A short line about the home." className={sheetField} />
+      </label>
+      <button type="button" onClick={onDone} className="w-full rounded-2xl bg-[#1493a3] py-4 text-lg font-black text-white">
+        Done
+      </button>
+      <button type="button" onClick={onPhoto} className="w-full py-2 text-base font-bold text-slate-600">
+        Use a photo instead
+      </button>
+      <button type="button" onClick={onRemove} className="w-full py-2 text-base font-bold text-slate-400">
+        Remove
+      </button>
+    </div>
+  )
+}
+
+function LayoutFace({
+  layout,
+  slots,
+  onSlot,
+  busyIndex,
+}: {
+  layout: FrontLayout
+  slots: PostcardSlot[]
+  onSlot?: (index: number) => void
+  busyIndex?: number | null
+}) {
+  const cells = fitSlots(layout, slots)
+  const grid = layout === 'full'
+    ? 'grid-cols-1 grid-rows-1'
+    : layout === 'split'
+      ? 'grid-cols-[1.15fr_1fr] grid-rows-2'
+      : 'grid-cols-[1.35fr_1fr] grid-rows-3'
+  return (
+    <div className={`grid aspect-[9.25/6.25] gap-1.5 ${grid}`}>
+      {cells.map((slot, index) => (
+        <SlotBox
+          key={index}
+          slot={slot}
+          busy={busyIndex === index}
+          span={index === 0 && layout !== 'full' ? (layout === 'split' ? 'row-span-2' : 'row-span-3') : ''}
+          onClick={onSlot ? () => onSlot(index) : undefined}
+        />
+      ))}
+    </div>
+  )
+}
+
+function SlotBox({
+  slot,
+  busy,
+  span,
+  onClick,
+}: {
+  slot: PostcardSlot
+  busy: boolean
+  span: string
+  onClick?: () => void
+}) {
+  const className = `relative flex min-h-0 items-center justify-center overflow-hidden rounded-xl bg-[#e7f6f8] text-[#16323a] ${span}`
+  const inner = slot.kind === 'photo' && slot.photoUrl ? (
+    <img src={slot.photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+  ) : slot.kind === 'text' ? (
+    <span className="block w-full px-2 py-1 text-center">
+      {slot.heading ? <span className="block text-sm font-black leading-tight">{slot.heading}</span> : null}
+      {slot.subheading ? <span className="mt-0.5 block text-[10px] leading-tight">{slot.subheading}</span> : null}
+      {slot.body ? <span className="mt-0.5 block text-[10px] leading-tight line-clamp-3">{slot.body}</span> : null}
+    </span>
+  ) : (
+    <PlusMark />
+  )
+  if (!onClick) return <div className={className}>{busy ? <span className="text-xs font-bold">Adding…</span> : inner}</div>
+  return (
+    <button type="button" onClick={onClick} className={className} aria-label={slot.kind === 'empty' ? 'Add to this box' : 'Change this box'}>
+      {busy ? <span className="text-xs font-bold">Adding…</span> : inner}
+    </button>
+  )
+}
+
+function PlusMark() {
+  return (
+    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1493a3] text-2xl font-light leading-none text-white">
+      +
+    </span>
   )
 }
 
@@ -287,27 +471,6 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
             style={{ background: item.hex }}
           />
         ))}
-      </div>
-    </div>
-  )
-}
-
-function FrontPreview({ design }: { design: ListingPostcard }) {
-  return (
-    <div className="relative aspect-[9.25/6.25] overflow-hidden rounded-2xl bg-slate-800">
-      {design.photoUrl ? <img src={design.photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}
-      <div className="absolute left-[5%] top-[6%] max-w-[70%] bg-black px-3 py-2 font-serif text-lg uppercase tracking-widest text-white" style={{ background: design.barColor }}>
-        {design.headline || 'Just Sold'}
-      </div>
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 py-2 text-white" style={{ background: design.barColor, minHeight: '18%' }}>
-        <div>
-          <p className="text-sm font-black leading-tight">{design.propertyAddress || 'Property address'}</p>
-          {design.detail ? <p className="text-xs">{design.detail}</p> : null}
-        </div>
-        <div className="text-right">
-          <p className="text-sm font-black leading-tight">{design.agentName || 'Your name'}</p>
-          {design.brokerage ? <p className="text-xs">{design.brokerage}</p> : null}
-        </div>
       </div>
     </div>
   )
@@ -340,3 +503,4 @@ function BackPreview({ design }: { design: ListingPostcard }) {
 }
 
 const fieldClass = 'mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-500'
+const sheetField = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-lg text-slate-950 placeholder:text-slate-400 focus:outline-none focus:border-[#1493a3]'

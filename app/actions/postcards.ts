@@ -6,6 +6,8 @@ import { addressError, normalizeAddress, type MailAddress } from '@/app/lib/lobM
 import {
   POSTCARD_MAX,
   POSTCARD_PRICE_CENTS,
+  fitSlots,
+  isSlotLayout,
   listingBackHtml,
   listingFrontHtml,
   listingPostcardReady,
@@ -15,6 +17,7 @@ import {
   type ListingPostcard,
   type PostcardOrder,
   type PostcardProof,
+  type PostcardSlot,
 } from '@/app/lib/postcardDesigns'
 import { appUrl, getStripe, stripeSecretKey } from '@/app/lib/stripe'
 
@@ -122,29 +125,54 @@ function allowedPicture(url: string) {
   return Boolean(base) && url.startsWith(base) && url.includes('/storage/')
 }
 
+function cleanSlot(slot: PostcardSlot | undefined): PostcardSlot {
+  if (!slot || slot.kind === 'empty') return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+  if (slot.kind === 'photo') {
+    const photoUrl = allowedPicture(slot.photoUrl) ? slot.photoUrl : ''
+    if (!photoUrl) return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+    return { kind: 'photo', photoUrl, heading: '', subheading: '', body: '' }
+  }
+  const heading = (slot.heading || '').trim().slice(0, 40)
+  const subheading = (slot.subheading || '').trim().slice(0, 60)
+  const body = (slot.body || '').trim().slice(0, 220)
+  if (!heading && !subheading && !body) return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+  return { kind: 'text', photoUrl: '', heading, subheading, body }
+}
+
 function cleanListing(input: ListingPostcard): ListingPostcard {
-  const photoUrl = allowedPicture(input.photoUrl) ? input.photoUrl : ''
+  const layout = isSlotLayout(input.layout) ? input.layout : ''
+  const slots = layout ? fitSlots(layout, input.slots).map(cleanSlot) : []
+  const photoUrl = slots.find((slot) => slot.kind === 'photo' && slot.photoUrl)?.photoUrl
+    || (allowedPicture(input.photoUrl) ? input.photoUrl : '')
   const headshotUrl = allowedPicture(input.headshotUrl) ? input.headshotUrl : ''
   const logoUrl = allowedPicture(input.logoUrl) ? input.logoUrl : ''
   return {
+    layout,
+    slots,
     photoUrl,
-    headline: input.headline.trim().slice(0, 28),
-    propertyAddress: input.propertyAddress.trim().slice(0, 42),
-    detail: input.detail.trim().slice(0, 36),
-    agentName: input.agentName.trim().slice(0, 36),
-    brokerage: input.brokerage.trim().slice(0, 36),
+    headline: (input.headline || '').trim().slice(0, 28),
+    propertyAddress: (input.propertyAddress || '').trim().slice(0, 42),
+    detail: (input.detail || '').trim().slice(0, 36),
+    agentName: (input.agentName || '').trim().slice(0, 36),
+    brokerage: (input.brokerage || '').trim().slice(0, 36),
     barColor: postcardColor(input.barColor, '#111111'),
     backColor: postcardColor(input.backColor, '#1b2a4a'),
-    message: input.message.trim().slice(0, 320),
-    phone: input.phone.trim().slice(0, 24),
-    website: input.website.trim().slice(0, 48),
-    title: input.title.trim().slice(0, 32),
-    license: input.license.trim().slice(0, 24),
+    message: (input.message || '').trim().slice(0, 320),
+    phone: (input.phone || '').trim().slice(0, 24),
+    website: (input.website || '').trim().slice(0, 48),
+    title: (input.title || '').trim().slice(0, 32),
+    license: (input.license || '').trim().slice(0, 24),
     headshotUrl,
     logoUrl,
     useHeadshot: Boolean(input.useHeadshot && headshotUrl),
     useLogo: Boolean(input.useLogo && logoUrl),
   }
+}
+
+function listingDesign(input: ListingPostcard | null | undefined) {
+  if (!input) return null
+  if (!isSlotLayout(input.layout) && !input.photoUrl) return null
+  return cleanListing(input)
 }
 
 function plainLobError(message: string | undefined, fallback: string) {
@@ -163,7 +191,7 @@ function postcardBody(input: {
   line: string
   design?: ListingPostcard | null
 }) {
-  if (input.design?.photoUrl) {
+  if (input.design && (isSlotLayout(input.design.layout) || input.design.photoUrl)) {
     return {
       description: '6x9 postcard',
       to: lobAddress(input.to),
@@ -222,7 +250,7 @@ export async function createPostcardProofs(input: {
   const recipients = input.recipients.filter((item) => !addressError(item)).map(normalizeAddress)
   if (!recipients.length) return { error: 'Add at least one address.' }
   if (recipients.length > POSTCARD_MAX) return { error: `Send up to ${POSTCARD_MAX} at a time.` }
-  const design = input.design?.photoUrl ? cleanListing(input.design) : null
+  const design = listingDesign(input.design)
   if (design) {
     const problem = listingPostcardReady(design)
     if (problem) return { error: problem }
@@ -362,7 +390,7 @@ export async function sendPaidPostcardOrder(session: Stripe.Checkout.Session) {
     return { proofs: mailedProofs(order), test: lobKey().startsWith('test_') }
   }
 
-  const design = order.design?.photoUrl ? cleanListing(order.design) : null
+  const design = listingDesign(order.design)
   const lobIds = [...order.lobIds]
   for (let i = lobIds.length; i < order.recipients.length; i++) {
     const result = await lobSend('/postcards', {

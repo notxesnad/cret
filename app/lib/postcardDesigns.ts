@@ -26,7 +26,44 @@ export function postcardColor(value: string, fallback: string) {
   return match ? match.hex : fallback
 }
 
+export type FrontLayout = 'full' | 'split' | 'trio'
+
+export type PostcardSlot = {
+  kind: 'empty' | 'photo' | 'text'
+  photoUrl: string
+  heading: string
+  subheading: string
+  body: string
+}
+
+export function isSlotLayout(value: string | undefined | null): value is FrontLayout {
+  return value === 'full' || value === 'split' || value === 'trio'
+}
+
+export function emptySlot(): PostcardSlot {
+  return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+}
+
+export function slotCount(layout: FrontLayout) {
+  if (layout === 'full') return 1
+  if (layout === 'split') return 3
+  return 4
+}
+
+export function fitSlots(layout: FrontLayout, slots: PostcardSlot[] | undefined) {
+  const previous = slots || []
+  return Array.from({ length: slotCount(layout) }, (_, index) => previous[index] || emptySlot())
+}
+
+export function slotHasContent(slot: PostcardSlot | undefined) {
+  if (!slot || slot.kind === 'empty') return false
+  if (slot.kind === 'photo') return Boolean(slot.photoUrl)
+  return Boolean(slot.heading.trim() || slot.subheading.trim() || slot.body.trim())
+}
+
 export type ListingPostcard = {
+  layout: FrontLayout | ''
+  slots: PostcardSlot[]
   photoUrl: string
   headline: string
   propertyAddress: string
@@ -48,6 +85,8 @@ export type ListingPostcard = {
 
 export function emptyListingPostcard(): ListingPostcard {
   return {
+    layout: '',
+    slots: [],
     photoUrl: '',
     headline: 'Just Sold',
     propertyAddress: '',
@@ -68,10 +107,22 @@ export function emptyListingPostcard(): ListingPostcard {
   }
 }
 
+export function frontSlotsReady(input: ListingPostcard) {
+  if (!isSlotLayout(input.layout)) return 'Pick a layout.'
+  const slots = fitSlots(input.layout, input.slots)
+  if (slots.some((slot) => !slotHasContent(slot))) return 'Tap each + and add a photo or some words.'
+  return ''
+}
+
 export function listingPostcardReady(input: ListingPostcard) {
-  if (!input.photoUrl) return 'Add the house photo.'
-  if (!input.headline.trim()) return 'Add the words for the top bar.'
-  if (!input.propertyAddress.trim()) return 'Add the property address.'
+  if (isSlotLayout(input.layout)) {
+    const front = frontSlotsReady(input)
+    if (front) return front
+  } else {
+    if (!input.photoUrl) return 'Add the house photo.'
+    if (!input.headline.trim()) return 'Add the words for the top bar.'
+    if (!input.propertyAddress.trim()) return 'Add the property address.'
+  }
   if (!input.agentName.trim()) return 'Add your name.'
   if (!input.message.trim()) return 'Write a short note for the back.'
   if (!input.phone.trim()) return 'Add a phone number.'
@@ -170,7 +221,82 @@ function displaySite(value: string) {
   return value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '')
 }
 
+function slotBoxes(layout: FrontLayout) {
+  const margin = 0.18
+  const gap = 0.12
+  const innerW = 9.25 - margin * 2
+  const innerH = 6.25 - margin * 2
+  const box = (left: number, top: number, width: number, height: number, big: boolean) => ({
+    left: `${left.toFixed(3)}in`,
+    top: `${top.toFixed(3)}in`,
+    width: `${width.toFixed(3)}in`,
+    height: `${height.toFixed(3)}in`,
+    big,
+  })
+  if (layout === 'full') return [box(margin, margin, innerW, innerH, true)]
+  if (layout === 'split') {
+    const leftW = (innerW - gap) * 0.52
+    const rightW = innerW - gap - leftW
+    const rowH = (innerH - gap) / 2
+    const right = margin + leftW + gap
+    return [
+      box(margin, margin, leftW, innerH, true),
+      box(right, margin, rightW, rowH, false),
+      box(right, margin + rowH + gap, rightW, rowH, false),
+    ]
+  }
+  const leftW = (innerW - gap) * 0.62
+  const rightW = innerW - gap - leftW
+  const rowH = (innerH - gap * 2) / 3
+  const right = margin + leftW + gap
+  return [
+    box(margin, margin, leftW, innerH, true),
+    box(right, margin, rightW, rowH, false),
+    box(right, margin + rowH + gap, rightW, rowH, false),
+    box(right, margin + (rowH + gap) * 2, rightW, rowH, false),
+  ]
+}
+
+function slotMarkup(slot: PostcardSlot, big: boolean) {
+  if (slot.kind === 'photo' && slot.photoUrl) {
+    return `<img src="${escapeHtml(slot.photoUrl)}" alt="">`
+  }
+  const heading = escapeHtml(slot.heading.trim())
+  const subheading = escapeHtml(slot.subheading.trim())
+  const body = escapeHtml(slot.body.trim())
+  const titleSize = big ? 28 : 16
+  const subSize = big ? 16 : 12
+  const bodySize = big ? 13 : 11
+  return `<table><tr><td>
+    ${heading ? `<div class="h" style="font-size:${titleSize}px">${heading}</div>` : ''}
+    ${subheading ? `<div class="s" style="font-size:${subSize}px">${subheading}</div>` : ''}
+    ${body ? `<div class="b" style="font-size:${bodySize}px">${body}</div>` : ''}
+  </td></tr></table>`
+}
+
+function slotFrontHtml(input: ListingPostcard) {
+  const layout = isSlotLayout(input.layout) ? input.layout : 'full'
+  const slots = fitSlots(layout, input.slots)
+  const boxes = slotBoxes(layout)
+  const pieces = boxes.map((box, index) => {
+    const slot = slots[index] || emptySlot()
+    return `<div class="slot" style="left:${box.left};top:${box.top};width:${box.width};height:${box.height}">${slotMarkup(slot, box.big)}</div>`
+  }).join('')
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    * { box-sizing: border-box; }
+    body { width: 9.25in; height: 6.25in; margin: 0; position: relative; overflow: hidden; background: #fff; }
+    .slot { position: absolute; overflow: hidden; border-radius: 0.1in; background: #e7f6f8; }
+    .slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    table { width: 100%; height: 100%; border-collapse: collapse; }
+    td { vertical-align: middle; text-align: center; padding: 0.12in; color: #16323a; font-family: Helvetica, Arial, sans-serif; }
+    .h { font-weight: 700; line-height: 1.15; }
+    .s { margin-top: 0.06in; line-height: 1.25; }
+    .b { margin-top: 0.08in; line-height: 1.35; white-space: pre-wrap; }
+  </style></head><body>${pieces}</body></html>`
+}
+
 export function listingFrontHtml(input: ListingPostcard) {
+  if (isSlotLayout(input.layout)) return slotFrontHtml(input)
   const bar = postcardColor(input.barColor, '#111111')
   const photo = escapeHtml(input.photoUrl)
   const headline = escapeHtml(input.headline.trim() || 'Just Sold')
