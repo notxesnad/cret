@@ -6,14 +6,17 @@ import { addressError, normalizeAddress, type MailAddress } from '@/app/lib/lobM
 import {
   POSTCARD_MAX,
   POSTCARD_PRICE_CENTS,
+  fitBackSlots,
   fitSlots,
   isSlotLayout,
   listingBackHtml,
   listingFrontHtml,
   listingPostcardReady,
+  normalizeSlot,
   postcardBackHtml,
   postcardColor,
   postcardFrontHtml,
+  slotColor,
   type ListingPostcard,
   type PostcardOrder,
   type PostcardProof,
@@ -126,22 +129,36 @@ function allowedPicture(url: string) {
 }
 
 function cleanSlot(slot: PostcardSlot | undefined): PostcardSlot {
-  if (!slot || slot.kind === 'empty') return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+  const base = normalizeSlot(slot)
+  const look = {
+    bg: slotColor(base.bg, '#000000'),
+    color: slotColor(base.color, '#ffffff'),
+    zoom: base.zoom,
+    rotate: base.rotate,
+    panX: base.panX,
+    panY: base.panY,
+  }
+  if (!slot || slot.kind === 'empty') return { ...emptyLook(), ...look, kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
   if (slot.kind === 'photo') {
     const photoUrl = allowedPicture(slot.photoUrl) ? slot.photoUrl : ''
-    if (!photoUrl) return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
-    return { kind: 'photo', photoUrl, heading: '', subheading: '', body: '' }
+    if (!photoUrl) return { ...emptyLook(), ...look, kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+    return { ...base, ...look, kind: 'photo', photoUrl, heading: '', subheading: '', body: '' }
   }
   const heading = (slot.heading || '').trim().slice(0, 40)
   const subheading = (slot.subheading || '').trim().slice(0, 60)
   const body = (slot.body || '').trim().slice(0, 220)
-  if (!heading && !subheading && !body) return { kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
-  return { kind: 'text', photoUrl: '', heading, subheading, body }
+  if (!heading && !subheading && !body) return { ...emptyLook(), ...look, kind: 'empty', photoUrl: '', heading: '', subheading: '', body: '' }
+  return { ...base, ...look, kind: 'text', photoUrl: '', heading, subheading, body }
+}
+
+function emptyLook(): PostcardSlot {
+  return normalizeSlot(undefined)
 }
 
 function cleanListing(input: ListingPostcard): ListingPostcard {
   const layout = isSlotLayout(input.layout) ? input.layout : ''
   const slots = layout ? fitSlots(layout, input.slots).map(cleanSlot) : []
+  const backSlots = layout ? fitBackSlots(input.backSlots).map(cleanSlot) : []
   const photoUrl = slots.find((slot) => slot.kind === 'photo' && slot.photoUrl)?.photoUrl
     || (allowedPicture(input.photoUrl) ? input.photoUrl : '')
   const headshotUrl = allowedPicture(input.headshotUrl) ? input.headshotUrl : ''
@@ -149,6 +166,7 @@ function cleanListing(input: ListingPostcard): ListingPostcard {
   return {
     layout,
     slots,
+    backSlots,
     photoUrl,
     headline: (input.headline || '').trim().slice(0, 28),
     propertyAddress: (input.propertyAddress || '').trim().slice(0, 42),

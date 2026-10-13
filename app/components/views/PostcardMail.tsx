@@ -75,7 +75,7 @@ export function PostcardMail({
 
   const [phase, setPhase] = useState<Phase>(orderFromUrl ? 'mailing' : 'build')
   const [design, setDesign] = useState<ListingPostcard>(() => emptyListingPostcard())
-  const [buildStep, setBuildStep] = useState<'layout' | 'front' | 'back'>('layout')
+  const [buildStep, setBuildStep] = useState<'start' | 'layout' | 'build'>('start')
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [frontUrl, setFrontUrl] = useState<string | null>(null)
   const [backUrl, setBackUrl] = useState<string | null>(null)
@@ -350,7 +350,7 @@ export function PostcardMail({
     if (working) return
     if (phase === 'pictures') {
       setPhase('build')
-      setBuildStep('layout')
+      setBuildStep('start')
       return
     }
     if (phase === 'who') {
@@ -360,7 +360,7 @@ export function PostcardMail({
       }
       if (isSlotLayout(design.layout)) {
         setPhase('build')
-        setBuildStep('back')
+        setBuildStep('build')
         return
       }
       setPhase('build')
@@ -434,8 +434,8 @@ export function PostcardMail({
         <>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-amber-300">{stepLabel}</p>
-            <h1 className="text-3xl font-black mt-1">Add your pictures</h1>
-            <p className="text-base text-slate-300 mt-2">One for the front. One for the back. Leave the right side of the back empty. The address goes there.</p>
+            <h1 className="text-3xl font-black mt-1">Upload from Canva</h1>
+            <p className="text-base text-slate-300 mt-2">One picture for the front. One for the back. Leave the bottom right of the back empty. The address goes there.</p>
           </div>
           <PictureSlot
             label="Front"
